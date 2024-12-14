@@ -1,0 +1,507 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+html,
+body {
+  padding: 0;
+  margin: 0;
+  overscroll-behavior: none;
+  touch-action: none;
+  min-height: 100vh;
+  /* mobile viewport bug fix */
+  min-height: -webkit-fill-available;
+  height: 100%;
+}
+
+/* Container styles */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Typography styles */
+@media (max-width: 600px) {
+  .MuiTypography-h2 {
+    font-size: 2rem !important;
+    line-height: 2.5rem !important;
+    margin-bottom: 16px !important;
+    padding: 0 16px !important;
+    word-break: break-word !important;
+  }
+
+  .MuiTypography-h5 {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+    margin-bottom: 16px !important;
+    padding: 0 16px !important;
+  }
+}
+
+/* Form and input styles */
+@media (max-width: 600px) {
+  .MuiContainer-root {
+    padding: 20px !important;
+  }
+
+  .MuiGrid-container {
+    gap: 16px !important;
+    padding: 0 16px !important;
+    justify-content: center !important;
+  }
+
+  .MuiGrid-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-basis: 100% !important;
+    padding: 0 !important;
+  }
+
+  .MuiTextField-root {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .MuiButton-root {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .login-form {
+    gap: 8px;
+  }
+}
+
+/* Add styles for wider screens */
+@media (min-width: 601px) {
+  .MuiTextField-root {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .MuiButton-root {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+/* Add this after your existing styles */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.login-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .login-buttons-container {
+    gap: 8px;
+  }
+}
+
+.login-form-container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-form-container .MuiTextField-root,
+.login-form-container .MuiButton-root {
+  width: 100%;
+}
+
+/* Adjust spacing for mobile */
+@media (max-width: 600px) {
+  .login-form-container {
+    gap: 8px;
+  }
+}
+
+.login-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.login-section-header {
+  text-align: center;
+  color: #666;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.login-role-header {
+  font-weight: 600 !important;
+  color: #1976d2 !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 2px solid #1976d2 !important;
+  width: fit-content !important;
+}
+
+@media (max-width: 600px) {
+  .login-role-header {
+    font-size: 1.75rem !important;
+    margin-bottom: 16px !important;
+  }
+}
+
+
+/* Calendar styles */
+.fc-timegrid-slot {
+  height: 2em !important;
+}
+
+.fc-timegrid-event {
+  min-height: 2.5em !important;
+}
+
+.fc-timegrid-slot-label {
+  vertical-align: middle;
+}
+
+.fc-event {
+cursor: pointer;
+overflow: visible !important;
+}
+
+.fc-event:hover {
+filter: brightness(90%);
+}
+
+.fc-event-title {
+font-weight: bold;
+}
+
+.custom-event-content > div {
+  transition: all 0.3s ease;
+  overflow: hidden;
+  max-height: 1.5em;
+}
+
+.custom-event-content > div[style*="display: none"] {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Custom button styling */
+.fc-filterClassesButton-button {
+background-color: #4CAF50;
+border: none;
+color: white;
+padding: 10px 20px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+font-size: 16px;
+margin: 4px 2px;
+cursor: pointer;
+border-radius: 4px;
+}
+
+/* Modal styling */
+.class-filter-modal {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: white;
+padding: 30px;
+border-radius: 12px;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+z-index: 9999;
+max-width: 90%;
+width: 400px;
+padding-bottom: 50px;
+}
+
+.class-filter-modal h2 {
+margin-top: 0;
+margin-bottom: 20px;
+font-size: 24px;
+text-align: center;
+}
+
+.class-filter-modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.5);
+z-index: 9998;
+}
+
+.class-filter-list {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+gap: 10px;
+margin-bottom: 20px;
+}
+
+.class-filter-button {
+display: flex;
+align-items: center;
+padding: 10px;
+border-radius: 8px;
+font-size: 14px;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+
+.class-filter-button:hover {
+opacity: 0.8;
+}
+
+.class-filter-button .checkbox {
+width: 20px;
+height: 20px;
+border-radius: 4px;
+border: 2px solid currentColor;
+display: flex;
+align-items: center;
+justify-content: center;
+margin-right: 10px;
+/* Add this to ensure the checkbox is visible */
+background-color: rgba(255, 255, 255, 0.5);
+}
+
+.class-filter-button .checkbox svg {
+font-size: 12px;
+}
+
+.class-filter-button span {
+flex-grow: 1;
+text-align: left;
+}
+
+.close-button {
+background-color: #2C3E50;
+border: 1px solid #2C3E50;
+color: #fff;
+padding: 6px 12px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+font-size: 14px;
+margin: 4px 2px;
+cursor: pointer;
+border-radius: 4px;
+transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.close-button:hover {
+background-color: #34495E;
+border-color: #34495E;
+}
+
+.close-button-container {
+text-align: center;
+margin-top: 20px;
+}
+
+.event-details-modal {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: white;
+padding: 30px;
+border-radius: 12px;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+z-index: 9999;
+max-width: 90%;
+width: 400px;
+}
+
+.event-details-modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.5);
+z-index: 9998;
+}
+
+.open-tldraw-button {
+background-color: #4CAF50;
+border: none;
+color: white;
+padding: 10px 20px;
+text-align: center;
+text-decoration: none;
+display: inline-flex;
+align-items: center;
+font-size: 16px;
+margin: 4px 2px;
+cursor: pointer;
+border-radius: 4px;
+transition: background-color 0.3s ease;
+}
+
+.open-tldraw-button:hover {
+background-color: #45a049;
+}
+
+.open-tldraw-button svg {
+margin-left: 8px;
+}
+
+.event-dropdown {
+position: absolute;
+z-index: 1100;  /* Higher value to ensure it appears above events */
+right: -5px;
+top: 25px;
+background-color: white;
+border: 1px solid #ccc;
+border-radius: 4px;
+box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+min-width: 180px;
+max-width: 250px;
+min-height: 185px;  /* Ensure a minimum height */
+max-height: 200px;
+padding: 5px;
+overflow-y: scroll;  /* Always show scrollbar */
+display: flex;
+flex-direction: column;
+}
+
+.event-dropdown div {
+padding: 8px 12px;
+cursor: pointer;
+white-space: nowrap;
+font-size: 12px;
+color: #000;
+flex-shrink: 0;
+}
+
+.event-dropdown div:not(:last-child) {
+border-bottom: 1px solid #eee;  /* Add separators between items */
+}
+
+.event-dropdown div:hover {
+background-color: #f0f0f0;
+}
+
+/* Styling for webkit browsers */
+.event-dropdown::-webkit-scrollbar {
+width: 8px;
+}
+
+.event-dropdown::-webkit-scrollbar-track {
+background: #f1f1f1;
+}
+
+.event-dropdown::-webkit-scrollbar-thumb {
+background: #888;
+border-radius: 4px;
+}
+
+.event-dropdown::-webkit-scrollbar-thumb:hover {
+background: #555;
+}
+
+/* Styling for Firefox */
+.event-dropdown {
+scrollbar-width: thin;
+scrollbar-color: #888 #f1f1f1;
+}
+
+/* Ensure the dropdown is on top of other elements */
+.fc-event-main {
+overflow: visible !important;
+}
+
+/* Style for the ellipsis icon */
+.custom-event-content .fa-ellipsis-v {
+opacity: 0.7;
+transition: opacity 0.3s ease;
+font-size: 16px;
+}
+
+.custom-event-content .fa-ellipsis-v:hover {
+opacity: 1;
+}
+
+/* Add this new style to ensure the event content doesn't overflow */
+.fc-event-main-frame {
+overflow: visible !important;
+}
+
+/* View Toggle Modal styles */
+.view-toggle-modal {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: white;
+padding: 30px;
+border-radius: 12px;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+z-index: 9999;
+max-width: 90%;
+width: 300px;
+}
+
+.view-toggle-modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.5);
+z-index: 9998;
+}
+
+.view-toggle-modal h2 {
+margin-top: 0;
+margin-bottom: 20px;
+font-size: 24px;
+text-align: center;
+}
+
+.view-toggle-list {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.view-toggle-button {
+background-color: #4CAF50;
+border: none;
+color: white;
+padding: 10px 20px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+font-size: 16px;
+margin: 4px 2px;
+cursor: pointer;
+border-radius: 4px;
+transition: background-color 0.3s ease;
+}
+
+.view-toggle-button:hover {
+background-color: #45a049;
+}
