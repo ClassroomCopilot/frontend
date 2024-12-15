@@ -1,17 +1,12 @@
 {
-  "name": "@cc/frontend",
-  "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "local_start": "yarn start",
-    "start": "yarn dev",
-    "dev": "vite --host",
+    "start": "vite --host",
+    "dev": "npx vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "lint": "eslint \"**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest",
-    "postinstall": "dir"
+    "test": "vitest"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",

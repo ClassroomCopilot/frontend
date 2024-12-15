@@ -1,0 +1,17 @@
+# Yarn
+yarn.lock
+.yarn/*
+
+# Node
+node_modules
+dist
+dist-ssr
+*.local
+package-lock.json
+
+# PnP
+.pnp.cjs
+.pnp.loader.mjs
+
+# Secrets
+.env

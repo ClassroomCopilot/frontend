@@ -38,7 +38,7 @@ export class RegistrationService {
                         display_name: username,
                         role: credentials.role
                     },
-                    emailRedirectTo: `${window.location.origin}/auth/callback`
+                    emailRedirectTo: `${window.location.origin}/supabase/auth/callback`
                 }
             });
 

@@ -14,10 +14,10 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env': env
     },
-    envPrefix: ['VITE_', 'PORT_'],
+    envPrefix: ['VITE_', 'HOST_', 'PORT_'],
     server: {
       host: true,
-      port: parseInt(env.VITE_FRONTEND_PORT || '3000'),
+      port: parseInt(env.VITE_PORT_FRONTEND),
       watch: {
         usePolling: true,
         interval: 1000

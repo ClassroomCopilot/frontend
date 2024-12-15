@@ -19,15 +19,6 @@ interface ImportMetaEnv {
   // Site URL
   readonly VITE_SITE_URL: string
 
-  // Host URLs
-  readonly VITE_FASTAPI_HOST: string
-  readonly VITE_TLDRAW_HOST: string
-
-  // Ports
-  readonly VITE_FASTAPI_PORT: string
-  readonly VITE_TLDRAW_PORT: string
-  readonly VITE_SEARXNG_PORT: string
-
   // Firebase Settings
   readonly VITE_REACT_APP_API_KEY: string
   readonly VITE_REACT_APP_AUTH_DOMAIN: string
@@ -37,7 +28,6 @@ interface ImportMetaEnv {
   readonly VITE_REACT_APP_APP_ID: string
 
   // Supabase Settings
-  readonly VITE_SUPABASE_ANON_KEY: string
 
   // Microsoft API Settings
   readonly VITE_MICROSOFT_CLIENT_ID: string
@@ -45,9 +35,6 @@ interface ImportMetaEnv {
   readonly VITE_MICROSOFT_CLIENT_SECRET_ID: string
   readonly VITE_MICROSOFT_CLIENT_SECRET: string
   readonly VITE_MICROSOFT_TENANT_ID: string
-
-  // Local Development Files
-  readonly VITE_KCAR_TIMETABLE_URL: string
 }
 
 interface ImportMeta {
