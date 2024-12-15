@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import Modal from 'react-modal'; // Make sure to install this package
 import { EventContentArg, EventClickArg, CalendarOptions } from '@fullcalendar/core';
 import FullCalendar from '@fullcalendar/react';

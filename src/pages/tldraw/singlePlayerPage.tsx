@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     Tldraw,
     DefaultSpinner,
@@ -97,7 +97,7 @@ export default function SinglePlayerPage() {
 
     // Redirect if no user
     useEffect(() => {
-        if (!isNeo4jLoading && !user) {
+        if (!user) {
             logger.info('single-player-page', '🚪 Redirecting to home - no user logged in');
             navigate('/');
         }
@@ -112,6 +112,18 @@ export default function SinglePlayerPage() {
 
         loadNodeSnapshotFromDatabase(userNode.path, userDbName, store, setLoadingState);
     }, [user, userNodes, tldrawUser, store, userDbName]);
+
+    useEffect(() => {
+        if (user) {
+            setLoadingState({ status: 'ready' });
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (loadingState.status === 'ready') {
+            logger.info('single-player-page', '🎨 TLDraw is ready');
+        }
+    }, [loadingState]);
 
     // Handle presentation mode
     useEffect(() => {
@@ -134,17 +146,8 @@ export default function SinglePlayerPage() {
     }, [presentationMode]);
 
     // Loading states handling
-    if (isNeo4jLoading || loadingState.status === 'loading') {
+    if (loadingState.status === 'loading') {
         return <div><DefaultSpinner /></div>;
-    }
-
-    if (!user || !tldrawUser || !userNodes) {
-        logger.debug('single-player-page', '⏳ Waiting for required dependencies', {
-            hasUser: !!user,
-            hasUserNodes: !!userNodes,
-            hasTldrawUser: !!tldrawUser
-        });
-        return null;
     }
 
     // Modify the render logic to use presentationMode
@@ -174,8 +177,6 @@ export default function SinglePlayerPage() {
                 onMount={(editor) => {
                     logger.info('system', '🎨 Tldraw mounted', {
                         editorId: editor.store.id,
-                        userId: user.id,
-                        userNodePath: userNodes.privateUserNode.path,
                         presentationMode
                     });
                     editorRef.current = editor;

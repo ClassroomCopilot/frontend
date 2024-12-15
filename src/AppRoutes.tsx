@@ -93,7 +93,7 @@ const AppRoutes = () => {
       } />
 
       <Route path="/single-player" element={
-        <ProtectedRoute requireNeo4j>
+        <ProtectedRoute>
           <SinglePlayerPage />
         </ProtectedRoute>
       } />
@@ -107,7 +107,6 @@ const AppRoutes = () => {
       <Route path="/dev" element={
         <ProtectedRoute 
           requiredRoles={['cc_admin', 'email_teacher', 'ms_teacher']}
-          requireNeo4j
         >
           <DevPage />
         </ProtectedRoute>

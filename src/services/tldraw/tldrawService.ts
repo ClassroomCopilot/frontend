@@ -20,23 +20,22 @@ export const createTldrawUser = (
     userId: string, 
     preferences?: TLUserPreferences | null
 ): TLUser => {
-    logger.debug('tldraw-service', '🔄 Creating TLDraw user', { 
-        userId,
-        hasPreferences: !!preferences 
-    });
-  
     const effectivePreferences = preferences || {
         ...DEFAULT_PREFERENCES,
         id: userId,
         name: DEFAULT_PREFERENCES.name,
         color: generateUserColor(userId)
     };
+
+    logger.debug('tldraw-service', '🔄 Creating TLDraw user', { 
+        userId,
+        hasPreferences: effectivePreferences 
+    });
   
     return createTLUser({
         userPreferences: {
             name: 'userPreferences',
             get: () => {
-                logger.trace('tldraw-service', '📥 Getting user preferences');
                 return effectivePreferences;
             },
             lastChangedEpoch: Date.now(),
@@ -44,10 +43,6 @@ export const createTldrawUser = (
             __unsafe__getWithoutCapture: () => effectivePreferences
         },
         setUserPreferences: (newPreferences: TLUserPreferences) => {
-            logger.info('tldraw-service', '⚙️ User preferences updated', {
-                userId,
-                newPreferences
-            });
             storageService.set(StorageKeys.TLDRAW_PREFERENCES, newPreferences);
         }
     });

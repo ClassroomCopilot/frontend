@@ -1,5 +1,5 @@
 import { Container, Grid, Button, Typography, Alert } from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNeo4j } from '../../contexts/Neo4jContext';
 import { SuperAdminSection } from '../components/auth/SuperAdminSection';
@@ -47,11 +47,9 @@ export default function HomePage() {
       <Grid container spacing={2} justifyContent="center">
         <Grid item>
           <Button 
-            component={Link} 
-            to="/calendar" 
+            onClick={() => navigate('/calendar')} 
             variant="contained" 
             color="primary"
-            disabled={!userNodes?.privateUserNode}
           >
             Calendar
           </Button>
@@ -59,11 +57,9 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            component={Link} 
-            to="/single-player" 
+            onClick={() => navigate('/single-player')} 
             variant="contained" 
             color="primary"
-            disabled={!userNodes?.privateUserNode}
           >
             Single Player
           </Button>
@@ -71,8 +67,7 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            component={Link} 
-            to="/multiplayer" 
+            onClick={() => navigate('/multiplayer')} 
             variant="contained" 
             color="primary"
             disabled={!userNodes?.privateUserNode}
@@ -82,14 +77,13 @@ export default function HomePage() {
         </Grid>
 
         {/* Show Dev Tools for teachers or admins */}
-        {(isTeacher || isAdmin) && (
+        {(isAdmin) && (
           <Grid item>
             <Button 
-              component={Link} 
-              to="/dev" 
+              onClick={() => navigate('/dev')} 
               variant="contained" 
               color="primary"
-              disabled={!userNodes?.privateUserNode && !isAdmin}
+              disabled={!isAdmin}
             >
               Dev Tools
             </Button>
@@ -111,6 +105,7 @@ export default function HomePage() {
             onClick={() => navigate('/teacher-planner')}
             variant="contained" 
             color="primary"
+            disabled={!isTeacher || !isAdmin}
           >
             Open Teacher Planner (React Flow)
           </Button>
