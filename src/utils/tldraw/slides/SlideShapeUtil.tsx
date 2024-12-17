@@ -4,68 +4,64 @@ import {
 	Rectangle2d,
 	SVGContainer,
 	ShapeUtil,
-	T,
-	TLBaseShape,
+	TLFrameShape,
 	getPerfectDashProps,
 	resizeBox,
 	useValue,
-	RecordProps,
 	TLShapePartial,
-	TLShapeId,
 	DefaultColorStyle,
 	DefaultDashStyle,
 	DefaultSizeStyle,
-	Vec,
 	TLParentId,
+	TLResizeHandle,
+	Box,
+	TLResizeMode,
+	VecModel,
+	TLShapeId,
 } from '@tldraw/tldraw'
 import { getSlideLabel, getSlideShowLabel, moveToSlide, moveToSlideShow, useSlides, useSlideShows } from './useSlides'
 import './slides.css'
 import { SlideLayoutBinding } from './SlideLayoutBindingUtil'
 import { logger } from '../../../debugConfig'
 
-export type SlideShowShape = TLBaseShape<
-	'slideshow',
-	{
-		w: number
-		h: number
-		isCurrentSlideshow: boolean | undefined
-		slideCount: number
-		slidePattern: 'freeform' | 'horizontal' | 'vertical' | 'grid' | 'radial'
-		autoAdvance: boolean
-		advanceInterval: number // in milliseconds
-		slides: TLShapeId[] // Change from string[] to TLShapeId[]
-		slideShowIndex: number
-		currentSlideIndex: number
-	}
->
-
-export type SlideShape = TLBaseShape<
-	'slide',
-	{
+// Type for individual slide frame shape  
+export type SlideShape = TLFrameShape & {
+	props: {
 		w: number
 		h: number
 		isCurrentSlide: boolean
-		parentId: string | null // ID of parent SlideShowShape
 		slideIndex: number
+		parentId: string
 	}
->
+}
+
+// Type for slideshow frame shape
+export type SlideShowShape = TLFrameShape & {
+	props: {
+		slides: TLShapeId[]
+		isCurrentSlideshow: boolean
+		slideCount: number
+		slidePattern: 'freeform' | 'horizontal' | 'vertical' | 'grid' | 'radial'
+		currentSlideIndex: number
+		slideShowIndex: number
+	}
+}
 
 export const defaultPresentationProps = {
-	slideshowWidth: 1920,
-	slideshowHeight: 1080,
 	slideWidth: 1920,
 	slideHeight: 1080,
 	slideCount: 10,
-	slides: [],
 	slidePattern: 'freeform' as const,
 	SLIDE_GAP: 50,
 	autoAdvance: false,
 	advanceInterval: 5000,
 	isCurrentSlideshow: false,
 	isCurrentSlide: false,
-	parentId: null,
 	slideIndex: 0,
 	slideShowIndex: 0,
+	slideName: 'Slide',
+	slideshowName: 'Slideshow',
+	color: 'black',
 }
 
 export class SlideShowShapeUtil extends ShapeUtil<SlideShowShape> {
@@ -75,18 +71,6 @@ export class SlideShowShapeUtil extends ShapeUtil<SlideShowShape> {
 		dash: DefaultDashStyle,
 		size: DefaultSizeStyle,
 	} as const
-	static override props: RecordProps<SlideShowShape> = {
-		w: T.number,
-		h: T.number,
-		isCurrentSlideshow: T.boolean,
-		slideCount: T.number,
-		slidePattern: T.string as T.Validator<SlideShowShape['props']['slidePattern']>,
-		autoAdvance: T.boolean,
-		advanceInterval: T.number,
-		slides: T.arrayOf(T.string) as unknown as T.Validator<TLShapeId[]>,
-		slideShowIndex: T.number,
-		currentSlideIndex: T.number,
-	}
 	
 	override canBind = () => true
 	override hideRotateHandle = () => true
@@ -94,16 +78,15 @@ export class SlideShowShapeUtil extends ShapeUtil<SlideShowShape> {
 
 	getDefaultProps(): SlideShowShape['props'] {
 		return {
-			w: defaultPresentationProps.slideshowWidth,
-			h: defaultPresentationProps.slideshowHeight,
+			w: defaultPresentationProps.slideWidth,
+			h: defaultPresentationProps.slideHeight,
+			name: defaultPresentationProps.slideshowName,
+			slides: [],
 			isCurrentSlideshow: defaultPresentationProps.isCurrentSlideshow,
 			slideCount: defaultPresentationProps.slideCount,
 			slidePattern: defaultPresentationProps.slidePattern,
-			autoAdvance: defaultPresentationProps.autoAdvance,
-			advanceInterval: defaultPresentationProps.advanceInterval,
-			slides: defaultPresentationProps.slides,
-			slideShowIndex: defaultPresentationProps.slideShowIndex,
 			currentSlideIndex: defaultPresentationProps.slideIndex,
+			slideShowIndex: defaultPresentationProps.slideShowIndex,
 		}
 	}
 
@@ -171,7 +154,15 @@ export class SlideShowShapeUtil extends ShapeUtil<SlideShowShape> {
 
 	override onRotate = (initial: SlideShowShape) => initial
 
-	override onResize = (shape: SlideShowShape, info: any) => {
+	override onResize = (shape: SlideShowShape, info: {
+		handle: TLResizeHandle
+		initialBounds: Box
+		initialShape: SlideShowShape
+		mode: TLResizeMode
+		newPoint: VecModel
+		scaleX: number
+		scaleY: number
+	}) => {
 		return resizeBox(shape, info)
 	}
 
@@ -186,7 +177,7 @@ export class SlideShowShapeUtil extends ShapeUtil<SlideShowShape> {
 	}
 
 	override component(shape: SlideShowShape) {
-		const bounds = this.editor.getShapeGeometry(shape).bounds
+		const {bounds} = this.editor.getShapeGeometry(shape)
 
 		// eslint-disable-next-line react-hooks/rules-of-hooks
 		const zoomLevel = useValue('zoom level', () => this.editor.getZoomLevel(), [this.editor])
@@ -198,7 +189,9 @@ export class SlideShowShapeUtil extends ShapeUtil<SlideShowShape> {
 		// eslint-disable-next-line react-hooks/rules-of-hooks
 		const handleLabelPointerDown = useCallback(() => this.editor.select(shape.id), [shape.id])
 
-		if (!bounds) return null
+		if (!bounds) {
+			return null
+		}
 
 		return (
 			<>
@@ -239,26 +232,20 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 		dash: DefaultDashStyle,
 		size: DefaultSizeStyle,
 	} as const
-	static override props: RecordProps<SlideShape> = {
-		w: T.number,
-		h: T.number,
-		isCurrentSlide: T.boolean,
-		parentId: T.string.nullable(),
-		slideIndex: T.number,
-	}
 
 	override getDefaultProps(): SlideShape['props'] {
 		return {
 			w: defaultPresentationProps.slideWidth,
 			h: defaultPresentationProps.slideHeight,
+			name: defaultPresentationProps.slideName,
 			isCurrentSlide: defaultPresentationProps.isCurrentSlide,
-			parentId: defaultPresentationProps.parentId,
 			slideIndex: defaultPresentationProps.slideIndex,
+			parentId: '',
 		}
 	}
 
 	override component(shape: SlideShape) {
-		const bounds = this.editor.getShapeGeometry(shape).bounds
+		const {bounds} = this.editor.getShapeGeometry(shape)
 
 		// eslint-disable-next-line react-hooks/rules-of-hooks
 		const zoomLevel = useValue('zoom level', () => this.editor.getZoomLevel(), [this.editor])
@@ -270,7 +257,9 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 		// eslint-disable-next-line react-hooks/rules-of-hooks
 		const handleLabelPointerDown = useCallback(() => this.editor.select(shape.id), [shape.id])
 
-		if (!bounds) return null
+		if (!bounds) {
+			return null
+		}
 
 		return (
 			<>
@@ -346,7 +335,9 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 	
 	indicator(shape: SlideShape) {
 		// Return null during translation to hide the default indicator
-		if (this.editor.isIn('translating')) return null
+		if (this.editor.isIn('translating')) {
+			return null
+		}
 		return <rect width={shape.props.w} height={shape.props.h} />
 	}
 	
@@ -377,7 +368,15 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 		return shape
 	}
 
-	override onResize = (shape: SlideShape, info: any) => {
+	override onResize = (shape: SlideShape, info: {
+		handle: TLResizeHandle
+		initialBounds: Box
+		initialShape: SlideShape
+		mode: TLResizeMode
+		newPoint: VecModel
+		scaleX: number
+		scaleY: number
+	}) => {
 		return resizeBox(shape, info)
 	}
 
@@ -389,15 +388,6 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 	override onDoubleClickEdge = (shape: SlideShape) => {
 		moveToSlide(this.editor, shape)
 		this.editor.selectNone()
-	}
-
-
-	private getTargetSlideShow(shape: SlideShape, pageAnchor: Vec) {
-		return this.editor.getShapeAtPoint(pageAnchor, {
-			hitInside: true,
-			filter: (otherShape) =>
-				this.editor.canBindShapes({ fromShape: otherShape, toShape: shape, binding: 'slide-layout' }),
-		}) as SlideShowShape | undefined
 	}
 
 	override onTranslateStart(shape: SlideShape) {
@@ -416,24 +406,30 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 			this.editor.updateBindings(
 				bindings.map(binding => ({
 					...binding,
-						props: { ...binding.props, placeholder: true }
+					props: { ...binding.props, placeholder: true }
 				}))
 			)
 		}
 	}
 
-	override onTranslate(initial: SlideShape, current: SlideShape): TLShapePartial<SlideShape> | undefined {
+	override onTranslate(_initial: SlideShape, current: SlideShape): TLShapePartial<SlideShape> | undefined {
 		logger.info('translation', '🟨 TRANSLATE UPDATE')
 		const parentId = current.props.parentId
-		if (!parentId) return
+		if (!parentId) {
+			return
+		}
 
 		const maybeSlideshow = this.editor.getShape(parentId as TLParentId)
-		if (!maybeSlideshow || maybeSlideshow.type !== 'slideshow') return
+		if (!maybeSlideshow || maybeSlideshow.type !== 'slideshow') {
+			return
+		}
 		const slideshow = maybeSlideshow as SlideShowShape
 
 		// Get current transform
 		const currentTransform = this.editor.getShapePageTransform(current)
-		if (!currentTransform) return
+		if (!currentTransform) {
+			return
+		}
 		const currentPoint = currentTransform.point()
 
 		const gap = defaultPresentationProps.SLIDE_GAP
@@ -441,6 +437,10 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 		// Calculate target index based on position and pattern
 		const currentIndex = slideshow.props.slides.indexOf(current.id)
 		let targetIndex: number
+
+		const cols = Math.ceil(Math.sqrt(slideshow.props.slides.length))
+		const row = Math.floor((currentPoint.y - slideshow.y - gap) / (current.props.h + gap))
+		const col = Math.floor((currentPoint.x - slideshow.x - gap) / (current.props.w + gap))
 
 		switch (slideshow.props.slidePattern) {
 			case 'horizontal':
@@ -457,9 +457,6 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 				break
 			case 'grid':
 				// TODO: Implement grid pattern
-				const cols = Math.ceil(Math.sqrt(slideshow.props.slides.length))
-				const row = Math.floor((currentPoint.y - slideshow.y - gap) / (current.props.h + gap))
-				const col = Math.floor((currentPoint.x - slideshow.x - gap) / (current.props.w + gap))
 				targetIndex = Math.max(0, Math.min(
 					row * cols + col,
 					slideshow.props.slides.length - 1
@@ -488,7 +485,6 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 				break
 			case 'grid':
 				// TODO: Implement grid constraints
-				const cols = Math.ceil(Math.sqrt(slideshow.props.slides.length))
 				constrainedX = slideshow.x + gap + (targetIndex % cols) * (current.props.w + gap)
 				constrainedY = slideshow.y + gap + Math.floor(targetIndex / cols) * (current.props.h + gap)
 				break
@@ -513,7 +509,7 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 
 			this.editor.updateShape<SlideShowShape>({
 				id: slideshow.id,
-				type: 'slideshow',
+				type: 'frame',
 				props: {
 					...slideshow.props,
 					slides: newSlides
@@ -521,8 +517,12 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 			})
 
 			// Update other slides' positions
+			const cols = Math.ceil(Math.sqrt(newSlides.length))
+
 			newSlides.forEach((slideId, index) => {
-				if (slideId === current.id) return // Skip moving slide
+				if (slideId === current.id) {
+					return // Skip moving slide
+				}
 
 				let position: { x: number, y: number }
 				switch (slideshow.props.slidePattern) {
@@ -540,7 +540,6 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 						break
 					case 'grid':
 						// TODO: Implement grid positioning
-						const cols = Math.ceil(Math.sqrt(newSlides.length))
 						position = {
 							x: slideshow.x + gap + (index % cols) * (current.props.w + gap),
 							y: slideshow.y + gap + Math.floor(index / cols) * (current.props.h + gap)
@@ -572,7 +571,7 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 		// Return snapped position for the moving slide
 		return {
 			id: current.id,
-			type: 'slide' as const,
+			type: 'frame',
 			x: constrainedX,
 			y: constrainedY
 		}
@@ -592,7 +591,7 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 			slideshow.props.slides.forEach((slideId, index) => {
 				this.editor.updateShape({
 					id: slideId,
-					type: 'slide',
+					type: 'frame',
 					props: {
 						slideIndex: index
 					}

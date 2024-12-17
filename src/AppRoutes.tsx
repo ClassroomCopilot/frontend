@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router';
 import { useAuth } from './contexts/AuthContext';
 import SitePage from './pages/sitePage';
 import AuthPage from './pages/auth/authPage';
@@ -99,7 +99,7 @@ const AppRoutes = () => {
       } />
 
       <Route path="/multiplayer" element={
-        <ProtectedRoute requireNeo4j>
+        <ProtectedRoute>
           <MultiplayerPage />
         </ProtectedRoute>
       } />

@@ -251,6 +251,146 @@ const CalendarPage: React.FC = () => {
     };
   }, [handleResize]);
 
+  const calendarOptions: CalendarOptions = useMemo(() => ({
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, multiMonthPlugin, listPlugin],
+    initialView: "timeGridWeek",
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'viewToggle filterClassesButton'
+    },
+    customButtons: {
+      filterClassesButton: {
+        text: 'Filter Classes',
+        click: toggleClassFilterModal
+      },
+      viewToggle: {
+        text: 'Change View',
+        click: () => setIsViewMenuOpen(true)
+      }
+    },
+    views: {
+      dayGridYear: {
+        type: 'dayGrid',
+        duration: { years: 1 },
+        buttonText: 'Year Grid',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      dayGridMonth: {
+        buttonText: 'Month',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      timeGridWeek: {
+        buttonText: 'Week',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      timeGridDay: {
+        buttonText: 'Day',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      listYear: {
+        buttonText: 'List Year',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      listMonth: {
+        buttonText: 'List Month',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      listWeek: {
+        buttonText: 'List Week',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+      listDay: {
+        buttonText: 'List Day',
+        visibleRange: (currentDate: Date) => ({
+          start: eventRange.start || currentDate,
+          end: eventRange.end || currentDate
+        }),
+      },
+    },
+    validRange: eventRange.start && eventRange.end ? {
+      start: eventRange.start,
+      end: eventRange.end
+    } : undefined,
+    events: filteredEvents,
+    height: "100%",
+    slotMinTime: "08:00:00",
+    slotMaxTime: "17:00:00",
+    allDaySlot: false,
+    expandRows: true,
+    slotEventOverlap: false,
+    slotDuration: "00:30:00",
+    slotLabelInterval: "01:00",
+    eventContent: renderEventContent,
+    eventClassNames: (arg: { event: { extendedProps?: { subjectClass?: string } } }) => 
+      [arg.event.extendedProps?.subjectClass || ''],
+    eventDidMount: (arg: { event: { extendedProps?: { color?: string }; id: string }; el: HTMLElement }) => {
+      if (arg.event.extendedProps?.color) {
+        const originalColor = arg.event.extendedProps.color;
+        const lightenedColor = lightenColor(originalColor, 0.4); // Increase lightening amount
+        arg.el.style.backgroundColor = lightenedColor;
+        arg.el.style.borderColor = originalColor;
+      }
+      
+      const updateEventContent = () => {
+        const height = arg.el.offsetHeight;
+        const contentElements = arg.el.querySelectorAll('.custom-event-content > div:not(.event-dropdown)');
+        
+        contentElements.forEach((el, index) => {
+          const element = el as HTMLElement;
+          if (index === 0 || index === 1) {
+            // Always show the title and ellipsis
+            element.style.display = 'block';
+          } else if (height >= 40 && index === 2) {
+            // Show subject class if height is sufficient
+            element.style.display = 'block';
+          } else if (height >= 60 && index === 3) {
+            // Show period code if height is sufficient
+            element.style.display = 'block';
+          } else if (height >= 80 && index === 4) {
+            // Show time if height is sufficient
+            element.style.display = 'block';
+          } else {
+            // Hide other elements
+            element.style.display = 'none';
+          }
+        });
+
+      };
+
+      updateEventContent();
+      
+      // Create a ResizeObserver to watch for changes in the event's size
+      const resizeObserver = new ResizeObserver(updateEventContent);
+      resizeObserver.observe(arg.el);
+
+      // Clean up the observer when the event is unmounted
+      return () => resizeObserver.disconnect();
+    },
+    eventClick: handleEventClick,
+  }), [eventRange, filteredEvents, toggleClassFilterModal]);
+
   if (!user) {
     console.log('User not logged in');
     return <div>Please log in to view your calendar.</div>;
@@ -437,146 +577,6 @@ const CalendarPage: React.FC = () => {
       </div>
     );
   };
-
-  const calendarOptions: CalendarOptions = useMemo(() => ({
-    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, multiMonthPlugin, listPlugin],
-    initialView: "timeGridWeek",
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'viewToggle filterClassesButton'
-    },
-    customButtons: {
-      filterClassesButton: {
-        text: 'Filter Classes',
-        click: toggleClassFilterModal
-      },
-      viewToggle: {
-        text: 'Change View',
-        click: () => setIsViewMenuOpen(true)
-      }
-    },
-    views: {
-      dayGridYear: {
-        type: 'dayGrid',
-        duration: { years: 1 },
-        buttonText: 'Year Grid',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      dayGridMonth: {
-        buttonText: 'Month',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      timeGridWeek: {
-        buttonText: 'Week',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      timeGridDay: {
-        buttonText: 'Day',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      listYear: {
-        buttonText: 'List Year',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      listMonth: {
-        buttonText: 'List Month',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      listWeek: {
-        buttonText: 'List Week',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-      listDay: {
-        buttonText: 'List Day',
-        visibleRange: (currentDate: Date) => ({
-          start: eventRange.start || currentDate,
-          end: eventRange.end || currentDate
-        }),
-      },
-    },
-    validRange: eventRange.start && eventRange.end ? {
-      start: eventRange.start,
-      end: eventRange.end
-    } : undefined,
-    events: filteredEvents,
-    height: "100%",
-    slotMinTime: "08:00:00",
-    slotMaxTime: "17:00:00",
-    allDaySlot: false,
-    expandRows: true,
-    slotEventOverlap: false,
-    slotDuration: "00:30:00",
-    slotLabelInterval: "01:00",
-    eventContent: renderEventContent,
-    eventClassNames: (arg: { event: { extendedProps?: { subjectClass?: string } } }) => 
-      [arg.event.extendedProps?.subjectClass || ''],
-    eventDidMount: (arg: { event: { extendedProps?: { color?: string }; id: string }; el: HTMLElement }) => {
-      if (arg.event.extendedProps?.color) {
-        const originalColor = arg.event.extendedProps.color;
-        const lightenedColor = lightenColor(originalColor, 0.4); // Increase lightening amount
-        arg.el.style.backgroundColor = lightenedColor;
-        arg.el.style.borderColor = originalColor;
-      }
-      
-      const updateEventContent = () => {
-        const height = arg.el.offsetHeight;
-        const contentElements = arg.el.querySelectorAll('.custom-event-content > div:not(.event-dropdown)');
-        
-        contentElements.forEach((el, index) => {
-          const element = el as HTMLElement;
-          if (index === 0 || index === 1) {
-            // Always show the title and ellipsis
-            element.style.display = 'block';
-          } else if (height >= 40 && index === 2) {
-            // Show subject class if height is sufficient
-            element.style.display = 'block';
-          } else if (height >= 60 && index === 3) {
-            // Show period code if height is sufficient
-            element.style.display = 'block';
-          } else if (height >= 80 && index === 4) {
-            // Show time if height is sufficient
-            element.style.display = 'block';
-          } else {
-            // Hide other elements
-            element.style.display = 'none';
-          }
-        });
-
-      };
-
-      updateEventContent();
-      
-      // Create a ResizeObserver to watch for changes in the event's size
-      const resizeObserver = new ResizeObserver(updateEventContent);
-      resizeObserver.observe(arg.el);
-
-      // Clean up the observer when the event is unmounted
-      return () => resizeObserver.disconnect();
-    },
-    eventClick: handleEventClick,
-  }), [eventRange, filteredEvents, toggleClassFilterModal]);
 
   const renderClassFilterButton = (subjectClass: string) => {
     const isSelected = selectedClasses.includes(subjectClass);

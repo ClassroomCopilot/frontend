@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Container, Box, Typography, Tabs, Tab, Paper, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { SUPER_ADMIN_EMAIL } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { TimetableUploadSection } from '../components/admin/TimetableUploadSection';

@@ -50,6 +50,7 @@ export default function HomePage() {
             onClick={() => navigate('/calendar')} 
             variant="contained" 
             color="primary"
+            disabled={!userNodes?.privateUserNode}
           >
             Calendar
           </Button>
@@ -70,7 +71,6 @@ export default function HomePage() {
             onClick={() => navigate('/multiplayer')} 
             variant="contained" 
             color="primary"
-            disabled={!userNodes?.privateUserNode}
           >
             Multiplayer
           </Button>

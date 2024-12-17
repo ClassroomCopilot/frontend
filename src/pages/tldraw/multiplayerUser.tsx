@@ -5,7 +5,7 @@ import {
     useRef,
     useMemo,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
     Tldraw,
     useTldrawUser,
@@ -68,16 +68,16 @@ export default function TldrawMultiUser() {
     
     // 4. Memos for derived data
     const syncUserInfo = useMemo(() => ({
-        id: userNodes?.privateUserNode?.unique_id ?? '',
-        name: userNodes?.privateUserNode?.user_name ?? 'Anonymous',
+        id: user?.id ?? '',
+        name: user?.displayName,
         color: tldrawPreferences?.color ?? `hsl(${Math.random() * 360}, 70%, 50%)`,
-    }), [userNodes?.privateUserNode, tldrawPreferences]);
+    }), [user, tldrawPreferences]);
 
     // 5. Create editor user
     const editorUser = useTldrawUser({
         userPreferences: {
-            id: userNodes?.privateUserNode?.unique_id ?? '',
-            name: userNodes?.privateUserNode?.user_name ?? '',
+            id: user?.id,
+            name: user?.displayName,
             color: tldrawPreferences?.color ?? '',
             locale: tldrawPreferences?.locale || 'en',
             colorScheme: tldrawPreferences?.colorScheme || 'system',
@@ -88,7 +88,7 @@ export default function TldrawMultiUser() {
     });
 
     // 6. Initialize sync store
-    const initial_roomId = userNodes?.privateUserNode?.unique_id ?? 'ERROR';
+    const initial_roomId = user?.id ?? 'ERROR';
     const sync_store = useSyncStore(initial_roomId, syncUserInfo);
 
     // 7. Create shared store
@@ -99,13 +99,13 @@ export default function TldrawMultiUser() {
 
     // 8. Effects
     useEffect(() => {
-        if (userNodes?.privateUserNode?.unique_id && !tldrawPreferences) {
-            initializePreferences(userNodes.privateUserNode.unique_id);
+        if (user?.id && !tldrawPreferences) {
+            initializePreferences(user.id);
         }
-    }, [userNodes?.privateUserNode?.unique_id, tldrawPreferences, initializePreferences]);
+    }, [user?.id, tldrawPreferences, initializePreferences]);
 
     useEffect(() => {
-        if (!isLoading && !user) {
+        if (!user) {
             navigate('/');
         }
     }, [isLoading, user, navigate]);
