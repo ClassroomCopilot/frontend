@@ -1,6 +1,5 @@
 // External imports
 import {
-    useState,
     useEffect,
     useRef,
     useMemo,
@@ -13,18 +12,14 @@ import {
     DEFAULT_SUPPORT_VIDEO_TYPES,
     DEFAULT_SUPPORTED_IMAGE_TYPES,
     Editor,
-    getSnapshot,
 } from '@tldraw/tldraw'
 // Local imports
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
 import { useNeo4j } from '../../contexts/Neo4jContext';
 // Services
-import { createSharedStore } from '../../services/tldraw/sharedStoreService';
-import { localStoreService } from '../../services/tldraw/localStoreService';
-import { StorageKeys, storageService } from '../../services/auth/localStorageService';
 import { unfurlBookmarkUrl, useSyncStore } from '../../services/tldraw/syncService';
-import { LoadingState, loadUserNodeTldrawFile } from '../../services/tldraw/snapshotService';
+import { loadUserNodeTldrawFile } from '../../services/tldraw/snapshotService';
 import { multiplayerOptions } from '../../services/tldraw/optionsService';
 import { PresentationService } from '../../services/tldraw/presentationService'
 // TLDraw imports
@@ -48,24 +43,13 @@ export default function TldrawMultiUser() {
         tldrawPreferences, 
         setTldrawPreferences, 
         initializePreferences,
-        presentationMode,
-        handleLocalSnapshot,
-        localSnapshot,
-        setConnectionStatus
+        presentationMode
     } = useTLDraw();
     const navigate = useNavigate();
 
-    // 2. State hooks
-    const [loadingState, setLoadingState] = useState<LoadingState>({ 
-        status: 'loading',
-        error: '' 
-    });
-
-    // 3. Refs
+    // 3. Refs - keep only editorRef for presentation mode
     const editorRef = useRef<Editor | null>(null);
-    const lastSaveRef = useRef<number>(Date.now());
-    const setLoadingStateRef = useRef(setLoadingState);
-    
+
     // 4. Memos for derived data
     const syncUserInfo = useMemo(() => ({
         id: user?.id ?? '',
@@ -76,7 +60,7 @@ export default function TldrawMultiUser() {
     // 5. Create editor user
     const editorUser = useTldrawUser({
         userPreferences: {
-            id: user?.id,
+            id: user?.id ?? '',
             name: user?.displayName,
             color: tldrawPreferences?.color ?? '',
             locale: tldrawPreferences?.locale || 'en',
@@ -91,15 +75,10 @@ export default function TldrawMultiUser() {
     const initial_roomId = user?.id ?? 'ERROR';
     const sync_store = useSyncStore(initial_roomId, syncUserInfo);
 
-    // 7. Create shared store
-    const sharedStore = useMemo(() => {
-        if (!sync_store.store) return null;
-        return createSharedStore(sync_store.store);
-    }, [sync_store.store]);
-
     // 8. Effects
     useEffect(() => {
         if (user?.id && !tldrawPreferences) {
+            logger.info('multiplayer-page', '🔄 Initializing preferences');
             initializePreferences(user.id);
         }
     }, [user?.id, tldrawPreferences, initializePreferences]);
@@ -111,31 +90,19 @@ export default function TldrawMultiUser() {
     }, [isLoading, user, navigate]);
 
     useEffect(() => {
-        if (!sharedStore || sync_store.status !== 'synced-remote') return;
-        sharedStore.startAutoSave(setLoadingState);
-        return () => sharedStore.stopAutoSave();
-    }, [sharedStore, sync_store.status]);
-
-    useEffect(() => {
-        if (!userNodes) {
+        if (!user || !editorUser || !sync_store.store || !userNodes) {
             logger.warn('multiplayer-page', '⚠️ No user node available');
-            setConnectionStatus('error');
+            return;
         }
-    }, [userNodes, setConnectionStatus]);
+        if (sync_store.status !== 'synced-remote') {
+            logger.warn('multiplayer-page', '⚠️ Sync store not synced-remote');
+            return;
+        }
+        logger.info('multiplayer-page', '🔄 Loading user node tldraw file');
+        loadUserNodeTldrawFile(userNodes.privateUserNode, sync_store.store);
+    }, [user, editorUser, sync_store.store, sync_store.status, userNodes]);
 
     useEffect(() => {
-        if (!user || !editorUser || !sync_store.store || !userNodes || !sharedStore) return;
-        if (sync_store.status !== 'synced-remote') return;
-
-        loadUserNodeTldrawFile(userNodes.privateUserNode, sync_store.store, setLoadingState, sharedStore);
-    }, [user, editorUser, sync_store.store, sync_store.status, userNodes, sharedStore]);
-
-    useEffect(() => {
-        logger.info('presentation', '🔄 Presentation mode changed', { 
-            presentationMode,
-            editorExists: !!editorRef.current
-        });
-
         if (presentationMode && editorRef.current) {
             const editor = editorRef.current;
             const presentationService = new PresentationService(editor);
@@ -149,95 +116,41 @@ export default function TldrawMultiUser() {
         }
     }, [presentationMode]);
 
-    useEffect(() => {
-        if (!sync_store) {
-            logger.warn('multiplayer-page', '⚠️ No sync store available');
-            return;
-        }
+    if (!user) {
+        logger.warn('multiplayer-page', '⚠️ No user available');
+        return null;
+    }
 
-        if (sync_store.status === 'error' && localSnapshot) {
-            logger.warn('multiplayer-page', '⚠️ Sync store error, attempting fallback', {
-                syncStatus: sync_store.status,
-                hasLocalSnapshot: !!localSnapshot
-            });
-
-            try {
-                localStoreService.loadSnapshot(localSnapshot, setLoadingState);
-                logger.info('multiplayer-page', '✅ Successfully loaded fallback snapshot');
-                
-                // You might want to put the app in a "offline/fallback" mode here
-                // This could involve disabling certain features or showing a warning banner
-                
-            } catch (error) {
-                logger.error('multiplayer-page', '❌ Failed to load fallback snapshot', {
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                });
-                setLoadingState({ 
-                    status: 'error',
-                    error: 'Failed to load fallback snapshot'
-                });
-            }
-        }
-    }, [sync_store, localSnapshot]);
-
-    useEffect(() => {
-        if (!sync_store || sync_store.status !== 'synced-remote') return;
-        if (!sync_store.store) return;
-
-        const saveIfNeeded = () => {
-            const now = Date.now();
-            if (now - lastSaveRef.current >= 30000) {
-                const currentSnapshot = getSnapshot(sync_store.store);
-                const savedSnapshot = storageService.get(StorageKeys.LOCAL_SNAPSHOT);
-
-                if (!savedSnapshot || JSON.stringify(currentSnapshot) !== JSON.stringify(savedSnapshot)) {
-                    logger.debug('multiplayer-page', '💾 Auto-saving snapshot - changes detected');
-                    handleLocalSnapshot('put', sync_store.store, setLoadingStateRef.current);
-                    lastSaveRef.current = now;
-                }
-            }
-        };
-
-        const saveInterval = setInterval(saveIfNeeded, 5000);
-        return () => clearInterval(saveInterval);
-    }, [sync_store, handleLocalSnapshot]);
-
-    useEffect(() => {
-        if (sync_store.status === 'error') {
-            setConnectionStatus('error');
-        } else if (sync_store.status === 'synced-remote') {
-            setConnectionStatus('online');
-        } else {
-            setConnectionStatus('offline');
-        }
-    }, [sync_store.status, setConnectionStatus]);
-
-    // 15. Monitor sync store status
-    useEffect(() => {
-        if (sync_store.status === 'error') {
-            setConnectionStatus('error');
-        } else if (sync_store.status === 'synced-remote') {
-            setConnectionStatus('online');
-        } else {
-            setConnectionStatus('offline');
-        }
-    }, [sync_store.status, setConnectionStatus]);
-
-    // 16. Modify the render logic to prevent unnecessary re-renders
-    const renderTldraw = useMemo(() => {
-        if (!user) {
-            logger.warn('multiplayer-page', '⚠️ Attempted to render Tldraw without user');
-            return null;
-        }
-
+    if (sync_store.status !== 'synced-remote') {
+        logger.info('multiplayer-page', '⏳ Sync store is not synced-remote');
+        return <div><DefaultSpinner /></div>;
+    }
+    
+    if (sync_store.status === 'synced-remote') {
         const uiOverrides = getUiOverrides(presentationMode);
         const uiComponents = getUiComponents(presentationMode);
-        const store = sync_store.store || localStoreService.getStore();
         
+        logger.info('multiplayer-page', '🎨 Tldraw mounted', {
+            editorId: sync_store.store.id,
+            presentationMode,
+            userId: userNodes?.privateUserNode.unique_id
+        });
+
         return (
+            <div className="tldraw-container" style={{
+                width: '100%',
+                height: '100%',
+                position: 'absolute',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '0px',
+                boxSizing: 'border-box'
+            }}>
             <Tldraw
                 user={editorUser}
-                store={store}
+                store={sync_store.store}
                 onMount={(editor) => {
                     logger.info('system', '🎨 Tldraw mounted', {
                         editorId: editor.store.id,
@@ -264,58 +177,6 @@ export default function TldrawMultiUser() {
                 maxAssetSize={100 * 1024 * 1024}
                 renderDebugMenuItems={() => []}
             />
-        );
-    }, [
-        user,
-        editorUser,
-        presentationMode,
-        sync_store.store,
-        userNodes?.privateUserNode.unique_id
-    ]);
-
-    if (isLoading) {
-        logger.debug('system', '⏳ Auth context still loading')
-        return <div>Loading auth context...</div>;
-    }
-
-    if (!user) {
-        return null;
-    }
-
-    if (loadingState.status === 'loading') {
-        return <div><DefaultSpinner /></div>;
-    } else if (loadingState.status === 'error') {
-        logger.error('system', '❌ Loading error', { error: loadingState.error })
-        return <div>Error: {loadingState.error}</div>;
-    }
-    
-    if (sync_store.status === 'synced-remote' || sync_store.status === 'error') {
-        return (
-            <div className="tldraw-container" style={{
-                width: '100%',
-                height: '100%',
-                position: 'absolute',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '0px',
-                boxSizing: 'border-box'
-            }}>
-                {sync_store.status === 'error' && (
-                    <div className="offline-warning" style={{
-                        backgroundColor: '#fff3cd',
-                        color: '#856404',
-                        padding: '12px',
-                        marginBottom: '12px',
-                        borderRadius: '4px',
-                        width: '100%',
-                        textAlign: 'center'
-                    }}>
-                        ⚠️ Working in offline mode with last saved version
-                    </div>
-                )}
-                {renderTldraw}
             </div>
         );
     }

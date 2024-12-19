@@ -8,7 +8,7 @@ import {
     TLStore,
 } from '@tldraw/tldraw';
 import { TLSyncUserInfo, useSync } from '@tldraw/sync';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 // Local imports
 import { customSchema } from '../../utils/tldraw/schemas';
 import { logger } from '../../debugConfig';
@@ -37,8 +37,48 @@ interface TLConnection {
 const CONNECT_TIMEOUT = 5000; // 5 seconds
 const STABLE_CONNECTION_TIME = 2000; // 2 seconds to consider connection stable
 
+const multiplayerAssets: TLAssetStore = {
+    async upload(_asset, file) {
+        const id = uniqueId()
+
+        const objectName = `${id}-${file.name}`
+        const uploadPath = '/uploads'
+        const url = `${HTTP_SYNC_WORKER_URL}${uploadPath}/${encodeURIComponent(objectName)}`
+
+        console.log('Asset: ', _asset)
+        console.log('Uploading asset to: ', url)
+
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': file.type,
+                },
+            })
+
+            if (!response.ok) {
+                const errorDetail = await response.text();
+                console.error(`Failed to upload asset: ${response.statusText}`, errorDetail);
+                throw new Error(`Failed to upload asset: ${response.statusText} - Details: ${errorDetail}`);
+            }
+
+            console.log('Upload successful, URL: ', url)
+            return url
+        } catch (error) {
+            console.error('Error during asset upload: ', error)
+            throw error
+        }
+    },
+    resolve(asset) {
+        if (asset.type === 'bookmark') {
+            return asset.props.src
+        }
+        return asset.props.src
+    },
+}
+
 export const useSyncStore = (roomId: string, userInfo: TLSyncUserInfo) => {
-    const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'online' | 'offline' | 'error'>('connecting');
     const reconnectAttemptsRef = useRef(0);
     const stableConnectionTimerRef = useRef<ReturnType<typeof setTimeout>>();
     const isConnectedRef = useRef(false);
@@ -57,34 +97,33 @@ export const useSyncStore = (roomId: string, userInfo: TLSyncUserInfo) => {
     const store = useSync(connectionOptions) as TLConnection;
 
     useEffect(() => {
-        const adapter = store.adapter;
-        if (!adapter?.ws) return;
+        const {adapter} = store;
+        if (!adapter?.ws) {
+          return;
+        }
 
-        const ws = adapter.ws;
+        const {ws} = adapter;
         let reconnectTimeout: ReturnType<typeof setTimeout>;
 
-        const handleConnectionChange = (newStatus: typeof connectionStatus) => {
+        const handleConnectionChange = (newStatus: typeof store.status) => {
             // Clear any existing timers
             clearTimeout(stableConnectionTimerRef.current);
             clearTimeout(connectTimeoutRef.current);
 
-            if (newStatus === 'online') {
+            if (newStatus === 'synced-remote') {
                 // Only set online after connection is stable
                 stableConnectionTimerRef.current = setTimeout(() => {
                     if (isConnectedRef.current) {
-                        setConnectionStatus('online');
                         reconnectAttemptsRef.current = 0;
                         logger.info('sync-service', '✅ Connection stable');
                     }
                 }, STABLE_CONNECTION_TIME);
-            } else {
-                setConnectionStatus(newStatus);
             }
         };
 
         const handleOpen = () => {
             isConnectedRef.current = true;
-            handleConnectionChange('online');
+            handleConnectionChange('synced-remote');
             logger.debug('sync-service', '🔌 WebSocket connected');
         };
 
@@ -143,58 +182,14 @@ export const useSyncStore = (roomId: string, userInfo: TLSyncUserInfo) => {
 
     // Add store ready status with additional checks
     const isStoreReady = useMemo(() => {
-        return connectionStatus === 'online' && 
-               store.status === 'synced-remote' && 
-               !!store.store;
-    }, [connectionStatus, store.status, store.store]);
+        return store.status === 'synced-remote' && !!store.store;
+    }, [store.status, store.store]);
 
     return {
         ...store,
-        connectionStatus,
         isStoreReady
     };
 };
-
-export const multiplayerAssets: TLAssetStore = {
-    async upload(_asset, file) {
-        const id = uniqueId()
-
-        const objectName = `${id}-${file.name}`
-        const uploadPath = '/uploads'
-        const url = `${HTTP_SYNC_WORKER_URL}${uploadPath}/${encodeURIComponent(objectName)}`
-
-        console.log('Asset: ', _asset)
-        console.log('Uploading asset to: ', url)
-
-        try {
-            const response = await fetch(url, {
-                method: 'PUT',
-                body: file,
-                headers: {
-                    'Content-Type': file.type,
-                },
-            })
-
-            if (!response.ok) {
-                const errorDetail = await response.text();
-                console.error(`Failed to upload asset: ${response.statusText}`, errorDetail);
-                throw new Error(`Failed to upload asset: ${response.statusText} - Details: ${errorDetail}`);
-            }
-
-            console.log('Upload successful, URL: ', url)
-            return url
-        } catch (error) {
-            console.error('Error during asset upload: ', error)
-            throw error
-        }
-    },
-    resolve(asset) {
-        if (asset.type === 'bookmark') {
-            return asset.props.src
-        }
-        return asset.props.src
-    },
-}
 
 export async function unfurlBookmarkUrl({ url }: { url: string }): Promise<TLBookmarkAsset> {
     const asset: TLBookmarkAsset = {
