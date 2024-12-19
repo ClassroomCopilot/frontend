@@ -72,7 +72,7 @@ export default function TldrawMultiUser() {
     });
 
     // 6. Initialize sync store
-    const initial_roomId = user?.id ?? 'ERROR';
+    const initial_roomId = 'multiplayer';
     const sync_store = useSyncStore(initial_roomId, syncUserInfo);
 
     // 8. Effects
