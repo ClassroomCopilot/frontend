@@ -1,20 +1,18 @@
-import { TldrawUiButton, TldrawUiDropdownMenuRoot, TldrawUiDropdownMenuTrigger, TldrawUiDropdownMenuContent, TldrawUiDropdownMenuItem, TldrawUiDropdownMenuGroup, stopEventPropagation, useEditor, useValue, DefaultSpinner, TLUiMenuItemProps, TLUiEventSource, TLShapeId, TldrawUiButtonIcon } from '@tldraw/tldraw'
-import { moveToSlide, moveToSlideShow, useCurrentSlide, useSlides, useSlideShows, useCurrentSlideShow, arrangeSlides, createSlideShowFromTemplate } from './useSlides'
+import React from 'react'
+import { TldrawUiButton, TldrawUiDropdownMenuRoot, TldrawUiDropdownMenuTrigger, TldrawUiDropdownMenuContent, TldrawUiDropdownMenuItem, TldrawUiDropdownMenuGroup, stopEventPropagation, useEditor, useValue, TLUiMenuItemProps, TLUiEventSource, TLShapeId, TldrawUiButtonIcon } from '@tldraw/tldraw'
+import { moveToSlide, moveToSlideShow, useCurrentSlide, useSlideShows, useCurrentSlideShow, arrangeSlides, createSlideShowFromTemplate } from './useSlides'
 import { useTLDraw } from '../../../contexts/TLDrawContext'
 import { useState, useEffect } from 'react'
 import { SlideShowShape, SlideShape } from './SlideShapeUtil'
 import { logger } from '../../../debugConfig'
-import { LoadingState } from '../../../services/tldraw/snapshotService'
 
 export const SlidesPanel: React.FC = () => {
 	const { presentationMode, togglePresentationMode } = useTLDraw()
 	const editor = useEditor()
-	const slides = useSlides()
 	const slideshows = useSlideShows()
 	const currentSlide = useCurrentSlide()
 	const currentSlideShow = useCurrentSlideShow()
 	const selectedShapes = useValue('selected shapes', () => editor.getSelectedShapes(), [editor])
-	const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'ready', error: '' })
 	
 	// Track expanded state for each slideshow
 	const [expandedSlideshows, setExpandedSlideshows] = useState<Set<string>>(new Set())
@@ -60,7 +58,7 @@ export const SlidesPanel: React.FC = () => {
 		console.log('Arranging slides with pattern:', pattern, ". Updating shape");
 		editor.updateShape<SlideShowShape>({
 			id: slideshow.id,
-			type: 'slideshow',
+			type: 'frame',
 			props: {
 				...slideshow.props,
 				slidePattern: pattern,
@@ -126,14 +124,6 @@ export const SlidesPanel: React.FC = () => {
 			},
 		},
 	]
-
-	if (loadingState.status === 'loading') {
-		return <div><DefaultSpinner /></div>
-	}
-
-	if (loadingState.status === 'error') {
-		return <div>Error: {loadingState.error}</div>
-	}
 
 	return (
 		<div className="slides-panel scroll-light" onPointerDown={stopEventPropagation}>
