@@ -3,6 +3,7 @@ import { Container, Box, Typography, Tabs, Tab, Paper, Button } from '@mui/mater
 import { useNavigate } from 'react-router';
 import { SUPER_ADMIN_EMAIL } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
+import { SchoolUploadSection } from '../components/admin/SchoolUploadSection';
 import { TimetableUploadSection } from '../components/admin/TimetableUploadSection';
 import { logger } from '../../debugConfig';
 
@@ -81,28 +82,28 @@ export default function AdminDashboard() {
 
       <Paper sx={{ width: '100%', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="User Management" />
-          <Tab label="Database Management" />
           <Tab label="System Settings" />
+          <Tab label="Database Management" />
+          <Tab label="User Management" />
+          <Tab label="Schools" />
           <Tab label="Timetables" />
         </Tabs>
-        
         <TabPanel value={tabValue} index={0}>
-          <Typography variant="h6">User Management</Typography>
-          {/* Add user management components here */}
+          <Typography variant="h6">System Settings</Typography>
+          {/* Add system settings components here */}
         </TabPanel>
-
         <TabPanel value={tabValue} index={1}>
           <Typography variant="h6">Database Management</Typography>
           {/* Add database management components here */}
         </TabPanel>
-
         <TabPanel value={tabValue} index={2}>
-          <Typography variant="h6">System Settings</Typography>
-          {/* Add system settings components here */}
+          <Typography variant="h6">User Management</Typography>
+          {/* Add user management components here */}
         </TabPanel>
-
         <TabPanel value={tabValue} index={3}>
+          <SchoolUploadSection />
+        </TabPanel>
+        <TabPanel value={tabValue} index={4}>
           <TimetableUploadSection />
         </TabPanel>
       </Paper>

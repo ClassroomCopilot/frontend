@@ -1,24 +1,44 @@
-import { SchoolNodeInterface } from '../../types/neo4j/nodes';
+import axios from '../../axiosConfig';
 import { logger } from '../../debugConfig';
-import axiosInstance from '../../axiosConfig';
+import { AxiosError } from 'axios';
+
+interface CreateSchoolResponse {
+    status: string;
+    message: string;
+}
 
 export class SchoolNeoDBService {
-    static async fetchSchoolNode(schoolUuid: string): Promise<SchoolNodeInterface | null> {
+    static async createSchools(
+    ): Promise<CreateSchoolResponse> {
+        logger.warn('school-service', '📤 Creating schools using default config.yaml');
+
         try {
-            const response = await axiosInstance.get(
-                `/api/database/tools/get-school-node?school_uuid=${schoolUuid}`
+            const response = await axios.post(
+                '/api/database/entity/create-schools',
+                {},
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
-            
-            if (response.data?.status === 'success' && response.data.school_node) {
-                return response.data.school_node;
+
+            if (response.data.status === 'success' || response.data.status === 'Accepted') {
+                logger.info('school-service', '✅ Schools successfully');
+                return {
+                    status: 'success',
+                    message: 'Schools created successfully'
+                };
             }
-            
-            return null;
-        } catch (error) {
-            logger.error('neo4j-service', '❌ Failed to fetch school node:', error);
+
+            throw new Error(response.data.message || 'Creation failed');
+        } catch (err: unknown) {
+            const error = err as AxiosError;
+            logger.error('school-service', '❌ Failed to create school', { 
+                error: error.message,
+                details: error.response?.data
+            });
             throw error;
         }
     }
-
-    // ... other school-related Neo4j operations ...
 }
