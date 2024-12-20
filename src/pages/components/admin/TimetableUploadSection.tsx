@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button, Box, Typography, Alert } from '@mui/material';
 import { useNeo4j } from '../../../contexts/Neo4jContext';
 import { TimetableNeoDBService } from '../../../services/graph/timetableNeoDBService';
-import { logger } from '../../../debugConfig';
 
 export const TimetableUploadSection = () => {
     const { userNodes } = useNeo4j();
@@ -11,33 +10,26 @@ export const TimetableUploadSection = () => {
     const [isUploading, setIsUploading] = useState(false);
 
     const handleTimetableUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        if (!file.name.endsWith('.xlsx')) {
-            setError('Please upload an Excel (.xlsx) file');
-            return;
-        }
-
         try {
             setIsUploading(true);
             setError(null);
             setSuccess(null);
 
-            const workerNode = userNodes?.connectedNodes?.teacher;
-            if (!workerNode) {
-                throw new Error('No teacher node found');
-            }
+            const result = await TimetableNeoDBService.handleTimetableUpload(
+                event.target.files?.[0],
+                userNodes?.connectedNodes?.teacher
+            );
 
-            const result = await TimetableNeoDBService.uploadWorkerTimetable(file, workerNode);
-            setSuccess(result.message);
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to upload timetable';
-            logger.error('admin-page', '❌ Timetable upload failed:', error);
-            setError(errorMessage);
+            if (result.success) {
+                setSuccess(result.message);
+            } else {
+                setError(result.message);
+            }
         } finally {
             setIsUploading(false);
-            event.target.value = '';
+            if (event.target) {
+                event.target.value = '';
+            }
         }
     };
 

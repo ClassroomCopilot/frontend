@@ -8,6 +8,11 @@ interface UploadTimetableResponse {
     message: string;
 }
 
+interface UploadResult {
+    success: boolean;
+    message: string;
+}
+
 export interface TeacherTimetableEvent {
   id: string;
   title: string;
@@ -132,7 +137,9 @@ export class TimetableNeoDBService {
     }
 
     static getEventRange(events: TeacherTimetableEvent[]) {
-        if (events.length === 0) return { start: null, end: null };
+        if (events.length === 0) {
+            return { start: null, end: null };
+        }
 
         let start = new Date(events[0].start);
         let end = new Date(events[0].end);
@@ -140,8 +147,12 @@ export class TimetableNeoDBService {
         events.forEach(event => {
             const eventStart = new Date(event.start);
             const eventEnd = new Date(event.end);
-            if (eventStart < start) start = eventStart;
-            if (eventEnd > end) end = eventEnd;
+            if (eventStart < start) {
+              start = eventStart;
+            }
+            if (eventEnd > end) {
+              end = eventEnd;
+            }
         });
 
         start.setDate(1);
@@ -156,5 +167,57 @@ export class TimetableNeoDBService {
             hash = subjectClass.charCodeAt(i) + ((hash << 5) - hash);
         }
         return `hsl(${hash % 360}, 70%, 50%)`;
+    }
+
+    static async handleTimetableUpload(
+        file: File | undefined,
+        workerNode: TeacherNodeInterface | undefined
+    ): Promise<UploadResult> {
+        if (!file) {
+            return {
+                success: false,
+                message: 'No file selected'
+            };
+        }
+
+        if (!file.name.endsWith('.xlsx')) {
+            return {
+                success: false,
+                message: 'Please upload an Excel (.xlsx) file'
+            };
+        }
+
+        try {
+            let effectiveWorkerNode = workerNode;
+            if (!effectiveWorkerNode) {
+                effectiveWorkerNode = {
+                    unique_id: 'kevlarai',
+                    teacher_code: 'kevlarai',
+                    teacher_name_formal: 'KevlarAI',
+                    teacher_email: 'kevlarai@kevlarai.com',
+                    worker_db_name: 'cc.ccschools.kevlarai',
+                    w: 0,
+                    h: 0,
+                    color: '',
+                    __primarylabel__: 'Teacher',
+                    path: '/',
+                    created: '',
+                    merged: ''
+                };
+            }
+
+            const result = await this.uploadWorkerTimetable(file, effectiveWorkerNode);
+            return {
+                success: true,
+                message: result.message
+            };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to upload timetable';
+            logger.error('timetable-service', '❌ Timetable upload failed:', error);
+            return {
+                success: false,
+                message: errorMessage
+            };
+        }
     }
 }
