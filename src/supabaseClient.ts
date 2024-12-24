@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { logger } from './debugConfig'
 
-const supabaseUrl = 'https://' + import.meta.env.VITE_SITE_URL + '/supabase';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -25,7 +25,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Log configuration in development
-if (import.meta.env.DEV) {
+if (import.meta.env.VITE_DEV === 'true') {
   logger.debug('supabase-client', '🔄 Supabase client initialized', {
     url: supabaseUrl
   });

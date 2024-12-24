@@ -8,8 +8,10 @@ export function AuthCallback() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        console.log('session', session);
         navigate('/'); // or wherever you want to redirect after successful auth
       } else {
+        console.log('no session');
         navigate('/login');
       }
     });

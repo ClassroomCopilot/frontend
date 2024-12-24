@@ -87,6 +87,16 @@ export default function HomePage() {
       {isAdmin && <SuperAdminSection />}
 
       <Grid container spacing={2} justifyContent="center">
+      <Grid item>
+          <Button 
+            onClick={() => navigate('/morphic')} 
+            variant="contained" 
+            color="primary"
+          >
+            Morphic
+          </Button>
+        </Grid>
+
         <Grid item>
           <Button 
             onClick={() => navigate('/calendar')} 

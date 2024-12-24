@@ -3,8 +3,7 @@ export async function uploadCurriculum(file: File, backendUrl: string) {
     formData.append("file", file);
   
     try {
-      const includeAPI = import.meta.env.VITE_DEV === 'true' ? "/api" : "";
-      const response = await fetch(`${backendUrl}${includeAPI}/database/curriculum/upload-subject-curriculum`, {
+      const response = await fetch(`${backendUrl}/api/database/curriculum/upload-subject-curriculum`, {
         method: 'POST',
         body: formData,
       });
@@ -27,8 +26,7 @@ export async function uploadSubjectCurriculum(file: File, backendUrl: string) {
     formData.append("file", file);
   
     try {
-      const includeAPI = import.meta.env.VITE_DEV === 'true' ? "/api" : "";
-      const response = await fetch(`${backendUrl}${includeAPI}/database/curriculum/upload-subject-curriculum`, {
+      const response = await fetch(`${backendUrl}/api/database/curriculum/upload-subject-curriculum`, {
         method: 'POST',
         body: formData,
       });
