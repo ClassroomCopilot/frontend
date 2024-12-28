@@ -13,12 +13,11 @@ export function formatEmailForDatabase(email: string): string {
   const sanitized = email.toLowerCase()
     .replace('@', 'at')
     .replace(/\./g, 'dot')
-    .replace(/_/g, 'underscore');
+    .replace(/_/g, 'underscore')
+    .replace(/-/g, 'dash');
     
   // Add prefix and ensure no consecutive dashes
-  const formatted = `${sanitized}`;
-  
-  return formatted;
+  return `${sanitized}`;
 }
 
 async function fetchSchoolNode(schoolUuid: string): Promise<SchoolNodeInterface> {
@@ -102,7 +101,9 @@ export class UserNeoDBService {
     private static processConnectedNodes(nodes: any[]): ProcessedUserNodes['connectedNodes'] {
         const processedNodes: ProcessedUserNodes['connectedNodes'] = {};
         
-        if (!nodes?.length) return processedNodes;
+        if (!nodes?.length) {
+          return processedNodes;
+        }
 
         nodes.forEach((node: any) => {
             logger.debug('neo4j-service', `📍 Processing ${node.node_type} node:`, node.node_data);
@@ -194,12 +195,12 @@ export class UserNeoDBService {
 
                 // Add worker data based on role
                 const workerData = role.includes('teacher') ? {
-                    teacher_code: 'kca',
-                    teacher_name_formal: 'MrKCar',
+                    teacher_code: username,
+                    teacher_name_formal: username,
                     teacher_email: user.email,
                 } : {
-                    student_code: 'student00',
-                    student_name_formal: 'MrStudent',
+                    student_code: username,
+                    student_name_formal: username,
                     student_email: user.email,
                 };
                 

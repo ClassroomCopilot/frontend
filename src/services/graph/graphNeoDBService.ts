@@ -2,7 +2,7 @@ import axios from '../../axiosConfig';
 import { logger } from '../../debugConfig';
 import { createShapeId } from '@tldraw/tldraw';
 import { nodeTypeConfig } from '../../utils/tldraw/graph/baseNodeShapeUtil';
-import graphState, { GRID_CELL_SIZE } from '../../utils/tldraw/graph/graphStateUtil';
+import  graphState from '../../utils/tldraw/graph/graphStateUtil';
 import { AllNodeShapes } from '../../utils/tldraw/graph/graph-shape-types';
 import { Editor } from '@tldraw/tldraw';
 
