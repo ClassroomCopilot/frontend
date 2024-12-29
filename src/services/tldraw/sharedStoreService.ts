@@ -85,20 +85,14 @@ export class SharedStoreService {
     }
 
     public async loadSnapshot(
-        snapshot: Partial<TLEditorSnapshot>,
-        setLoadingState: (state: LoadingState) => void
+        snapshot: Partial<TLEditorSnapshot>
     ): Promise<void> {
         try {
             loadSnapshot(this.store, snapshot);
-            setLoadingState({ status: 'ready', error: '' });
             logger.debug('shared-store-service', '✅ Snapshot loaded successfully');
         } catch (error) {
             logger.error('shared-store-service', '❌ Failed to load snapshot:', error);
             this.store.clear();
-            setLoadingState({ 
-                status: 'error', 
-                error: error instanceof Error ? error.message : 'Failed to load snapshot' 
-            });
         }
     }
 

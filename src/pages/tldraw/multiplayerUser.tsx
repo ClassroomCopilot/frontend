@@ -1,63 +1,41 @@
-// External imports
-import {
-    useEffect,
-    useRef,
-    useMemo,
-} from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
     Tldraw,
     useTldrawUser,
-    DefaultSpinner,
-    DEFAULT_SUPPORT_VIDEO_TYPES,
-    DEFAULT_SUPPORTED_IMAGE_TYPES,
     Editor,
-} from '@tldraw/tldraw'
+} from '@tldraw/tldraw';
+import { useSync } from '@tldraw/sync';
 // Local imports
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
-import { useNeo4j } from '../../contexts/Neo4jContext';
-// Services
-import { unfurlBookmarkUrl, useSyncStore } from '../../services/tldraw/syncService';
-import { loadUserNodeTldrawFile } from '../../services/tldraw/snapshotService';
 import { multiplayerOptions } from '../../services/tldraw/optionsService';
-import { PresentationService } from '../../services/tldraw/presentationService'
-// TLDraw imports
+import { PresentationService } from '../../services/tldraw/presentationService';
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
-import { customAssetUrls } from '../../ui/assetUrls';
 import { multiplayerTools } from '../../utils/tldraw/tools';
 import { allShapeUtils } from '../../utils/tldraw/shapes';
 import { allBindingUtils } from '../../utils/tldraw/bindings';
 import { multiplayerEmbeds } from '../../utils/tldraw/embeds';
-// Styles
+import { customSchema } from '../../utils/tldraw/schemas';
+import { createSyncConnectionOptions, handleExternalAsset } from '../../services/tldraw/syncService';
 import '../../utils/tldraw/tldraw.css';
 import '../../utils/tldraw/slides/slides.css';
-// Debug imports
-import { logger } from '../../debugConfig'
+import { logger } from '../../debugConfig';
+
+const SYNC_WORKER_URL = `ws://localhost:5000`;
 
 export default function TldrawMultiUser() {
-    // 1. Context hooks
-    const { user, isLoading } = useAuth();
-    const { userNodes } = useNeo4j();
-    const { 
-        tldrawPreferences, 
-        setTldrawPreferences, 
+    const { user } = useAuth();
+    const {
+        tldrawPreferences,
+        setTldrawPreferences,
         initializePreferences,
         presentationMode
     } = useTLDraw();
     const navigate = useNavigate();
-
-    // 3. Refs - keep only editorRef for presentation mode
     const editorRef = useRef<Editor | null>(null);
 
-    // 4. Memos for derived data
-    const syncUserInfo = useMemo(() => ({
-        id: user?.id ?? '',
-        name: user?.displayName,
-        color: tldrawPreferences?.color ?? `hsl(${Math.random() * 360}, 70%, 50%)`,
-    }), [user, tldrawPreferences]);
-
-    // 5. Create editor user
+    // Create editor user with memoization
     const editorUser = useTldrawUser({
         userPreferences: {
             id: user?.id ?? '',
@@ -66,16 +44,32 @@ export default function TldrawMultiUser() {
             locale: tldrawPreferences?.locale || 'en',
             colorScheme: tldrawPreferences?.colorScheme || 'system',
             animationSpeed: tldrawPreferences?.animationSpeed || 1,
-            isSnapMode: tldrawPreferences?.isSnapMode || false,
+            isSnapMode: tldrawPreferences?.isSnapMode || false
         },
         setUserPreferences: setTldrawPreferences
     });
 
-    // 6. Initialize sync store
-    const initial_roomId = 'multiplayer';
-    const sync_store = useSyncStore(initial_roomId, syncUserInfo);
+    const connectionOptions = useMemo(() => createSyncConnectionOptions({
+        userId: user?.id ?? '',
+        displayName: user?.displayName,
+        color: tldrawPreferences?.color ?? `hsl(${Math.random() * 360}, 70%, 50%)`,
+        baseUrl: SYNC_WORKER_URL
+    }), [user, tldrawPreferences]);
 
-    // 8. Effects
+    const sync_store = useSync({
+        ...connectionOptions,
+        schema: customSchema
+    });
+
+    // Log connection status changes
+    useEffect(() => {
+        logger.info('multiplayer-page', `🔄 Connection status changed: ${sync_store.status}`, {
+            status: sync_store.status,
+            connectionOptions
+        });
+    }, [sync_store.status, connectionOptions]);
+
+    // Effect for initializing preferences
     useEffect(() => {
         if (user?.id && !tldrawPreferences) {
             logger.info('multiplayer-page', '🔄 Initializing preferences');
@@ -83,25 +77,14 @@ export default function TldrawMultiUser() {
         }
     }, [user?.id, tldrawPreferences, initializePreferences]);
 
+    // Effect for redirecting if user is not authenticated
     useEffect(() => {
         if (!user) {
             navigate('/');
         }
-    }, [isLoading, user, navigate]);
+    }, [user, navigate]);
 
-    useEffect(() => {
-        if (!user || !editorUser || !sync_store.store || !userNodes) {
-            logger.warn('multiplayer-page', '⚠️ No user node available');
-            return;
-        }
-        if (sync_store.status !== 'synced-remote') {
-            logger.warn('multiplayer-page', '⚠️ Sync store not synced-remote');
-            return;
-        }
-        logger.info('multiplayer-page', '🔄 Loading user node tldraw file');
-        loadUserNodeTldrawFile(userNodes.privateUserNode, sync_store.store);
-    }, [user, editorUser, sync_store.store, sync_store.status, userNodes]);
-
+    // Effect for presentation mode
     useEffect(() => {
         if (presentationMode && editorRef.current) {
             const editor = editorRef.current;
@@ -109,35 +92,29 @@ export default function TldrawMultiUser() {
             const cleanup = presentationService.startPresentationMode();
 
             return () => {
-                logger.info('presentation', '🧹 Cleaning up presentation mode');
                 presentationService.stopPresentationMode();
                 cleanup();
             };
         }
     }, [presentationMode]);
 
+    // Memoize UI overrides and components
+    const uiOverrides = useMemo(() => getUiOverrides(presentationMode), [presentationMode]);
+    const uiComponents = useMemo(() => getUiComponents(presentationMode), [presentationMode]);
+
+    // Render conditionally to avoid unnecessary rerenders
     if (!user) {
-        logger.warn('multiplayer-page', '⚠️ No user available');
         return null;
     }
 
     if (sync_store.status !== 'synced-remote') {
-        logger.info('multiplayer-page', '⏳ Sync store is not synced-remote');
-        return <div><DefaultSpinner /></div>;
+        return <div>Connecting...</div>;
     }
-    
-    if (sync_store.status === 'synced-remote') {
-        const uiOverrides = getUiOverrides(presentationMode);
-        const uiComponents = getUiComponents(presentationMode);
-        
-        logger.info('multiplayer-page', '🎨 Tldraw mounted', {
-            editorId: sync_store.store.id,
-            presentationMode,
-            userId: userNodes?.privateUserNode.unique_id
-        });
 
-        return (
-            <div className="tldraw-container" style={{
+    return (
+        <div
+            className="tldraw-container"
+            style={{
                 width: '100%',
                 height: '100%',
                 position: 'absolute',
@@ -147,18 +124,16 @@ export default function TldrawMultiUser() {
                 alignItems: 'center',
                 padding: '0px',
                 boxSizing: 'border-box'
-            }}>
+            }}
+        >
             <Tldraw
                 user={editorUser}
                 store={sync_store.store}
                 onMount={(editor) => {
-                    logger.info('system', '🎨 Tldraw mounted', {
-                        editorId: editor.store.id,
-                        presentationMode,
-                        userId: userNodes?.privateUserNode.unique_id
-                    });
                     editorRef.current = editor;
-                    editor.registerExternalAssetHandler('url', unfurlBookmarkUrl);
+                    editor.registerExternalAssetHandler('url', async ({ url }: { url: string }) => {
+                        return handleExternalAsset(SYNC_WORKER_URL, url);
+                    });
                 }}
                 options={multiplayerOptions}
                 embeds={multiplayerEmbeds}
@@ -167,17 +142,9 @@ export default function TldrawMultiUser() {
                 bindingUtils={allBindingUtils}
                 overrides={uiOverrides}
                 components={uiComponents}
-                assetUrls={customAssetUrls}
-                autoFocus={true}
+                autoFocus
                 hideUi={false}
-                inferDarkMode={false}
-                acceptedImageMimeTypes={DEFAULT_SUPPORTED_IMAGE_TYPES}
-                acceptedVideoMimeTypes={DEFAULT_SUPPORT_VIDEO_TYPES}
-                maxImageDimension={Infinity}
-                maxAssetSize={100 * 1024 * 1024}
-                renderDebugMenuItems={() => []}
             />
-            </div>
-        );
-    }
+        </div>
+    );
 }

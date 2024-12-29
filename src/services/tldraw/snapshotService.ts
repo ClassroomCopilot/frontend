@@ -18,12 +18,9 @@ function replaceBackslashes(input: string | undefined): string {
 export const loadUserNodeTldrawFile = async (
     userNode: UserNodeInterface,
     store: TLStore,
-    setLoadingState: (state: LoadingState) => void,
     sharedStore?: SharedStoreService
 ): Promise<void> => {
     try {
-        setLoadingState({ status: 'loading', error: '' });
-        
         // Extract the actual user node data
         const userNodeData = userNode;
         
@@ -53,23 +50,17 @@ export const loadUserNodeTldrawFile = async (
             
             // If we have a shared store, use it for loading
             if (sharedStore) {
-                await sharedStore.loadSnapshot(snapshot, setLoadingState);
+                await sharedStore.loadSnapshot(snapshot);
             } else {
                 // Otherwise use the provided store directly
                 loadSnapshot(store, snapshot);
-                setLoadingState({ status: 'ready', error: '' });
             }
         } else {
             logger.error('snapshot-service', '❌ Invalid snapshot format');
-            setLoadingState({ status: 'error', error: 'Invalid snapshot format' });
         }
     } catch (error) {
         logger.error('snapshot-service', '❌ Failed to fetch snapshot', { 
             error: error instanceof Error ? error.message : 'Unknown error'
-        });
-        setLoadingState({ 
-            status: 'error', 
-            error: error instanceof Error ? error.message : 'Failed to load file' 
         });
     }
 };
@@ -103,11 +94,10 @@ export const loadNodeSnapshotFromDatabase = async (
             logger.debug('snapshot-service', '📥 Snapshot loaded successfully');
             
             if (sharedStore) {
-                await sharedStore.loadSnapshot(snapshot, setLoadingState);
+                await sharedStore.loadSnapshot(snapshot);
             } else {
                 loadSnapshot(store, snapshot);
                 storageService.set(StorageKeys.NODE_FILE_PATH, nodePath);
-                setLoadingState({ status: 'ready', error: '' });
             }
         } else {
             logger.error('snapshot-service', '❌ Invalid snapshot format');
