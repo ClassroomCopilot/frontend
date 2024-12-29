@@ -19,16 +19,6 @@ tools(editor, tools) {
         },
     }
 
-    const embedTools = {
-        embed: {
-        id: 'embed',
-        icon: 'embed',
-        label: 'Embed',
-        kbd: 'e',
-        onSelect: () => editor.setCurrentTool('embed'),
-        },
-    }
-
     const stickerTools = {
         heartSticker: {
         id: 'heartSticker',
@@ -56,7 +46,6 @@ tools(editor, tools) {
     return {
         ...tools,
         ...commonTools,
-        ...embedTools,
         ...stickerTools,
     }
     },
