@@ -22,7 +22,7 @@ import '../../utils/tldraw/tldraw.css';
 import '../../utils/tldraw/slides/slides.css';
 import { logger } from '../../debugConfig';
 
-const SYNC_WORKER_URL = `ws://localhost:5000`;
+const SYNC_WORKER_URL = `https://` + import.meta.env.VITE_SITE_URL + `/tldraw`;
 
 export default function TldrawMultiUser() {
     const { user } = useAuth();
