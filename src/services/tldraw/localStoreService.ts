@@ -2,7 +2,9 @@ import {
     TLStore, 
     createTLStore,
     TLEditorSnapshot,
-    loadSnapshot
+    loadSnapshot,
+    TLAnyShapeUtilConstructor,
+    TLAnyBindingUtilConstructor
 } from '@tldraw/tldraw';
 import { LoadingState } from './snapshotService';
 import { allShapeUtils, devShapeUtils } from '../../utils/tldraw/shapes';
@@ -10,17 +12,13 @@ import { allBindingUtils } from '../../utils/tldraw/bindings';
 import { logger } from '../../debugConfig';
 
 interface LocalStoreConfig {
-    shapeUtils?: any[];
-    bindingUtils?: any[];
+    shapeUtils?: TLAnyShapeUtilConstructor[];
+    bindingUtils?: TLAnyBindingUtilConstructor[];
 }
 
 class LocalStoreService {
     private store: TLStore | null = null;
     private static instance: LocalStoreService;
-
-    private constructor() {
-        logger.debug('system', '🏗️ Initializing LocalStoreService');
-    }
 
     public static getInstance(): LocalStoreService {
         if (!LocalStoreService.instance) {

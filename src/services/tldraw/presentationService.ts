@@ -1,4 +1,4 @@
-import { Editor, TLStoreEventInfo, createShapeId } from '@tldraw/tldraw'
+import { Editor, TLStoreEventInfo, createShapeId, TLShape } from '@tldraw/tldraw'
 import { logger } from '../../debugConfig'
 import { SlideShape, SlideShowShape } from '../../utils/tldraw/slides/SlideShapeUtil'
 
@@ -79,8 +79,8 @@ export class PresentationService {
                 logger.debug('presentation', '🔄 Examining change', {
                     fromType: from.typeName,
                     toType: to.typeName,
-                    fromShapeType: (from as any).type,
-                    toShapeType: (to as any).type
+                    fromShapeType: (from as TLShape).type,
+                    toShapeType: (to as TLShape).type
                 })
 
                 // Check if it's a shape first
@@ -89,8 +89,8 @@ export class PresentationService {
                     continue
                 }
 
-                const fromShape = from as any
-                const toShape = to as any
+                const fromShape = from as TLShape
+                const toShape = to as TLShape
 
                 // Check if it's our slideshow
                 if (fromShape.type !== 'slideshow' || toShape.type !== 'slideshow') {

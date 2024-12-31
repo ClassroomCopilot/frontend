@@ -1,6 +1,5 @@
 import { TldrawOptions } from "@tldraw/tldraw";
 
-
 export const multiplayerOptions: Partial<TldrawOptions> = {
 	actionShortcutsLocation: "swap",
     adjacentShapeMargin: 10,

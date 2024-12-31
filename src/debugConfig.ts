@@ -76,7 +76,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 
 class DebugLogger {
     private config: LogConfig = {
-        enabled: process.env.NODE_ENV === 'development',
+        enabled: true,
         level: 'debug',
         categories: ['system', 'navigation', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service']
     }
@@ -93,8 +93,10 @@ class DebugLogger {
         )
     }
 
-    log(level: LogLevel, category: LogCategory, message: string, data?: any) {
-        if (!this.shouldLog(level, category)) return
+    log(level: LogLevel, category: LogCategory, message: string, data?: unknown) {
+        if (!this.shouldLog(level, category)) {
+          return
+        }
 
         const levelEmojis: Record<LogLevel, string> = {
             error: '🔴',  // Red circle for errors
@@ -116,23 +118,23 @@ class DebugLogger {
     }
 
     // Convenience methods
-    error(category: LogCategory, message: string, data?: any) {
+    error(category: LogCategory, message: string, data?: unknown) {
         this.log('error', category, message, data)
     }
 
-    warn(category: LogCategory, message: string, data?: any) {
+    warn(category: LogCategory, message: string, data?: unknown) {
         this.log('warn', category, message, data)
     }
 
-    info(category: LogCategory, message: string, data?: any) {
+    info(category: LogCategory, message: string, data?: unknown) {
         this.log('info', category, message, data)
     }
 
-    debug(category: LogCategory, message: string, data?: any) {
+    debug(category: LogCategory, message: string, data?: unknown) {
         this.log('debug', category, message, data)
     }
 
-    trace(category: LogCategory, message: string, data?: any) {
+    trace(category: LogCategory, message: string, data?: unknown) {
         this.log('trace', category, message, data)
     }
 }
@@ -144,7 +146,5 @@ logger.setConfig({
     level: 'debug',
     categories: ['app', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool']
 })
-
-logger.info('system', '🔄 Debug logging initialized')
 
 export default logger
