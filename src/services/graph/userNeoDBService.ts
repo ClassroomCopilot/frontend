@@ -1,7 +1,7 @@
 import { supabase } from '../../supabaseClient';
 import axiosInstance from '../../axiosConfig';
-import { CCUser } from '../../types/auth.types';
-import { SchoolNodeInterface, UserNodeInterface, CalendarNodeInterface, TeacherNodeInterface, StudentNodeInterface } from '../../types/neo4j/nodes';
+import { CCUser } from '../../services/auth/authService';
+import { SchoolNodeInterface, UserNodeInterface, CalendarNodeInterface, TeacherNodeInterface, StudentNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
 import { logger } from '../../debugConfig';
 import { storageService, StorageKeys } from '../auth/localStorageService';
 
@@ -63,6 +63,19 @@ export interface ProcessedUserNodes {
     };
 }
 
+interface ConnectedNode {
+    node_type: string;
+    node_data: {
+        __primarylabel__: string;
+        [key: string]: unknown;
+    };
+}
+
+interface NodeData {
+    __primarylabel__: string;
+    [key: string]: unknown;
+}
+
 export class UserNeoDBService {
     static async fetchUserNodesData(email: string): Promise<ProcessedUserNodes | null> {
         try {
@@ -98,14 +111,14 @@ export class UserNeoDBService {
         }
     }
 
-    private static processConnectedNodes(nodes: any[]): ProcessedUserNodes['connectedNodes'] {
+    private static processConnectedNodes(nodes: ConnectedNode[]): ProcessedUserNodes['connectedNodes'] {
         const processedNodes: ProcessedUserNodes['connectedNodes'] = {};
         
         if (!nodes?.length) {
           return processedNodes;
         }
 
-        nodes.forEach((node: any) => {
+        nodes.forEach((node: ConnectedNode) => {
             logger.debug('neo4j-service', `📍 Processing ${node.node_type} node:`, node.node_data);
 
             switch (node.node_type) {
@@ -126,39 +139,56 @@ export class UserNeoDBService {
         return processedNodes;
     }
 
-    private static processCalendarNode(nodeData: any): CalendarNodeInterface {
+    private static processCalendarNode(nodeData: NodeData): CalendarNodeInterface {
         return {
             ...nodeData,
             __primarylabel__: 'Calendar',
-            w: 0, h: 0, x: 0, y: 0,
-            rotation: 0,
-            isLocked: false,
-            isHidden: false,
-            type: 'calendar'
+            w: 0,
+            h: 0,
+            start_date: '',
+            end_date: '',
+            name: '',
+            color: '',
+            unique_id: '',
+            path: '',
+            created: '',
+            merged: ''
         };
     }
 
-    private static processTeacherNode(nodeData: any): TeacherNodeInterface {
+    private static processTeacherNode(nodeData: NodeData): TeacherNodeInterface {
         return {
             ...nodeData,
             __primarylabel__: 'Teacher',
-            w: 0, h: 0, x: 0, y: 0,
-            rotation: 0,
-            isLocked: false,
-            isHidden: false,
-            type: 'teacher'
+            w: 0,
+            h: 0,
+            unique_id: '',
+            path: '',
+            created: '',
+            merged: '',
+            teacher_code: '',
+            teacher_name_formal: '',
+            teacher_email: '',
+            worker_db_name: '',
+            color: ''
         };
     }
 
-    private static processStudentNode(nodeData: any): StudentNodeInterface {
+    private static processStudentNode(nodeData: NodeData): StudentNodeInterface {
         return {
             ...nodeData,
             __primarylabel__: 'Student',
-            w: 0, h: 0, x: 0, y: 0,
-            rotation: 0,
-            isLocked: false,
-            isHidden: false,
-            type: 'student'
+            w: 0,
+            h: 0,
+            unique_id: '',
+            path: '',
+            created: '',
+            merged: '',
+            student_code: '',
+            student_name_formal: '',
+            student_email: '',
+            worker_db_name: '',
+            color: ''
         };
     }
 

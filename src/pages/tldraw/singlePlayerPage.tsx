@@ -16,7 +16,7 @@ import { createTldrawUser } from '../../services/tldraw/tldrawService';
 import { localStoreService } from '../../services/tldraw/localStoreService';
 import { loadNodeSnapshotFromDatabase } from '../../services/tldraw/snapshotService';
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
-import { customAssetUrls } from '../../ui/assetUrls';
+import { customAssetUrls } from '../../utils/tldraw/assetUrls';
 import { defaultEmbedsToKeep, customEmbeds } from '../../utils/tldraw/embeds/embedSetup';
 // Import all shape utils
 import { allShapeUtils, devShapeUtils } from '../../utils/tldraw/shapes';
@@ -105,7 +105,9 @@ export default function SinglePlayerPage() {
 
     // Load initial data when user node is available
     useEffect(() => {
-        if (!user || !userNodes || !tldrawUser || !userDbName) return;
+        if (!user || !userNodes || !tldrawUser || !userDbName) {
+          return;
+        }
 
         // Access the deeply nested user node data
         const userNode = userNodes.privateUserNode;

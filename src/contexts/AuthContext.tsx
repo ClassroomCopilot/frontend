@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CCUser } from '../types/auth.types';
-import { EmailCredentials } from '../types/auth/credentials';
-import { LoginResponse } from '../types/auth/responses';
+import { CCUser } from '../services/auth/authService';
+import { EmailCredentials } from '../services/auth/authService';
+import { LoginResponse } from '../services/auth/authService';
 import { authService } from '../services/auth/authService';
 import { getUserProfile } from '../services/auth/profileService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
@@ -31,15 +31,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        logger.debug('auth-context', '🔄 Initializing auth');
         const session = await authService.getCurrentSession();
         if (session.user) {
+          logger.debug('auth-context', '🔄 User found', { user: session.user });
           setUser(session.user);
           const storedRole = storageService.get(StorageKeys.USER_ROLE);
           if (storedRole) {
+            logger.debug('auth-context', '🔄 User role found', { userRole: storedRole });
             setUserRole(storedRole);
           } else {
             const profile = await getUserProfile(session.user.id);
             if (profile?.user_role) {
+              logger.debug('auth-context', '🔄 User role found', { userRole: profile.user_role });
               setUserRole(profile.user_role);
               storageService.set(StorageKeys.USER_ROLE, profile.user_role);
             }
@@ -48,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         logger.error('auth-context', '❌ Auth initialization failed', { error });
       } finally {
+        logger.debug('auth-context', '🔄 Auth initialization complete');
         setIsLoading(false);
       }
     };

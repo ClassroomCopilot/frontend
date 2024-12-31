@@ -1,8 +1,7 @@
-import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
+import React, { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNeo4j } from './Neo4jContext';
-import { UserProfile } from '../types/user/profile';
-import { UserPreferences } from '../types/user/preferences';
+import { UserProfile, UserPreferences } from '../services/auth/profileService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { supabase } from '../supabaseClient';
 import { logger } from '../debugConfig';
@@ -45,8 +44,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Load user profile
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+    
     const loadUserProfile = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        return;
+      }
 
       setIsLoading(true);
       try {
@@ -56,18 +61,22 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .eq('id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         const userProfile: UserProfile = {
           id: data.id,
           email: data.email,
-          displayName: data.display_name,
-          role: user.user_metadata.role,
-          workerDbName: data.worker_db_name,
-          instanceCount: data.instance_count,
-          neo4jNode: userNode,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
+          display_name: data.display_name,
+          user_role: data.user_role,
+          worker_db_name: data.worker_db_name,
+          instance_count: data.instance_count,
+          neo4j_user_node: data.neo4j_user_node,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          one_note_details: data.one_note_details,
+          tldraw_preferences: data.tldraw_preferences
         };
 
         setProfile(userProfile);
@@ -89,10 +98,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     loadUserProfile();
-  }, [user?.id, userNode]);
+  }, [user, userNode]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user?.id || !profile) return;
+    if (!user?.id || !profile) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -104,7 +115,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setProfile(prev => prev ? { ...prev, ...updates } : null);
       logger.info('user-context', '✅ Profile updated successfully');
@@ -118,7 +131,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updatePreferences = async (updates: Partial<UserPreferences>) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -135,14 +150,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       // Update storage
       storageService.set(StorageKeys.USER, {
         ...user,
         user_metadata: {
           ...user.user_metadata,
-          tldraw_preferences: newPreferences
+          tldraw_preferences: newPreferences.tldraw
         }
       });
 
@@ -157,14 +174,18 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const incrementInstanceCount = async () => {
-    if (!user?.id) return 0;
+    if (!user?.id) {
+      return 0;
+    }
 
     try {
       const { data, error } = await supabase.rpc('increment_instance_count', {
         user_id: user.id
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       const newCount = data.instance_count;
       setInstanceCount(newCount);

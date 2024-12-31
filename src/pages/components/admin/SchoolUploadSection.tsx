@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button, Box, Typography, Alert } from '@mui/material';
 import { logger } from '../../../debugConfig';
 import { SchoolNeoDBService } from '../../../services/graph/schoolNeoDBService';

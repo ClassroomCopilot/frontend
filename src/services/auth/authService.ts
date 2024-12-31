@@ -1,11 +1,91 @@
+import { User as SupabaseUser } from '@supabase/gotrue-js'
+import { TLUserPreferences } from '@tldraw/tldraw'
 import { supabase } from '../../supabaseClient';
-import { CCUser, convertToCCUser } from '../../types/auth.types';
-import { EmailCredentials } from '../../types/auth/credentials';
-import { LoginResponse, SessionResponse } from '../../types/auth/responses';
 import { storageService, StorageKeys } from './localStorageService';
+import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
 import { logger } from '../../debugConfig';
 
 const AUTH_SERVICE = 'auth-service';
+
+interface CCUserMetadata {
+  role: UserRole;
+  tldraw_preferences?: TLUserPreferences;
+}
+
+export interface CCUser extends SupabaseUser {
+  displayName: string;
+  instanceCount?: number;
+  user_metadata: CCUserMetadata;
+}
+
+export const convertToCCUser = (
+  user: SupabaseUser
+): CCUser => {
+  return {
+    ...user,
+    displayName: user.user_metadata?.display_name,
+    user_metadata: {
+      role: user.user_metadata?.role,
+      tldraw_preferences: user.user_metadata?.tldraw_preferences
+    },
+    instanceCount: 0
+  };
+};
+
+export const getTldrawPreferences = (user: CCUser): TLUserPreferences => {
+  return user.user_metadata?.tldraw_preferences || {
+    id: user.id,
+    colorScheme: 'system'
+  };
+};
+
+export type UserRole = 'email_teacher' | 'email_student' | 'ms_teacher' | 'ms_student' | 'cc_admin';
+
+// Login response
+export interface LoginResponse {
+  user: CCUser | null;
+  accessToken: string | null;
+  userRole: string;
+  message: string | null;
+}
+
+// Session response
+export interface SessionResponse {
+  user: CCUser | null;
+  accessToken: string | null;
+  message: string | null;
+}
+
+// Registration response
+export interface RegistrationResponse extends LoginResponse {
+  user: CCUser;
+  accessToken: string | null;
+  userRole: UserRole;
+  message: string | null;
+}
+
+// Microsoft auth response
+export interface MicrosoftAuthResponse {
+  data: { provider: string; url: string } | null;
+  user: CCUser | null;
+  accessToken: string | null;
+  msAccessToken: string | null;
+  userRole: string;
+  oneNoteNotebook: StandardizedOneNoteDetails; // TODO: Type this properly once OneNote integration is implemented
+  message: string | null;
+}
+
+export interface EmailCredentials {
+  email: string;
+  password: string;
+  role: 'email_teacher' | 'email_student';
+}
+
+export interface MicrosoftCredentials {
+  role: 'ms_teacher' | 'ms_student';
+}
+
+export type AuthCredentials = EmailCredentials | MicrosoftCredentials;
 
 class AuthService {
   private static instance: AuthService;

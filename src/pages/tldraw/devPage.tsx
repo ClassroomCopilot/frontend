@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Tldraw,
@@ -18,7 +18,7 @@ import { createTldrawUser } from '../../services/tldraw/tldrawService';
 import { loadUserNodeTldrawFile } from '../../services/tldraw/snapshotService';
 import { localStoreService } from '../../services/tldraw/localStoreService';
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
-import { customAssetUrls } from '../../ui/assetUrls';
+import { customAssetUrls } from '../../utils/tldraw/assetUrls';
 import { createSharedStore } from '../../services/tldraw/sharedStoreService';
 import { MicrophoneShapeUtil } from '../../utils/tldraw/transcription/MicrophoneShapeUtil';
 import MicrophoneStateTool from '../../utils/tldraw/transcription/MicrophoneStateTool';
@@ -211,7 +211,7 @@ const EventMonitoringControls: React.FC<{
 
           <div className="active-filters">
             {Object.entries(filters.filters)
-              .filter(([_, filter]) => filter.enabled)
+              .filter(([, filter]) => filter.enabled)
               .map(([key]) => (
                 <div key={key} className="filter-tag">
                   {key}
@@ -291,46 +291,18 @@ type LoadingState = {
 
 export default function DevPage() {
     const { user } = useAuth();
-    const { userNodes, isLoading: isNeo4jLoading } = useNeo4j();
+    const { userNodes } = useNeo4j();
     const { tldrawPreferences } = useTLDraw();
-    
+    const navigate = useNavigate();
+    const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'loading' });
+    const [events, setEvents] = useState<Array<{ type: 'ui' | 'store' | 'canvas'; data: string; timestamp: string; }>>([]);
+    const [eventFilters, setEventFilters] = useState<EventFilters>({ mode: 'all', filters: {} });
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     const tldrawUser = useMemo(() => 
-        createTldrawUser(
-            user?.id || 'anonymous',
-            tldrawPreferences
-        ),
+        createTldrawUser(user?.id || 'anonymous', tldrawPreferences),
         [user?.id, tldrawPreferences]
     );
-
-    const navigate = useNavigate();
-
-    const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'loading' });
-
-    // Redirect if no user
-    useEffect(() => {
-        if (!user) {
-            logger.info('dev-page', '🚫 No user found, redirecting to home');
-            navigate('/');
-            return;
-        }
-    }, [user, navigate]);
-
-    // Show loading state while Neo4j data is being fetched
-    if (isNeo4jLoading) {
-        logger.debug('dev-page', '⏳ Rendering loading state');
-        return <div><DefaultSpinner /></div>;
-    }
-
-    // Check for required dependencies
-    if (!user || !userNodes?.privateUserNode || !tldrawUser) {
-        logger.debug('dev-page', '⏳ Waiting for required dependencies', {
-            hasUser: !!user,
-            hasUserNodes: !!userNodes,
-            hasTldrawUser: !!tldrawUser,
-            userNodePath: userNodes?.privateUserNode?.path
-        });
-        return <div><DefaultSpinner /></div>;
-    }
 
     const store = useMemo(() => localStoreService.getStore({
         shapeUtils: [
@@ -344,40 +316,7 @@ export default function DevPage() {
         bindingUtils: [...defaultBindingUtils]
     }), []);
 
-    const sharedStore = useMemo(() => 
-        createSharedStore(store),
-        [store]
-    );
-
-    // Start auto-save
-    useEffect(() => {
-        if (!sharedStore) return;
-        sharedStore.startAutoSave(setLoadingState);
-        return () => sharedStore.stopAutoSave();
-    }, [sharedStore]);
-
-    // Load file data
-    useEffect(() => {
-        if (!user || !userNodes?.privateUserNode || !tldrawUser || !sharedStore) return;
-
-        loadUserNodeTldrawFile(userNodes?.privateUserNode, store, setLoadingState, sharedStore);
-
-        return () => {
-            if (sharedStore) {
-                sharedStore.stopAutoSave();
-            }
-        };
-    }, [user, userNodes?.privateUserNode, tldrawUser, sharedStore]);
-
-    const [events, setEvents] = useState<Array<{
-      type: 'ui' | 'store' | 'canvas';
-      data: string;
-      timestamp: string;
-    }>>([]);
-    const [eventFilters, setEventFilters] = useState<EventFilters>({
-        mode: 'all',
-        filters: {}
-    });
+    const sharedStore = useMemo(() => createSharedStore(store), [store]);
 
     const shouldCaptureEvent = useCallback((type: 'ui' | 'store' | 'canvas', data: string) => {
         if (eventFilters.mode === 'all') return true;
@@ -417,34 +356,11 @@ export default function DevPage() {
         });
     }, [shouldCaptureEvent]);
 
-    const handleUiEvent = useCallback<TLUiEventHandler>((name, data: any) => {
+    const handleUiEvent = useCallback<TLUiEventHandler>((name, data) => {
         const eventString = `UI Event: ${name} ${JSON.stringify(data)}`;
         addEvent('ui', eventString);
         console.log(eventString);
     }, [addEvent]);
-
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            const scrollContainer = scrollContainerRef.current;
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-    }, [events]);
-
-    useEffect(() => {
-        if (store) {
-            const cleanupFn = store.listen((info) => {
-                const eventString = `Store Event: ${info.source} ${JSON.stringify(info.changes)}`;
-                addEvent('store', eventString);
-                console.log(eventString);
-            });
-
-            return () => {
-                cleanupFn();
-            };
-        }
-    }, [store, addEvent]);
 
     const handleCanvasEvent = useCallback((editor: Editor) => {
         logger.trace('dev-page', '🎨 Canvas editor mounted');
@@ -471,6 +387,46 @@ export default function DevPage() {
             }
         });
     }, [addEvent]);
+
+    useEffect(() => {
+        if (!user) {
+            navigate('/');
+        }
+    }, [user, navigate]);
+
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            const scrollContainer = scrollContainerRef.current;
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    }, [events]);
+
+    useEffect(() => {
+        if (!sharedStore) return;
+        sharedStore.startAutoSave(setLoadingState);
+        return () => sharedStore.stopAutoSave();
+    }, [sharedStore]);
+
+    useEffect(() => {
+        if (!user || !userNodes?.privateUserNode || !tldrawUser || !sharedStore) return;
+        loadUserNodeTldrawFile(userNodes?.privateUserNode, store, sharedStore);
+        return () => {
+            if (sharedStore) {
+                sharedStore.stopAutoSave();
+            }
+        };
+    }, [user, userNodes?.privateUserNode, tldrawUser, sharedStore, store]);
+
+    useEffect(() => {
+        if (store) {
+            const cleanupFn = store.listen((info) => {
+                const eventString = `Store Event: ${info.source} ${JSON.stringify(info.changes)}`;
+                addEvent('store', eventString);
+                console.log(eventString);
+            });
+            return () => cleanupFn();
+        }
+    }, [store, addEvent]);
 
     if (!user) {
         logger.info('dev-page', '🚫 Rendering null - no user');

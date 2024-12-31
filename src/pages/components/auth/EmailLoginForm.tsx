@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { EmailCredentials } from '../../../types/auth/credentials';
+import { EmailCredentials } from '../../../services/auth/authService';
 import { logger } from '../../../debugConfig';
 
 interface EmailLoginFormProps {

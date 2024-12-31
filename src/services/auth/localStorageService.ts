@@ -1,7 +1,9 @@
+import React from 'react';
 import { TLUserPreferences, TLEditorSnapshot, TLUser } from '@tldraw/tldraw';
-import { CalendarNodeInterface, TeacherNodeInterface, TeacherTimetableNodeInterface, UserNodeInterface } from '../../types/neo4j/nodes';
+import { CalendarNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
 import { ProcessedUserNodes } from '../graph/userNeoDBService';
-import { CCUser } from '../../types/auth.types';
+import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
+import { CCUser } from '../../services/auth/authService';
 import { logger } from '../../debugConfig';
 
 // Type-safe storage keys
@@ -40,7 +42,7 @@ interface StorageValueTypes {
   [StorageKeys.TLDRAW_FILE_PATH]: string;
   [StorageKeys.LOCAL_SNAPSHOT]: Partial<TLEditorSnapshot>;
   [StorageKeys.NODE_FILE_PATH]: string;
-  [StorageKeys.ONENOTE_NOTEBOOK]: any;
+  [StorageKeys.ONENOTE_NOTEBOOK]: StandardizedOneNoteDetails;
   [StorageKeys.PRESENTATION_MODE]: boolean;
   [StorageKeys.TLDRAW_USER]: TLUser;
   [StorageKeys.IS_NEW_REGISTRATION]: boolean;

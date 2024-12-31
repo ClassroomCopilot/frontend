@@ -1,6 +1,6 @@
+import React, { useState } from 'react';
 import { Button, TextField } from '@mui/material';
-import { useState } from 'react';
-import { EmailCredentials } from '../../../types/auth/credentials';
+import { EmailCredentials } from '../../../services/auth/authService';
 import { logger } from '../../../debugConfig';
 
 interface LoginFormProps {

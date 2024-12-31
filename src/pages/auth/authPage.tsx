@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { RegistrationService } from '../../services/auth/registrationService';
 import { EmailLoginForm } from '../components/auth/EmailLoginForm';
 import { EmailSignupForm } from '../components/auth/EmailSignupForm';
-import { EmailCredentials } from '../../types/auth/credentials';
+import { EmailCredentials } from '../../services/auth/authService';
 import { logger } from '../../debugConfig';
 
 function AuthPage() {

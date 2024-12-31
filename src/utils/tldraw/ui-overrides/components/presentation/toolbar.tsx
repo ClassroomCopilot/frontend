@@ -5,7 +5,7 @@ import {
     useTools,
     useIsToolSelected,
 } from '@tldraw/tldraw';
-import { StickerDropdown } from '../../../../../ui/components/StickerDropdown';
+import { StickerDropdown } from '../../StickerDropdown';
 
 export const PresentationToolbar = () => {
     const tools = useTools();

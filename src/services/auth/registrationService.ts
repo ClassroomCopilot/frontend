@@ -1,7 +1,7 @@
 import { supabase } from '../../supabaseClient';
-import { CCUser, convertToCCUser } from '../../types/auth.types';
-import { EmailCredentials } from '../../types/auth/credentials';
-import { RegistrationResponse } from '../../types/auth/responses';
+import { CCUser, convertToCCUser } from '../../services/auth/authService';
+import { EmailCredentials } from '../../services/auth/authService';
+import { RegistrationResponse } from '../../services/auth/authService';
 import { UserNeoDBService } from '../graph/userNeoDBService';
 import { storageService, StorageKeys } from './localStorageService';
 import { logger } from '../../debugConfig';
@@ -52,7 +52,7 @@ export class RegistrationService {
                 throw new Error('No user data after registration');
             }
 
-            const ccUser = convertToCCUser(data.user);
+            const ccUser: CCUser = convertToCCUser(data.user);
 
             // 2. Create user profile
             const { error: profileError } = await supabase

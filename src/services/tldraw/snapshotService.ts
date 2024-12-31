@@ -4,7 +4,7 @@ import axios from '../../axiosConfig';
 import logger from '../../debugConfig';
 import { SharedStoreService } from './sharedStoreService';
 import { StorageKeys, storageService } from '../auth/localStorageService';
-import { UserNodeInterface } from '../../types/neo4j/nodes';
+import { UserNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
 
 export interface LoadingState {
     status: 'loading' | 'ready' | 'error';
@@ -18,9 +18,13 @@ function replaceBackslashes(input: string | undefined): string {
 export const loadUserNodeTldrawFile = async (
     userNode: UserNodeInterface,
     store: TLStore,
-    sharedStore?: SharedStoreService
+    sharedStore?: SharedStoreService,
+    setLoadingState?: (state: LoadingState) => void
 ): Promise<void> => {
     try {
+        if (setLoadingState) {
+            setLoadingState({ status: 'loading', error: '' });
+        }
         // Extract the actual user node data
         const userNodeData = userNode;
         
@@ -49,19 +53,31 @@ export const loadUserNodeTldrawFile = async (
             logger.debug('snapshot-service', '📥 Snapshot loaded successfully');
             
             // If we have a shared store, use it for loading
-            if (sharedStore) {
-                await sharedStore.loadSnapshot(snapshot);
+            if (sharedStore && setLoadingState) {
+                await sharedStore.loadSnapshot(snapshot, setLoadingState);
             } else {
                 // Otherwise use the provided store directly
                 loadSnapshot(store, snapshot);
+                if (setLoadingState) {
+                    setLoadingState({ status: 'ready', error: '' });
+                }
             }
         } else {
             logger.error('snapshot-service', '❌ Invalid snapshot format');
+            if (setLoadingState) {
+                setLoadingState({ status: 'error', error: 'Invalid snapshot format' });
+            }
         }
     } catch (error) {
         logger.error('snapshot-service', '❌ Failed to fetch snapshot', { 
             error: error instanceof Error ? error.message : 'Unknown error'
         });
+        if (setLoadingState) {
+            setLoadingState({ 
+                status: 'error', 
+                error: error instanceof Error ? error.message : 'Failed to load file' 
+            });
+        }
     }
 };
 
@@ -94,7 +110,7 @@ export const loadNodeSnapshotFromDatabase = async (
             logger.debug('snapshot-service', '📥 Snapshot loaded successfully');
             
             if (sharedStore) {
-                await sharedStore.loadSnapshot(snapshot);
+                await sharedStore.loadSnapshot(snapshot, setLoadingState);
             } else {
                 loadSnapshot(store, snapshot);
                 storageService.set(StorageKeys.NODE_FILE_PATH, nodePath);

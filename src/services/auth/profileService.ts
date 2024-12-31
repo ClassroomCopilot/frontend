@@ -1,6 +1,56 @@
+import { TLUserPreferences } from '@tldraw/tldraw';
 import { supabase } from '../../supabaseClient';
-import { UserProfile, UserProfileUpdate } from '../../types/supabase/profiles';
+import { UserNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
+import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
 import { logger } from '../../debugConfig';
+import { UserRole } from '../../services/auth/authService';
+
+export interface UserProfile {
+  id: string;                    // UUID from auth.users
+  email: string;                 // User's email
+  display_name: string;   // User's display name
+  user_role: UserRole;            // Role (email_teacher, email_student, etc.)
+  worker_db_name: string;       // Neo4j database name for worker
+  instance_count: number;       // Number of active instances
+  one_note_details: StandardizedOneNoteDetails | null; // OneNote integration details
+  neo4j_user_node: UserNodeInterface; // Neo4j user node data
+  tldraw_preferences: TLUserPreferences;
+  created_at: string;           // Timestamp
+  updated_at: string;           // Timestamp
+}
+
+export interface UserProfileUpdate extends Partial<UserProfile> {
+  id: string; // ID is always required for updates
+} 
+
+export interface UserPreferences {
+  tldraw?: TLUserPreferences;
+  theme?: 'light' | 'dark' | 'system';
+  notifications?: boolean;
+}
+
+export async function createUserProfile(profile: UserProfile): Promise<UserProfile | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert([profile])
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('supabase-profile-service', '❌ Failed to create user profile', { 
+        userId: profile.id,
+        error 
+      });
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    logger.error('supabase-profile-service', '❌ Error in createUserProfile', error);
+    return null;
+  }
+}
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   try {
@@ -48,55 +98,3 @@ export async function updateUserProfile(update: UserProfileUpdate): Promise<User
     return null;
   }
 }
-
-export async function createUserProfile(profile: UserProfile): Promise<UserProfile | null> {
-  try {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .insert([profile])
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('supabase-profile-service', '❌ Failed to create user profile', { 
-        userId: profile.id,
-        error 
-      });
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    logger.error('supabase-profile-service', '❌ Error in createUserProfile', error);
-    return null;
-  }
-}
-
-// Instance count management
-export async function incrementUserInstanceCount(userId: string): Promise<number> {
-  const { data, error } = await supabase.rpc('increment_instance_count', {
-    user_id: userId
-  });
-
-  if (error) {
-    console.error('Error incrementing instance count:', error);
-    throw error;
-  }
-
-  return data.instance_count;
-}
-
-export async function getUserInstanceCount(userId: string): Promise<number> {
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('instance_count')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching instance count:', error);
-    throw error;
-  }
-
-  return data?.instance_count || 0;
-} 

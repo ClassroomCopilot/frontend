@@ -1,5 +1,5 @@
 import axios from '../../axiosConfig';
-import { TeacherNodeInterface } from '../../types/neo4j/nodes';
+import { TeacherNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
 import { logger } from '../../debugConfig';
 import { AxiosError } from 'axios';
 

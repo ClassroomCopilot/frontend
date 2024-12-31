@@ -1,4 +1,4 @@
-import { ReactNode, createContext, useContext, useState, useCallback } from 'react';
+import React, { ReactNode, createContext, useContext, useState, useCallback } from 'react';
 import { TLUserPreferences, TLEditorSnapshot, TLStore, getSnapshot, loadSnapshot } from '@tldraw/tldraw';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { LoadingState } from '../services/tldraw/snapshotService';
@@ -128,33 +128,33 @@ export const TLDrawProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             await sharedStore.loadSnapshot(savedSnapshot, setLoadingState);
           }
         }
-      } else {
-        if (action === 'put') {
-          logger.debug('tldraw-context', '💾 Putting snapshot into local storage');
-          const snapshot = getSnapshot(store);
-          logger.debug('tldraw-context', '📦 Snapshot:', snapshot);
-          setLocalSnapshot(snapshot);
-          storageService.set(StorageKeys.LOCAL_SNAPSHOT, snapshot);
-          setLoadingState({ status: 'ready', error: '' });
-        } else if (action === 'get') {
-          logger.debug('tldraw-context', '📂 Getting snapshot from local storage');
-          setLoadingState({ status: 'loading', error: '' });
-          const savedSnapshot = storageService.get(StorageKeys.LOCAL_SNAPSHOT);
-          
-          if (savedSnapshot && savedSnapshot.document && savedSnapshot.session) {
-            try {
-              logger.debug('tldraw-context', '📥 Loading snapshot into editor');
-              loadSnapshot(store, savedSnapshot);
-              setLoadingState({ status: 'ready', error: '' });
-            } catch (error) {
-              logger.error('tldraw-context', '❌ Failed to load snapshot:', error);
-              store.clear();
-              setLoadingState({ status: 'error', error: 'Failed to load snapshot' });
-            }
-          } else {
-            logger.debug('tldraw-context', '⚠️ No valid snapshot found in local storage');
+      }
+      else if (action === 'put') {
+        logger.debug('tldraw-context', '💾 Putting snapshot into local storage');
+        const snapshot = getSnapshot(store);
+        logger.debug('tldraw-context', '📦 Snapshot:', snapshot);
+        setLocalSnapshot(snapshot);
+        storageService.set(StorageKeys.LOCAL_SNAPSHOT, snapshot);
+        setLoadingState({ status: 'ready', error: '' });
+      }
+      else if (action === 'get') {
+        logger.debug('tldraw-context', '📂 Getting snapshot from local storage');
+        setLoadingState({ status: 'loading', error: '' });
+        const savedSnapshot = storageService.get(StorageKeys.LOCAL_SNAPSHOT);
+        
+        if (savedSnapshot && savedSnapshot.document && savedSnapshot.session) {
+          try {
+            logger.debug('tldraw-context', '📥 Loading snapshot into editor');
+            loadSnapshot(store, savedSnapshot);
             setLoadingState({ status: 'ready', error: '' });
+          } catch (error) {
+            logger.error('tldraw-context', '❌ Failed to load snapshot:', error);
+            store.clear();
+            setLoadingState({ status: 'error', error: 'Failed to load snapshot' });
           }
+        } else {
+          logger.debug('tldraw-context', '⚠️ No valid snapshot found in local storage');
+          setLoadingState({ status: 'ready', error: '' });
         }
       }
     } catch (error) {

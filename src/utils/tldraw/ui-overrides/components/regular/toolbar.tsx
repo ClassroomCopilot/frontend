@@ -6,7 +6,7 @@ import {
     useIsToolSelected,
     DefaultToolbarContent
 } from '@tldraw/tldraw';
-import { StickerDropdown } from '../../../../../ui/components/StickerDropdown';
+import { StickerDropdown } from '../../StickerDropdown';
 
 export const RegularToolbar = () => {
     const tools = useTools()
