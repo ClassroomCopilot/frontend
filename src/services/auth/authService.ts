@@ -1,4 +1,4 @@
-import { User as SupabaseUser } from '@supabase/gotrue-js'
+import { User as SupabaseUser } from '@supabase/supabase-js'
 import { TLUserPreferences } from '@tldraw/tldraw'
 import { supabase } from '../../supabaseClient';
 import { storageService, StorageKeys } from './localStorageService';
@@ -7,37 +7,15 @@ import { logger } from '../../debugConfig';
 
 const AUTH_SERVICE = 'auth-service';
 
+export interface CCUser extends SupabaseUser {
+  displayName: string;
+  user_metadata: CCUserMetadata;
+}
+
 interface CCUserMetadata {
   role: UserRole;
   tldraw_preferences?: TLUserPreferences;
 }
-
-export interface CCUser extends SupabaseUser {
-  displayName: string;
-  instanceCount?: number;
-  user_metadata: CCUserMetadata;
-}
-
-export const convertToCCUser = (
-  user: SupabaseUser
-): CCUser => {
-  return {
-    ...user,
-    displayName: user.user_metadata?.display_name,
-    user_metadata: {
-      role: user.user_metadata?.role,
-      tldraw_preferences: user.user_metadata?.tldraw_preferences
-    },
-    instanceCount: 0
-  };
-};
-
-export const getTldrawPreferences = (user: CCUser): TLUserPreferences => {
-  return user.user_metadata?.tldraw_preferences || {
-    id: user.id,
-    colorScheme: 'system'
-  };
-};
 
 export type UserRole = 'email_teacher' | 'email_student' | 'ms_teacher' | 'ms_student' | 'cc_admin';
 
@@ -86,6 +64,26 @@ export interface MicrosoftCredentials {
 }
 
 export type AuthCredentials = EmailCredentials | MicrosoftCredentials;
+
+export const convertToCCUser = (
+  user: SupabaseUser
+): CCUser => {
+  return {
+    ...user,
+    displayName: user.user_metadata?.display_name,
+    user_metadata: {
+      role: user.user_metadata?.role,
+      tldraw_preferences: user.user_metadata?.tldraw_preferences
+    }
+  };
+};
+
+export const getTldrawPreferences = (user: CCUser): TLUserPreferences => {
+  return user.user_metadata?.tldraw_preferences || {
+    id: user.id,
+    colorScheme: 'system'
+  };
+};
 
 class AuthService {
   private static instance: AuthService;

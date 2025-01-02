@@ -8,7 +8,7 @@ import { SuperAdminSection } from '../components/auth/SuperAdminSection';
 import { logger } from '../../debugConfig';
 import { TimetableNeoDBService } from '../../services/graph/timetableNeoDBService';
 
-export default function HomePage() {
+export default function UserHomePage() {
   const { user, userRole, logout } = useAuth();
   const { userNodes } = useNeo4j();
   const isAdmin = user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL;
@@ -21,11 +21,10 @@ export default function HomePage() {
     userId: user?.id,
     role: userRole,
     isAdmin,
-    hasNeo4jSetup: !!userNodes?.privateUserNode
+    hasNeo4jSetup: !!userNodes?.privateUserNode,
   });
 
-  // Check if user is a teacher (includes both email and MS teachers)
-  const isTeacher = userRole?.includes('teacher');
+  const isTeacher = userRole?.includes('teacher'); // TODO: add these vars to an app config file
 
   const handleTimetableUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -99,7 +98,7 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            onClick={() => navigate('/calendar')} 
+            onClick={() => navigate('/user/calendar')} 
             variant="contained" 
             color="primary"
             disabled={!userNodes?.privateUserNode}
@@ -110,7 +109,7 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            onClick={() => navigate('/tldraw-dev')} 
+            onClick={() => navigate('/user/tldraw-dev')} 
             variant="contained" 
             color="primary"
           >
@@ -120,7 +119,7 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            onClick={() => navigate('/single-player')} 
+            onClick={() => navigate('/user/singleplayer')} 
             variant="contained" 
             color="primary"
           >
@@ -130,7 +129,7 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            onClick={() => navigate('/multiplayer')} 
+            onClick={() => navigate('/user/multiplayer')} 
             variant="contained" 
             color="primary"
           >
@@ -139,13 +138,13 @@ export default function HomePage() {
         </Grid>
 
         {/* Show Dev Tools for teachers or admins */}
-        {(isAdmin) && (
+        {(isAdmin || isTeacher) && (
           <Grid item>
             <Button 
               onClick={() => navigate('/dev')} 
               variant="contained" 
               color="primary"
-              disabled={!isAdmin}
+              disabled={!isAdmin && !isTeacher}
             >
               Dev Tools
             </Button>
@@ -154,20 +153,10 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
-            onClick={logout} 
-            variant="contained" 
-            color="error"
-          >
-            Logout
-          </Button>
-        </Grid>
-
-        <Grid item>
-          <Button 
-            onClick={() => navigate('/teacher-planner')}
+            onClick={() => navigate('/user/teacher-planner')}
             variant="contained" 
             color="primary"
-            disabled={!isTeacher || !isAdmin}
+            disabled={!isTeacher && !isAdmin}
           >
             Open Teacher Planner (React Flow)
           </Button>
@@ -192,6 +181,16 @@ export default function HomePage() {
             </Button>
           </Grid>
         )}
+
+        <Grid item>
+          <Button 
+            onClick={logout} 
+            variant="contained" 
+            color="error"
+          >
+            Logout
+          </Button>
+        </Grid>
       </Grid>
     </Container>
   );

@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router';
 import { useAuth } from './contexts/AuthContext';
 import SitePage from './pages/sitePage';
 import AuthPage from './pages/auth/authPage';
-import HomePage from './pages/user/homePage';
+import UserHomePage from './pages/user/userHomePage';
 import CalendarPage from './pages/user/calendarPage';
 import DevPage from './pages/tldraw/devPage';
 import TLDrawDevPage from './pages/tldraw/devPlayerPage';
@@ -15,50 +15,6 @@ import { storageService, StorageKeys } from './services/auth/localStorageService
 import { SUPER_ADMIN_EMAIL } from './config/constants';
 import { useNeo4j } from './contexts/Neo4jContext';
 import TeacherPlanner from './pages/react-flow/teacherPlanner';
-
-// Protected Route wrapper
-const ProtectedRoute: React.FC<{ 
-  children: React.ReactNode;
-  requiredRoles?: string[];
-  requireSuperAdmin?: boolean;
-  requireNeo4j?: boolean;
-}> = ({ children, requiredRoles, requireSuperAdmin, requireNeo4j }) => {
-  const { user, userRole } = useAuth();
-  const { userNodes, isLoading: isNeo4jLoading } = useNeo4j();
-
-  // Wait for Neo4j data if required
-  if (requireNeo4j && isNeo4jLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    logger.warn('routes', '🔄 Redirecting to home - no user');
-    return <Navigate to="/" />;
-  }
-
-  if (requireNeo4j && !userNodes?.privateUserNode) {
-    logger.warn('routes', '🔄 Redirecting to user page - no Neo4j setup');
-    return <Navigate to="/user" />;
-  }
-
-  if (requireSuperAdmin && user.email !== SUPER_ADMIN_EMAIL) {
-    logger.warn('routes', '🔄 Redirecting to user page - not super admin', {
-      userEmail: user.email,
-      requiredEmail: SUPER_ADMIN_EMAIL
-    });
-    return <Navigate to="/user" />;
-  }
-
-  if (requiredRoles?.length && !requiredRoles.includes(userRole || '')) {
-    logger.warn('routes', '🔄 Redirecting to user page - insufficient role', {
-      required: requiredRoles,
-      current: userRole
-    });
-    return <Navigate to="/user" />;
-  }
-
-  return <>{children}</>;
-};
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -76,6 +32,7 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<SitePage />} />
+
       <Route path="/auth" element={
         (user) ? <Navigate to="/user" replace /> : <AuthPage />
       } />
@@ -83,31 +40,43 @@ const AppRoutes = () => {
       {/* Protected Routes */}
       <Route path="/user" element={
         <ProtectedRoute>
-          <HomePage />
+          <UserHomePage />
         </ProtectedRoute>
       } />
 
-      <Route path="/calendar" element={
+      <Route path="/admin" element={
+        <ProtectedRoute requireSuperAdmin>
+          <AdminPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/user/calendar" element={
         <ProtectedRoute requireNeo4j>
           <CalendarPage />
         </ProtectedRoute>
       } />
 
-      <Route path="/tldraw-dev" element={
+      <Route path="/user/tldraw-dev" element={
         <ProtectedRoute>
           <TLDrawDevPage />
         </ProtectedRoute>
       } />
 
-      <Route path="/single-player" element={
+      <Route path="/user/singleplayer" element={
         <ProtectedRoute>
           <SinglePlayerPage />
         </ProtectedRoute>
       } />
 
-      <Route path="/multiplayer" element={
+      <Route path="/user/multiplayer" element={
         <ProtectedRoute>
           <MultiplayerPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/user/teacher-planner" element={
+        <ProtectedRoute>
+          <TeacherPlanner />
         </ProtectedRoute>
       } />
 
@@ -119,22 +88,54 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
 
-      <Route path="/admin" element={
-        <ProtectedRoute requireSuperAdmin>
-          <AdminPage />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/teacher-planner" element={
-        <ProtectedRoute>
-          <TeacherPlanner />
-        </ProtectedRoute>
-      } />
-
       {/* Catch all - redirect to site page */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+};
+
+// Protected Route wrapper
+const ProtectedRoute: React.FC<{ 
+  children: React.ReactNode;
+  requiredRoles?: string[];
+  requireSuperAdmin?: boolean;
+  requireNeo4j?: boolean;
+}> = ({ children, requiredRoles, requireSuperAdmin, requireNeo4j }) => {
+  const { user, userRole } = useAuth();
+  const { userNodes, isLoading: isNeo4jLoading } = useNeo4j();
+
+  // Wait for Neo4j data if required
+  if (requireNeo4j && isNeo4jLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    logger.error('routes', '🔄 No user - Redirecting to site page');
+    return <Navigate to="/" />;
+  }
+
+  if (requireNeo4j && !userNodes?.privateUserNode) {
+    logger.warn('routes', '🔄 Neo4j privateUserNode required - Redirecting to user home page');
+    return <Navigate to="/user" />;
+  }
+
+  if (requireSuperAdmin && user.email !== SUPER_ADMIN_EMAIL) {
+    logger.warn('routes', '🔄 Not super admin - Redirecting to user page', {
+      userEmail: user.email,
+      requiredEmail: SUPER_ADMIN_EMAIL
+    });
+    return <Navigate to="/user" />;
+  }
+
+  if (requiredRoles?.length && !requiredRoles.includes(userRole || '')) {
+    logger.warn('routes', '🔄 Insufficient role - Redirecting to user page', {
+      required: requiredRoles,
+      current: userRole
+    });
+    return <Navigate to="/user" />;
+  }
+
+  return <>{children}</>;
 };
 
 export default AppRoutes;
