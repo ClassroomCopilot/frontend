@@ -18,8 +18,8 @@ export function UserToolbar({ children }: { children: (props: { handleLogout: ()
     };
 
     const handleNavUserHome = () => {
-        logger.info('user-toolbar', '🏠 Navigating to user page');
-        navigate('/user');
+        logger.info('user-toolbar', '🏠 Navigating to single player page');
+        navigate('/single-player');
     }
 
     return (

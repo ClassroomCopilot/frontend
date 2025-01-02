@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Container, Box, Typography, Tabs, Tab, Paper, Button } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { SUPER_ADMIN_EMAIL } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { SchoolUploadSection } from '../components/admin/SchoolUploadSection';
 import { TimetableUploadSection } from '../components/admin/TimetableUploadSection';
 import { logger } from '../../debugConfig';
+
+const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -36,8 +37,8 @@ export default function AdminDashboard() {
   });
 
   const handleReturn = () => {
-    logger.info('admin-page', '🏠 Returning to user page');
-    navigate('/user');
+    logger.info('admin-page', '🏠 Returning to single player page');
+    navigate('/single-player');
   };
 
   if (!isSuperAdmin) {
@@ -59,7 +60,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 

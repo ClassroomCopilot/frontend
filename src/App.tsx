@@ -1,6 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { theme } from './theme/index';
+import { theme } from './services/themeService';
 import { AuthProvider } from './contexts/AuthContext';
 import { Neo4jProvider } from './contexts/Neo4jContext';
 import { TLDrawProvider } from './contexts/TLDrawContext';

@@ -1,11 +1,9 @@
-import { User as SupabaseUser } from '@supabase/supabase-js'
+import { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { TLUserPreferences } from '@tldraw/tldraw'
 import { supabase } from '../../supabaseClient';
 import { storageService, StorageKeys } from './localStorageService';
 import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
 import { logger } from '../../debugConfig';
-
-const AUTH_SERVICE = 'auth-service';
 
 export interface CCUser extends SupabaseUser {
   displayName: string;
@@ -90,23 +88,21 @@ class AuthService {
   
   private constructor() {}
   
-  onAuthStateChange(callback: (session: SessionResponse) => void) {
-    return supabase.auth.onAuthStateChange(async (event, session) => {
-      logger.debug(AUTH_SERVICE, 'Auth state changed:', { event, hasSession: !!session });
-      
-      if (session?.user) {
-        callback({
-          user: convertToCCUser(session.user),
-          accessToken: session.access_token,
-          message: `Auth state changed: ${event}`
-        });
-      } else {
-        callback({
-          user: null,
-          accessToken: null,
-          message: `Auth state changed: ${event}`
-        });
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
+    return supabase.auth.onAuthStateChange((event, session) => {
+      logger.debug('auth-service', '🔄 Auth state changed', { 
+        event, 
+        hasSession: !!session,
+        userId: session?.user?.id,
+        eventType: event
+      });
+
+      // Ensure we clear storage on signout
+      if (event === 'SIGNED_OUT') {
+        storageService.clearAll();
       }
+
+      callback(event, session);
     });
   }
 
@@ -120,7 +116,9 @@ class AuthService {
   async getCurrentSession(): Promise<SessionResponse> {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       if (!session) {
         return { user: null, accessToken: null, message: 'No active session' };
@@ -132,7 +130,7 @@ class AuthService {
         message: 'Session retrieved'
       };
     } catch (error) {
-      logger.error(AUTH_SERVICE, 'Failed to get current session:', error);
+      logger.error('auth-service', 'Failed to get current session:', error);
       throw error;
     }
   }
@@ -140,17 +138,19 @@ class AuthService {
   async getCurrentUser(): Promise<CCUser | null> {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) return null;
+      if (error || !user) {
+        return null;
+      }
       return convertToCCUser(user);
     } catch (error) {
-      logger.error(AUTH_SERVICE, 'Failed to get current user:', error);
+      logger.error('auth-service', 'Failed to get current user:', error);
       return null;
     }
   }
 
   async login({ email, password, role }: EmailCredentials): Promise<LoginResponse> {
     try {
-      logger.debug(AUTH_SERVICE, '🔄 Attempting login', { 
+      logger.debug('auth-service', '🔄 Attempting login', { 
         email,
         role,
       });
@@ -161,7 +161,7 @@ class AuthService {
       });
 
       if (error) {
-        logger.error(AUTH_SERVICE, '❌ Supabase auth error', { 
+        logger.error('auth-service', '❌ Supabase auth error', { 
           error: error.message,
           status: error.status
         });
@@ -169,7 +169,7 @@ class AuthService {
       }
 
       if (!data.session) {
-        logger.error(AUTH_SERVICE, '❌ No session after login');
+        logger.error('auth-service', '❌ No session after login');
         throw new Error('No session after login');
       }
 
@@ -180,7 +180,7 @@ class AuthService {
       storageService.set(StorageKeys.USER, ccUser);
       storageService.set(StorageKeys.SUPABASE_TOKEN, data.session.access_token);
 
-      logger.info(AUTH_SERVICE, '✅ Login successful', {
+      logger.info('auth-service', '✅ Login successful', {
         userId: ccUser.id,
         role,
       });
@@ -192,20 +192,26 @@ class AuthService {
         message: 'Login successful'
       };
     } catch (error) {
-      logger.error(AUTH_SERVICE, '❌ Login failed:', error);
+      logger.error('auth-service', '❌ Login failed:', error);
       throw error;
     }
   }
 
   async logout(): Promise<void> {
     try {
+      logger.debug('auth-service', '🔄 Attempting logout');
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      if (error) {
+        logger.error('auth-service', '❌ Logout failed:', error);
+        throw error;
+      }
       // Clear all stored data
       storageService.clearAll();
+      // Force a refresh of the auth state
+      await supabase.auth.refreshSession();
+      logger.debug('auth-service', '✅ Logout successful');
     } catch (error) {
-      logger.error(AUTH_SERVICE, 'Logout failed:', error);
+      logger.error('auth-service', '❌ Logout failed:', error);
       throw error;
     }
   }

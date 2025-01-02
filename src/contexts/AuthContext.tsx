@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CCUser } from '../services/auth/authService';
 import { EmailCredentials } from '../services/auth/authService';
 import { LoginResponse } from '../services/auth/authService';
@@ -6,6 +7,8 @@ import { authService } from '../services/auth/authService';
 import { getUserProfile } from '../services/auth/profileService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { logger } from '../debugConfig';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { convertToCCUser } from '../services/auth/authService';
 
 interface AuthContextType {
   user: CCUser | null;
@@ -28,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<CCUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,15 +39,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Prevent double initialization
-    if (isInitialized) return;
+    if (isInitialized) {
+      return;
+    }
     
     let mounted = true;
     const initializeAuth = async () => {
       try {
         logger.debug('auth-context', '🔄 Initializing auth');
         const session = await authService.getCurrentSession();
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         
         if (session.user) {
           setUser(session.user);
@@ -59,7 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch (error) {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         const errorMessage = error instanceof Error ? error.message : 'Failed to initialize auth';
         logger.error('auth-context', '❌ Auth initialization failed', { error });
         setError(errorMessage);
@@ -72,9 +81,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
+    // Set up auth state change listener
+    const { data: { subscription } } = authService.onAuthStateChange((event: AuthChangeEvent, supabaseSession: Session | null) => {
+      logger.debug('auth-context', '🔄 Auth state changed', { 
+        event, 
+        hasUser: !!supabaseSession?.user,
+        userId: supabaseSession?.user?.id,
+        eventType: event,
+        currentUser: user?.id
+      });
+      
+      // Handle sign out or no session
+      if (event === 'SIGNED_OUT' || !supabaseSession?.user) {
+        logger.debug('auth-context', '🔄 User signed out or no session, clearing state');
+        // Clear all state immediately
+        setUser(null);
+        setUserRole(null);
+        storageService.clearAll();
+        // Force a re-render of all components using auth state
+        setIsInitialized(false);
+        // Only navigate on explicit sign out
+        if (event === 'SIGNED_OUT') {
+          navigate('/', { replace: true });
+        }
+        return;
+      }
+      
+      // Handle sign in and token refresh
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && supabaseSession.user && mounted) {
+        logger.debug('auth-context', '🔄 User signed in or token refreshed', {
+          userId: supabaseSession.user.id,
+          email: supabaseSession.user.email
+        });
+        const ccUser = convertToCCUser(supabaseSession.user);
+        setUser(ccUser);
+        const storedRole = storageService.get(StorageKeys.USER_ROLE);
+        if (storedRole) {
+          setUserRole(storedRole);
+        }
+      }
+    });
+
     initializeAuth();
-    return () => { mounted = false; };
-  }, [isInitialized]);
+    return () => { 
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [isInitialized, navigate]);
 
   const login = async (credentials: EmailCredentials): Promise<LoginResponse> => {
     try {
@@ -102,10 +155,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       await authService.logout();
+      // Force immediate state clear
       setUser(null);
       setUserRole(null);
       storageService.clearAll();
-      logger.debug('auth-context', '🔄 User logged out');
+      // Navigate to root and force a page refresh
+      navigate('/', { replace: true });
+      window.location.reload();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Logout failed';
       setError(errorMessage);

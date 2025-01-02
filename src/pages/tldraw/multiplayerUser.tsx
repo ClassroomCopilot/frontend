@@ -23,7 +23,9 @@ import { allShapeUtils } from '../../utils/tldraw/shapes';
 import { customSchema } from '../../utils/tldraw/schemas';
 import { allBindingUtils } from '../../utils/tldraw/bindings';
 import { multiplayerEmbeds } from '../../utils/tldraw/embeds';
-// App styles
+// Layout
+import { HEADER_HEIGHT } from '../../pages/Layout';
+// Styles
 import '../../utils/tldraw/tldraw.css';
 import '../../utils/tldraw/slides/slides.css';
 // App debug
@@ -45,7 +47,7 @@ export default function TldrawMultiUser() {
     // Create editor user with memoization
     const editorUser = useTldrawUser({
         userPreferences: {
-            id: user?.id ?? null,
+            id: user?.id ?? '',
             name: user?.displayName,
             color: tldrawPreferences?.color,
             locale: tldrawPreferences?.locale,
@@ -63,18 +65,20 @@ export default function TldrawMultiUser() {
         baseUrl: SYNC_WORKER_URL
     }), [user, tldrawPreferences]);
 
-    const sync_store = useSync({
+    const store = useSync({
         ...connectionOptions,
-        schema: customSchema
+        schema: customSchema,
+        shapeUtils: allShapeUtils,
+        bindingUtils: allBindingUtils
     });
 
     // Log connection status changes
     useEffect(() => {
-        logger.info('multiplayer-page', `🔄 Connection status changed: ${sync_store.status}`, {
-            status: sync_store.status,
+        logger.info('multiplayer-page', `🔄 Connection status changed: ${store.status}`, {
+            status: store.status,
             connectionOptions
         });
-    }, [sync_store.status, connectionOptions]);
+    }, [store.status, connectionOptions]);
 
     // Effect for initializing preferences
     useEffect(() => {
@@ -114,28 +118,22 @@ export default function TldrawMultiUser() {
         return null;
     }
 
-    if (sync_store.status !== 'synced-remote') {
+    if (store.status !== 'synced-remote') {
         return <div>Connecting...</div>;
     }
 
     return (
-        <div
-            className="tldraw-container"
-            style={{
-                width: '100%',
-                height: '100%',
-                position: 'absolute',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '0px',
-                boxSizing: 'border-box'
-            }}
-        >
+        <div style={{ 
+            position: 'fixed',
+            inset: 0,
+            top: `${HEADER_HEIGHT}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+        }}>
             <Tldraw
                 user={editorUser}
-                store={sync_store.store}
+                store={store.store}
                 onMount={(editor) => {
                     editorRef.current = editor;
                     editor.registerExternalAssetHandler('url', async ({ url }: { url: string }) => {

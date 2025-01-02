@@ -19,6 +19,8 @@ import { allShapeUtils } from '../../utils/tldraw/shapes';
 import { allBindingUtils } from '../../utils/tldraw/bindings';
 import { devTools } from '../../utils/tldraw/tools';
 import { customSchema } from '../../utils/tldraw/schemas';
+// Layout
+import { HEADER_HEIGHT } from '../../pages/Layout';
 // Styles
 import '../../utils/tldraw/tldraw.css';
 import '../../utils/tldraw/slides/slides.css';
@@ -99,7 +101,14 @@ export default function TLDrawDevPage() {
     const uiComponents = getUiComponents(presentationMode);
 
     return (
-        <div style={{ display: 'flex', width: '100%', height: '100%', position: 'fixed' }}>
+        <div style={{ 
+            position: 'fixed',
+            inset: 0,
+            top: `${HEADER_HEIGHT}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+        }}>
             <Tldraw
                 user={tldrawUser}
                 store={store}
