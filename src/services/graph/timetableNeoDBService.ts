@@ -187,26 +187,27 @@ export class TimetableNeoDBService {
             };
         }
 
-        try {
-            let effectiveWorkerNode = workerNode;
-            if (!effectiveWorkerNode) {
-                effectiveWorkerNode = {
-                    unique_id: 'kevlarai',
-                    teacher_code: 'kevlarai',
-                    teacher_name_formal: 'KevlarAI',
-                    teacher_email: 'kevlarai@kevlarai.com',
-                    worker_db_name: 'cc.ccschools.kevlarai',
-                    w: 0,
-                    h: 0,
-                    color: '',
-                    __primarylabel__: 'Teacher',
-                    path: '/',
-                    created: '',
-                    merged: ''
-                };
-            }
+        if (!workerNode) {
+            return {
+                success: false,
+                message: 'Teacher information not found. Please ensure you are logged in as a teacher.'
+            };
+        }
 
-            const result = await this.uploadWorkerTimetable(file, effectiveWorkerNode);
+        // Validate worker node has required fields
+        const requiredFields = ['unique_id', 'teacher_code', 'teacher_name_formal', 'teacher_email', 'worker_db_name', 'path'];
+        const missingFields = requiredFields.filter(field => !workerNode[field as keyof TeacherNodeInterface]);
+        
+        if (missingFields.length > 0) {
+            logger.error('timetable-service', '❌ Missing required teacher fields:', { missingFields });
+            return {
+                success: false,
+                message: `Missing required teacher information: ${missingFields.join(', ')}`
+            };
+        }
+
+        try {
+            const result = await this.uploadWorkerTimetable(file, workerNode);
             return {
                 success: true,
                 message: result.message

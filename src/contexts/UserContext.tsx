@@ -33,18 +33,24 @@ const UserContext = createContext<UserContextType>({
 });
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { userNode } = useNeo4j();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>({});
   const [instanceCount, setInstanceCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMobile] = useState(window.innerWidth <= 768); // Simple mobile detection
+  const [isMobile] = useState(window.innerWidth <= 768);
 
   // Load user profile
   useEffect(() => {
+    if (isAuthLoading) {
+      return; // Wait for auth to complete
+    }
+    
     if (!user) {
+      setProfile(null);
+      setIsLoading(false);
       return;
     }
     
@@ -98,7 +104,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     loadUserProfile();
-  }, [user, userNode]);
+  }, [user, isAuthLoading, userNode]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user?.id || !profile) {

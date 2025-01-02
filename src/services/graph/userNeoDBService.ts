@@ -140,55 +140,73 @@ export class UserNeoDBService {
     }
 
     private static processCalendarNode(nodeData: NodeData): CalendarNodeInterface {
-        return {
-            ...nodeData,
-            __primarylabel__: 'Calendar',
+        // Create a base object with required fields from BaseNodeInterface
+        const baseNode = {
             w: 0,
             h: 0,
-            start_date: '',
-            end_date: '',
-            name: '',
             color: '',
-            unique_id: '',
-            path: '',
-            created: '',
-            merged: ''
+            __primarylabel__: 'Calendar',
+            unique_id: String(nodeData.unique_id || ''),
+            path: String(nodeData.path || ''),
+            created: String(nodeData.created || ''),
+            merged: String(nodeData.merged || ''),
+        };
+
+        // Create the calendar node by spreading nodeData first, then adding missing required fields
+        return {
+            ...nodeData,
+            ...baseNode,
+            start_date: String(nodeData.start_date || ''),
+            end_date: String(nodeData.end_date || ''),
+            name: String(nodeData.name || ''),
         };
     }
 
     private static processTeacherNode(nodeData: NodeData): TeacherNodeInterface {
-        return {
-            ...nodeData,
-            __primarylabel__: 'Teacher',
+        // Create a base object with required fields from BaseNodeInterface
+        const baseNode = {
             w: 0,
             h: 0,
-            unique_id: '',
-            path: '',
-            created: '',
-            merged: '',
-            teacher_code: '',
-            teacher_name_formal: '',
-            teacher_email: '',
-            worker_db_name: '',
-            color: ''
+            color: '',
+            __primarylabel__: 'Teacher',
+            unique_id: String(nodeData.unique_id || ''),
+            path: String(nodeData.path || ''),
+            created: String(nodeData.created || ''),
+            merged: String(nodeData.merged || ''),
+        };
+
+        // Create the teacher node by spreading nodeData first, then adding missing required fields
+        return {
+            ...nodeData,
+            ...baseNode,
+            teacher_code: String(nodeData.teacher_code || ''),
+            teacher_name_formal: String(nodeData.teacher_name_formal || ''),
+            teacher_email: String(nodeData.teacher_email || ''),
+            worker_db_name: String(nodeData.worker_db_name || ''),
         };
     }
 
     private static processStudentNode(nodeData: NodeData): StudentNodeInterface {
-        return {
-            ...nodeData,
-            __primarylabel__: 'Student',
+        // Create a base object with required fields from BaseNodeInterface
+        const baseNode = {
             w: 0,
             h: 0,
-            unique_id: '',
-            path: '',
-            created: '',
-            merged: '',
-            student_code: '',
-            student_name_formal: '',
-            student_email: '',
-            worker_db_name: '',
-            color: ''
+            color: '',
+            __primarylabel__: 'Student',
+            unique_id: String(nodeData.unique_id || ''),
+            path: String(nodeData.path || ''),
+            created: String(nodeData.created || ''),
+            merged: String(nodeData.merged || ''),
+        };
+
+        // Create the student node by spreading nodeData first, then adding missing required fields
+        return {
+            ...nodeData,
+            ...baseNode,
+            student_code: String(nodeData.student_code || ''),
+            student_name_formal: String(nodeData.student_name_formal || ''),
+            student_email: String(nodeData.student_email || ''),
+            worker_db_name: String(nodeData.worker_db_name || ''),
         };
     }
 

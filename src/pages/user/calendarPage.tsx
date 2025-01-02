@@ -86,11 +86,21 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     r = g = b = l; // achromatic
   } else {
     const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 0) {
+        t += 1;
+      }
+      if (t > 1) {
+        t -= 1;
+      }
+      if (t < 1/6) {
+        return p + (q - p) * 6 * t;
+      }
+      if (t < 1/2) {
+        return q;
+      }
+      if (t < 2/3) {
+        return p + (q - p) * (2/3 - t) * 6;
+      }
       return p;
     };
 
@@ -148,7 +158,9 @@ const CalendarPage: React.FC = () => {
   const { userNodes, isLoading, error } = useNeo4j();
 
   const getEventRange = useCallback((events: Event[]) => {
-    if (events.length === 0) return { start: null, end: null };
+    if (events.length === 0) {
+      return { start: null, end: null };
+    }
 
     let start = new Date(events[0].start);
     let end = new Date(events[0].end);
@@ -156,8 +168,12 @@ const CalendarPage: React.FC = () => {
     events.forEach(event => {
       const eventStart = new Date(event.start);
       const eventEnd = new Date(event.end);
-      if (eventStart < start) start = eventStart;
-      if (eventEnd > end) end = eventEnd;
+      if (eventStart < start) {
+        start = eventStart;
+      }
+      if (eventEnd > end) {
+        end = eventEnd;
+      }
     });
 
     // Adjust start to the beginning of its month and end to the end of its month
@@ -222,9 +238,9 @@ const CalendarPage: React.FC = () => {
     }
   }, []);
 
-  const toggleClassFilterModal = () => {
+  const toggleClassFilterModal = useCallback(() => {
     setIsModalOpen(!isModalOpen);
-  };
+  }, [isModalOpen]);
 
   const handleClassToggle = (subjectClass: string) => {
     setSelectedClasses(prev => 
@@ -250,6 +266,179 @@ const CalendarPage: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [handleResize]);
+
+  const toggleDropdown = useCallback((eventId: string) => {
+    setOpenDropdownId(openDropdownId === eventId ? null : eventId);
+  }, [openDropdownId]);
+
+  const toggleSubjectClassDivVisibility = useCallback((subjectClass: string) => {
+    setHiddenSubjectClassDivs(prev => 
+      prev.includes(subjectClass)
+        ? prev.filter(c => c !== subjectClass)
+        : [...prev, subjectClass]
+    );
+  }, []);
+
+  const togglePeriodCodeDivVisibility = useCallback((subjectClass: string) => {
+    setHiddenPeriodCodeDivs(prev => 
+      prev.includes(subjectClass)
+        ? prev.filter(c => c !== subjectClass)
+        : [...prev, subjectClass]
+    );
+  }, []);
+
+  const toggleTimeDivVisibility = useCallback((subjectClass: string) => {
+    setHiddenTimeDivs(prev => 
+      prev.includes(subjectClass)
+        ? prev.filter(c => c !== subjectClass)
+        : [...prev, subjectClass]
+    );
+  }, []);
+
+  const hideSubjectClassFromView = useCallback((subjectClass: string) => {
+    setSelectedClasses(prev => prev.filter(c => c !== subjectClass));
+  }, []);
+
+  const toggleAllDivs = useCallback((subjectClass: string, hide: boolean) => {
+    const updateHiddenDivs = (prev: string[]) => 
+      hide ? [...prev, subjectClass] : prev.filter(c => c !== subjectClass);
+
+    setHiddenSubjectClassDivs(updateHiddenDivs);
+    setHiddenPeriodCodeDivs(updateHiddenDivs);
+    setHiddenTimeDivs(updateHiddenDivs);
+  }, []);
+
+  const areAllDivsHidden = useCallback((subjectClass: string) => {
+    return hiddenSubjectClassDivs.includes(subjectClass) &&
+           hiddenPeriodCodeDivs.includes(subjectClass) &&
+           hiddenTimeDivs.includes(subjectClass);
+  }, [hiddenSubjectClassDivs, hiddenPeriodCodeDivs, hiddenTimeDivs]);
+
+  const renderEventContent = useCallback((eventInfo: EventContentArg) => {
+    const { event } = eventInfo;
+    const subjectClass = event.extendedProps?.subjectClass || 'Subject Class';
+    const originalColor = event.extendedProps?.color || '#ffffff';
+    const lightenedColor = lightenColor(originalColor, 0.9);
+
+    const eventStyle = {
+      backgroundColor: lightenedColor,
+      color: '#000',
+      padding: '4px 6px',
+      borderRadius: '6px',
+      fontSize: '1.0em',
+      overflow: 'visible',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100%',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      border: `2px solid ${originalColor}`,
+      position: 'relative' as const,
+    };
+
+    const titleStyle = {
+      fontWeight: 'bold' as const,
+      whiteSpace: 'nowrap' as const,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      paddingRight: '20px',
+    };
+
+    const contentStyle = {
+      fontSize: '0.8em',
+      whiteSpace: 'nowrap' as const,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    };
+
+    const ellipsisStyle = {
+      position: 'absolute' as const,
+      top: '4px',
+      right: '4px',
+      cursor: 'pointer',
+      zIndex: 10,
+    };
+
+    return (
+      <div className={`custom-event-content ${openDropdownId === event.id ? 'event-with-dropdown' : ''}`} style={eventStyle}>
+        <div style={titleStyle}>{event.title}</div>
+        <div style={ellipsisStyle}>
+          <FaEllipsisV onClick={(e) => {
+            e.stopPropagation();
+            toggleDropdown(event.id);
+          }} />
+        </div>
+        {openDropdownId === event.id && (
+          <div className="event-dropdown" style={{ position: 'absolute'}}>
+            <div onClick={(e) => {
+                e.stopPropagation();
+                hideSubjectClassFromView(subjectClass);
+                setOpenDropdownId(null);
+            }}>
+                Hide this class from view
+            </div>
+            <div onClick={(e) => {
+              e.stopPropagation();
+              toggleAllDivs(subjectClass, !areAllDivsHidden(subjectClass));
+              setOpenDropdownId(null);
+            }}>
+              {areAllDivsHidden(subjectClass) ? 'Show' : 'Hide'} all divs
+            </div>
+            <div onClick={(e) => {
+              e.stopPropagation();
+              toggleSubjectClassDivVisibility(subjectClass);
+              setOpenDropdownId(null);
+            }}>
+              {hiddenSubjectClassDivs.includes(subjectClass) ? 'Show' : 'Hide'} subject class
+            </div>
+            <div onClick={(e) => {
+              e.stopPropagation();
+              togglePeriodCodeDivVisibility(subjectClass);
+              setOpenDropdownId(null);
+            }}>
+              {hiddenPeriodCodeDivs.includes(subjectClass) ? 'Show' : 'Hide'} period code
+            </div>
+            <div onClick={(e) => {
+              e.stopPropagation();
+              toggleTimeDivVisibility(subjectClass);
+              setOpenDropdownId(null);
+            }}>
+              {hiddenTimeDivs.includes(subjectClass) ? 'Show' : 'Hide'} time
+            </div>
+          </div>
+        )}
+        {!hiddenSubjectClassDivs.includes(subjectClass) && (
+          <div style={contentStyle} className="event-subject-class">{subjectClass}</div>
+        )}
+        {!hiddenPeriodCodeDivs.includes(subjectClass) && (
+          <div style={contentStyle} className="event-period">{event.extendedProps?.periodCode || 'Period Code'}</div>
+        )}
+        {!hiddenTimeDivs.includes(subjectClass) && (
+          <div style={contentStyle} className="event-time">
+            {event.start?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+            {event.end?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          </div>
+        )}
+      </div>
+    );
+  }, [openDropdownId, hiddenSubjectClassDivs, hiddenPeriodCodeDivs, hiddenTimeDivs, toggleDropdown, hideSubjectClassFromView, toggleAllDivs, areAllDivsHidden, toggleSubjectClassDivVisibility, togglePeriodCodeDivVisibility, toggleTimeDivVisibility]);
+
+  const handleEventClick = useCallback((clickInfo: EventClickArg) => {
+    // Convert EventImpl to Event by extracting needed properties
+    const eventData: Event = {
+      id: clickInfo.event.id,
+      title: clickInfo.event.title,
+      start: clickInfo.event.startStr,
+      end: clickInfo.event.endStr,
+      extendedProps: {
+        subjectClass: clickInfo.event.extendedProps?.subjectClass || '',
+        color: clickInfo.event.extendedProps?.color || '#000000',
+        periodCode: clickInfo.event.extendedProps?.periodCode || '',
+        path: clickInfo.event.extendedProps?.path
+      }
+    };
+    setSelectedEvent(eventData);
+    setIsEventModalOpen(true);
+  }, []);
 
   const calendarOptions: CalendarOptions = useMemo(() => ({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, multiMonthPlugin, listPlugin],
@@ -389,29 +578,12 @@ const CalendarPage: React.FC = () => {
       return () => resizeObserver.disconnect();
     },
     eventClick: handleEventClick,
-  }), [eventRange, filteredEvents, toggleClassFilterModal]);
+  }), [toggleClassFilterModal, eventRange.start, eventRange.end, filteredEvents, renderEventContent, handleEventClick]);
 
   if (!user) {
     console.log('User not logged in');
     return <div>Please log in to view your calendar.</div>;
   }
-  const handleEventClick = (clickInfo: EventClickArg) => {
-    // Convert EventImpl to Event by extracting needed properties
-    const eventData: Event = {
-      id: clickInfo.event.id,
-      title: clickInfo.event.title,
-      start: clickInfo.event.startStr,
-      end: clickInfo.event.endStr,
-      extendedProps: {
-        subjectClass: clickInfo.event.extendedProps?.subjectClass || '',
-        color: clickInfo.event.extendedProps?.color || '#000000',
-        periodCode: clickInfo.event.extendedProps?.periodCode || '',
-        path: clickInfo.event.extendedProps?.path
-      }
-    };
-    setSelectedEvent(eventData);
-    setIsEventModalOpen(true);
-  };
 
   const toggleEventModal = () => {
     setIsEventModalOpen(!isEventModalOpen);
@@ -421,161 +593,6 @@ const CalendarPage: React.FC = () => {
     // Navigate to the multiplayerUser page with the path as a query parameter
     // We don't need to append the filename here, as it will be handled in multiplayerUser.tsx
     navigate(`/multiplayer?path=${encodeURIComponent(path)}`);
-  };
-
-  const toggleDropdown = (eventId: string) => {
-    setOpenDropdownId(openDropdownId === eventId ? null : eventId);
-  };
-
-  const toggleSubjectClassDivVisibility = (subjectClass: string) => {
-    setHiddenSubjectClassDivs(prev => 
-      prev.includes(subjectClass)
-        ? prev.filter(c => c !== subjectClass)
-        : [...prev, subjectClass]
-    );
-  };
-
-  const togglePeriodCodeDivVisibility = (subjectClass: string) => {
-    setHiddenPeriodCodeDivs(prev => 
-      prev.includes(subjectClass)
-        ? prev.filter(c => c !== subjectClass)
-        : [...prev, subjectClass]
-    );
-  };
-
-  const toggleTimeDivVisibility = (subjectClass: string) => {
-    setHiddenTimeDivs(prev => 
-      prev.includes(subjectClass)
-        ? prev.filter(c => c !== subjectClass)
-        : [...prev, subjectClass]
-    );
-  };
-
-  const hideSubjectClassFromView = (subjectClass: string) => {
-    setSelectedClasses(prev => prev.filter(c => c !== subjectClass));
-  };
-
-  const toggleAllDivs = (subjectClass: string, hide: boolean) => {
-    const updateHiddenDivs = (prev: string[]) => 
-      hide ? [...prev, subjectClass] : prev.filter(c => c !== subjectClass);
-
-    setHiddenSubjectClassDivs(updateHiddenDivs);
-    setHiddenPeriodCodeDivs(updateHiddenDivs);
-    setHiddenTimeDivs(updateHiddenDivs);
-  };
-
-  const areAllDivsHidden = (subjectClass: string) => {
-    return hiddenSubjectClassDivs.includes(subjectClass) &&
-           hiddenPeriodCodeDivs.includes(subjectClass) &&
-           hiddenTimeDivs.includes(subjectClass);
-  };
-
-  const renderEventContent = (eventInfo: EventContentArg) => {
-    const { event } = eventInfo;
-    const subjectClass = event.extendedProps?.subjectClass || 'Subject Class';
-    const originalColor = event.extendedProps?.color || '#ffffff';
-    const lightenedColor = lightenColor(originalColor, 0.9); // Increase lightening amount
-
-    const eventStyle = {
-      backgroundColor: lightenedColor,
-      color: '#000',
-      padding: '4px 6px',
-      borderRadius: '6px',
-      fontSize: '1.0em',
-      overflow: 'visible',
-      display: 'flex',
-      flexDirection: 'column' as const,
-      height: '100%',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      border: `2px solid ${originalColor}`,
-      position: 'relative' as const,
-    };
-
-    const titleStyle = {
-      fontWeight: 'bold' as const,
-      whiteSpace: 'nowrap' as const,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      paddingRight: '20px',  // Make room for the ellipsis
-    };
-
-    const contentStyle = {
-      fontSize: '0.8em',
-      whiteSpace: 'nowrap' as const,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis'
-    };
-
-    const ellipsisStyle = {
-      position: 'absolute' as const,
-      top: '4px',
-      right: '4px',
-      cursor: 'pointer',
-      zIndex: 10,
-    };
-
-    return (
-      <div className={`custom-event-content ${openDropdownId === event.id ? 'event-with-dropdown' : ''}`} style={eventStyle}>
-        <div style={titleStyle}>{event.title}</div>
-        <div style={ellipsisStyle}>
-          <FaEllipsisV onClick={(e) => {
-            e.stopPropagation();
-            toggleDropdown(event.id);
-          }} />
-        </div>
-        {openDropdownId === event.id && (
-          <div className="event-dropdown" style={{ position: 'absolute'}}>
-            <div onClick={(e) => {
-                e.stopPropagation();
-                hideSubjectClassFromView(subjectClass);
-                setOpenDropdownId(null);
-            }}>
-                Hide this class from view
-            </div>
-            <div onClick={(e) => {
-              e.stopPropagation();
-              toggleAllDivs(subjectClass, !areAllDivsHidden(subjectClass));
-              setOpenDropdownId(null);
-            }}>
-              {areAllDivsHidden(subjectClass) ? 'Show' : 'Hide'} all divs
-            </div>
-            <div onClick={(e) => {
-              e.stopPropagation();
-              toggleSubjectClassDivVisibility(subjectClass);
-              setOpenDropdownId(null);
-            }}>
-              {hiddenSubjectClassDivs.includes(subjectClass) ? 'Show' : 'Hide'} subject class
-            </div>
-            <div onClick={(e) => {
-              e.stopPropagation();
-              togglePeriodCodeDivVisibility(subjectClass);
-              setOpenDropdownId(null);
-            }}>
-              {hiddenPeriodCodeDivs.includes(subjectClass) ? 'Show' : 'Hide'} period code
-            </div>
-            <div onClick={(e) => {
-              e.stopPropagation();
-              toggleTimeDivVisibility(subjectClass);
-              setOpenDropdownId(null);
-            }}>
-              {hiddenTimeDivs.includes(subjectClass) ? 'Show' : 'Hide'} time
-            </div>
-          </div>
-        )}
-        {!hiddenSubjectClassDivs.includes(subjectClass) && (
-          <div style={contentStyle} className="event-subject-class">{subjectClass}</div>
-        )}
-        {!hiddenPeriodCodeDivs.includes(subjectClass) && (
-          <div style={contentStyle} className="event-period">{event.extendedProps?.periodCode || 'Period Code'}</div>
-        )}
-        {!hiddenTimeDivs.includes(subjectClass) && (
-          <div style={contentStyle} className="event-time">
-            {event.start?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-            {event.end?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const renderClassFilterButton = (subjectClass: string) => {

@@ -1,17 +1,29 @@
-import { Button, Container, Typography, Box, Grid, Paper } from '@mui/material';
+import { Button, Container, Typography, Box, Grid, Paper, CircularProgress } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../debugConfig';
+import React, { useEffect, useState } from 'react';
 
-export default function SitePage() {
+const SitePage = React.memo(() => {
   const { user, isLoading } = useAuth();
+  const [hasLogged, setHasLogged] = useState(false);
 
-  logger.debug('site-page', '🔍 Site page loaded', { 
-    hasUser: !!user
-  });
+  // Log only once per auth state change
+  useEffect(() => {
+    if (!hasLogged) {
+      logger.debug('site-page', '🔍 Site page loaded', { 
+        hasUser: !!user
+      });
+      setHasLogged(true);
+    }
+  }, [user, hasLogged]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Container>
+    );
   }
 
   if (user) {
@@ -131,4 +143,6 @@ export default function SitePage() {
       </Grid>
     </Container>
   );
-} 
+});
+
+export default SitePage; 

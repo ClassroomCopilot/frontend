@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router';
 import { useAuth } from './contexts/AuthContext';
 import SitePage from './pages/sitePage';
@@ -15,20 +15,24 @@ import { storageService, StorageKeys } from './services/auth/localStorageService
 import { SUPER_ADMIN_EMAIL } from './config/constants';
 import { useNeo4j } from './contexts/Neo4jContext';
 import TeacherPlanner from './pages/react-flow/teacherPlanner';
+import { Container, CircularProgress } from '@mui/material';
 
 const AppRoutes = () => {
   const { user } = useAuth();
   const location = useLocation();
   const storedUser = storageService.get(StorageKeys.USER);
 
-  // Log route changes
-  logger.debug('routes', '🔄 Route change', { 
-    path: location.pathname,
-    hasUser: !!user,
-    hasStoredUser: !!storedUser
-  });
+  // Log route changes only when path or auth state changes
+  useEffect(() => {
+    logger.debug('routes', '🔄 Route change', { 
+      path: location.pathname,
+      hasUser: !!user,
+      hasStoredUser: !!storedUser
+    });
+  }, [location.pathname, user, storedUser]);
 
-  return (
+  // Memoize routes to prevent unnecessary re-renders
+  const routes = useMemo(() => (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<SitePage />} />
@@ -91,7 +95,9 @@ const AppRoutes = () => {
       {/* Catch all - redirect to site page */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
+  ), [user]); // Only re-render routes when user changes
+
+  return routes;
 };
 
 // Protected Route wrapper
@@ -101,17 +107,21 @@ const ProtectedRoute: React.FC<{
   requireSuperAdmin?: boolean;
   requireNeo4j?: boolean;
 }> = ({ children, requiredRoles, requireSuperAdmin, requireNeo4j }) => {
-  const { user, userRole } = useAuth();
+  const { user, userRole, isLoading } = useAuth();
   const { userNodes, isLoading: isNeo4jLoading } = useNeo4j();
 
-  // Wait for Neo4j data if required
-  if (requireNeo4j && isNeo4jLoading) {
-    return <div>Loading...</div>;
+  // Single loading state for all async operations
+  if (isLoading || (requireNeo4j && isNeo4jLoading)) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Container>
+    );
   }
 
   if (!user) {
-    logger.error('routes', '🔄 No user - Redirecting to site page');
-    return <Navigate to="/" />;
+    logger.error('routes', '🔄 No user - Redirecting to auth page');
+    return <Navigate to="/auth" />;
   }
 
   if (requireNeo4j && !userNodes?.privateUserNode) {
