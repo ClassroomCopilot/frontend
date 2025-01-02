@@ -3,128 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import {
     Tldraw,
     Editor,
-    defaultShapeUtils,
-    defaultBindingUtils,
-    TldrawOptions,
-    TLUiEventHandler,
-    DefaultSpinner,
+    useTldrawUser,
     DEFAULT_SUPPORT_VIDEO_TYPES,
     DEFAULT_SUPPORTED_IMAGE_TYPES,
 } from '@tldraw/tldraw';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNeo4j } from '../../contexts/Neo4jContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
-import { createTldrawUser } from '../../services/tldraw/tldrawService';
+// Tldraw services
 import { localStoreService } from '../../services/tldraw/localStoreService';
-import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
+// Tldraw utils
 import { customAssets } from '../../utils/tldraw/assets';
-import { createSharedStore } from '../../services/tldraw/sharedStoreService';
-import { MicrophoneShapeUtil } from '../../utils/tldraw/transcription/MicrophoneShapeUtil';
-import MicrophoneStateTool from '../../utils/tldraw/transcription/MicrophoneStateTool';
-import { TranscriptionTextShapeUtil } from '../../utils/tldraw/transcription/TranscriptionTextShapeUtil';
-import { SlideShapeUtil, SlideShowShapeUtil } from '../../utils/tldraw/slides/SlideShapeUtil';
-import { SlideShapeTool, SlideShowShapeTool } from '../../utils/tldraw/slides/SlideShapeTool';
-import { CalendarShapeUtil } from '../../utils/tldraw/calendar/CalendarShapeUtil';
-import { CalendarShapeTool } from '../../utils/tldraw/calendar/CalendarShapeTool';
-import { GraphShapeUtils } from '../../utils/tldraw/graph/graphShapeUtil';
-import { defaultEmbedsToKeep, customEmbeds } from '../../utils/tldraw/embeds';
+import { devEmbeds } from '../../utils/tldraw/embeds';
+import { allShapeUtils } from '../../utils/tldraw/shapes';
+import { allBindingUtils } from '../../utils/tldraw/bindings';
+import { devTools } from '../../utils/tldraw/tools';
+import { customSchema } from '../../utils/tldraw/schemas';
+// Layout
+import { HEADER_HEIGHT } from '../Layout';
+// Styles
+import '../../utils/tldraw/tldraw.css';
+import '../../utils/tldraw/slides/slides.css';
+// App debug
 import { logger } from '../../debugConfig';
-
-const calendarShapeUtils = [
-    CalendarShapeUtil,
-];
-
-const transcriptionShapeUtils = [
-    MicrophoneShapeUtil,
-    TranscriptionTextShapeUtil,
-];
-
-const slideShapeUtils = [
-    SlideShapeUtil,
-    SlideShowShapeUtil,
-];
-
-const graphShapeUtils = [
-    GraphShapeUtils.UserNodeShapeUtil,
-    GraphShapeUtils.DeveloperNodeShapeUtil,
-    GraphShapeUtils.TeacherNodeShapeUtil,
-    GraphShapeUtils.CalendarNodeShapeUtil,
-    GraphShapeUtils.CalendarYearNodeShapeUtil,
-    GraphShapeUtils.CalendarMonthNodeShapeUtil,
-    GraphShapeUtils.CalendarWeekNodeShapeUtil,
-    GraphShapeUtils.CalendarDayNodeShapeUtil,
-    GraphShapeUtils.CalendarTimeChunkNodeShapeUtil,
-    GraphShapeUtils.TeacherTimetableNodeShapeUtil,
-    GraphShapeUtils.TimetableLessonNodeShapeUtil,
-    GraphShapeUtils.PlannedLessonNodeShapeUtil,
-    GraphShapeUtils.SchoolNodeShapeUtil,
-    GraphShapeUtils.DepartmentNodeShapeUtil,
-    GraphShapeUtils.RoomNodeShapeUtil,
-    GraphShapeUtils.PastoralStructureNodeShapeUtil,
-    GraphShapeUtils.YearGroupNodeShapeUtil,
-    GraphShapeUtils.CurriculumStructureNodeShapeUtil,
-    GraphShapeUtils.KeyStageNodeShapeUtil,
-    GraphShapeUtils.KeyStageSyllabusNodeShapeUtil,
-    GraphShapeUtils.YearGroupSyllabusNodeShapeUtil,
-    GraphShapeUtils.SubjectNodeShapeUtil,
-    GraphShapeUtils.TopicNodeShapeUtil,
-    GraphShapeUtils.TopicLessonNodeShapeUtil,
-    GraphShapeUtils.LearningStatementNodeShapeUtil,
-    GraphShapeUtils.ScienceLabNodeShapeUtil,
-    GraphShapeUtils.SchoolTimetableNodeShapeUtil,
-    GraphShapeUtils.AcademicYearNodeShapeUtil,
-    GraphShapeUtils.AcademicTermNodeShapeUtil,
-    GraphShapeUtils.AcademicWeekNodeShapeUtil,
-    GraphShapeUtils.AcademicDayNodeShapeUtil,
-    GraphShapeUtils.AcademicPeriodNodeShapeUtil,
-    GraphShapeUtils.RegistrationPeriodNodeShapeUtil,
-    GraphShapeUtils.SubjectClassNodeShapeUtil,
-    GraphShapeUtils.GeneralRelationshipShapeUtil,
-];
-
-const customTools = [MicrophoneStateTool, SlideShapeTool, SlideShowShapeTool, CalendarShapeTool];
-
-const options: Partial<TldrawOptions> = {
-	actionShortcutsLocation: "swap",
-    adjacentShapeMargin: 10,
-    animationMediumMs: 320,
-    cameraMovingTimeoutMs: 64,
-    cameraSlideFriction: 0.09,
-    coarseDragDistanceSquared: 36,
-    coarseHandleRadius: 20,
-    coarsePointerWidth: 12,
-    collaboratorCheckIntervalMs: 1200,
-    collaboratorIdleTimeoutMs: 3000,
-    collaboratorInactiveTimeoutMs: 60000,
-    defaultSvgPadding: 32,
-    doubleClickDurationMs: 450,
-    dragDistanceSquared: 16,
-    edgeScrollDelay: 200,
-    edgeScrollDistance: 8,
-    edgeScrollEaseDuration: 200,
-    edgeScrollSpeed: 25,
-    flattenImageBoundsExpand: 64,
-    flattenImageBoundsPadding: 16,
-    followChaseViewportSnap: 2,
-    gridSteps: [
-        { mid: 0.15, min: -1, step: 64 },
-        { mid: 0.375, min: 0.05, step: 16 },
-        { mid: 1, min: 0.15, step: 4 },
-        { mid: 2.5, min: 0.7, step: 1 }
-    ],
-    handleRadius: 12,
-    hitTestMargin: 8,
-    laserDelayMs: 1200,
-    longPressDurationMs: 500,
-    maxExportDelayMs: 5000,
-    maxFilesAtOnce: 100,
-    maxPages: 1,
-    maxPointsPerDrawShape: 500,
-    maxShapesPerPage: 4000,
-    multiClickDurationMs: 200,
-    temporaryAssetPreviewLifetimeMs: 180000,
-    textShadowLod: 0.35
-}
 
 interface EventFilter {
   type: 'all' | 'ui' | 'store' | 'canvas';
@@ -218,6 +118,8 @@ const EventMonitoringControls: React.FC<{
   );
 };
 
+const MAX_EVENTS = 100; // Limit visible events to last 100
+
 const EventDisplay: React.FC<{ events: Array<{ type: string; data: string; timestamp: string }> }> = 
   ({ events }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -227,6 +129,12 @@ const EventDisplay: React.FC<{ events: Array<{ type: string; data: string; times
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [events]);
+
+  // Only show the last MAX_EVENTS events
+  const visibleEvents = useMemo(() => 
+    events.slice(-MAX_EVENTS),
+    [events]
+  );
 
   return (
     <div
@@ -243,9 +151,21 @@ const EventDisplay: React.FC<{ events: Array<{ type: string; data: string; times
         scrollBehavior: 'smooth',
       }}
     >
-      {events.map((event, i) => (
+      {visibleEvents.length === MAX_EVENTS && (
+        <div style={{
+          padding: '4px 8px',
+          marginBottom: 8,
+          backgroundColor: '#fff3cd',
+          color: '#856404',
+          borderRadius: 4,
+          fontSize: 11,
+        }}>
+          Showing last {MAX_EVENTS} events only
+        </div>
+      )}
+      {visibleEvents.map((event, i) => (
         <pre
-          key={i}
+          key={event.timestamp + i}
           style={{
             borderBottom: '1px solid #000',
             marginBottom: 0,
@@ -277,38 +197,80 @@ const getEventTypeColor = (type: string): string => {
   }
 };
 
-type LoadingState = {
-    status: 'loading' | 'ready' | 'error';
-    error?: string;
-};
-
 export default function DevPage() {
     const { user } = useAuth();
-    const { userNodes } = useNeo4j();
-    const { tldrawPreferences } = useTLDraw();
     const navigate = useNavigate();
-    const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'loading' });
+    const { tldrawPreferences, initializePreferences, setTldrawPreferences } = useTLDraw();
     const [events, setEvents] = useState<Array<{ type: 'ui' | 'store' | 'canvas'; data: string; timestamp: string; }>>([]);
     const [eventFilters, setEventFilters] = useState<EventFilters>({ mode: 'all', filters: {} });
+    const [logPanelWidth, setLogPanelWidth] = useState(30); // Width in percentage
+    const editorRef = useRef<Editor | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const isDraggingRef = useRef(false);
 
-    const tldrawUser = useMemo(() => 
-        createTldrawUser(user?.id || 'anonymous', tldrawPreferences),
-        [user?.id, tldrawPreferences]
-    );
+    const handleDragStart = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isDraggingRef.current = true;
+        document.body.style.cursor = 'col-resize';
+        
+        const handleDragMove = (e: MouseEvent) => {
+            if (!isDraggingRef.current) return;
+            
+            const windowWidth = window.innerWidth;
+            const newWidth = (e.clientX / windowWidth) * 100;
+            
+            // Limit the range to between 20% and 80%
+            const clampedWidth = Math.min(Math.max(newWidth, 20), 80);
+            setLogPanelWidth(100 - clampedWidth);
+        };
 
+        const handleDragUp = () => {
+            isDraggingRef.current = false;
+            document.body.style.cursor = 'default';
+            window.removeEventListener('mousemove', handleDragMove);
+            window.removeEventListener('mouseup', handleDragUp);
+        };
+
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragUp);
+    }, []);
+
+    // Create tldraw user
+    const tldrawUser = useTldrawUser({
+        userPreferences: {
+            id: user?.id ?? 'dev-user',
+            name: user?.displayName ?? 'Dev User',
+            color: tldrawPreferences?.color,
+            locale: tldrawPreferences?.locale,
+            colorScheme: tldrawPreferences?.colorScheme,
+            animationSpeed: tldrawPreferences?.animationSpeed,
+            isSnapMode: tldrawPreferences?.isSnapMode
+        },
+        setUserPreferences: setTldrawPreferences
+    });
+
+    // Create store
     const store = useMemo(() => localStoreService.getStore({
-        shapeUtils: [
-            ...defaultShapeUtils,
-            ...transcriptionShapeUtils,
-            ...slideShapeUtils,
-            ...graphShapeUtils,
-            ...calendarShapeUtils
-        ],
-        bindingUtils: [...defaultBindingUtils]
+        schema: customSchema,
+        shapeUtils: allShapeUtils,
+        bindingUtils: allBindingUtils
     }), []);
 
-    const sharedStore = useMemo(() => createSharedStore(store), [store]);
+    // Initialize preferences when user is available
+    useEffect(() => {
+        if (user?.id && !tldrawPreferences) {
+            logger.debug('dev-page', '🔄 Initializing preferences for user', { userId: user.id });
+            initializePreferences(user.id);
+        }
+    }, [user?.id, tldrawPreferences, initializePreferences]);
+
+    // Redirect if no user
+    useEffect(() => {
+        if (!user) {
+            logger.info('dev-page', '🚪 Redirecting to home - no user logged in');
+            navigate('/');
+        }
+    }, [user, navigate]);
 
     const shouldCaptureEvent = useCallback((type: 'ui' | 'store' | 'canvas', data: string) => {
         if (eventFilters.mode === 'all') return true;
@@ -344,11 +306,12 @@ export default function DevPage() {
                 data,
                 timestamp: new Date().toISOString()
             }];
-            return newEvents.slice(-1000);
+            // Keep last 2 * MAX_EVENTS in state to allow some scrollback
+            return newEvents.slice(-(MAX_EVENTS * 2));
         });
     }, [shouldCaptureEvent]);
 
-    const handleUiEvent = useCallback<TLUiEventHandler>((name, data) => {
+    const handleUiEvent = useCallback((name: string, data: unknown) => {
         const eventString = `UI Event: ${name} ${JSON.stringify(data)}`;
         addEvent('ui', eventString);
         console.log(eventString);
@@ -381,34 +344,6 @@ export default function DevPage() {
     }, [addEvent]);
 
     useEffect(() => {
-        if (!user) {
-            navigate('/');
-        }
-    }, [user, navigate]);
-
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            const scrollContainer = scrollContainerRef.current;
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-    }, [events]);
-
-    useEffect(() => {
-        if (!sharedStore) return;
-        sharedStore.startAutoSave(setLoadingState);
-        return () => sharedStore.stopAutoSave();
-    }, [sharedStore]);
-
-    useEffect(() => {
-        if (!user || !userNodes?.privateUserNode || !tldrawUser || !sharedStore) return;
-        return () => {
-            if (sharedStore) {
-                sharedStore.stopAutoSave();
-            }
-        };
-    }, [user, userNodes?.privateUserNode, tldrawUser, sharedStore, store]);
-
-    useEffect(() => {
         if (store) {
             const cleanupFn = store.listen((info) => {
                 const eventString = `Store Event: ${info.source} ${JSON.stringify(info.changes)}`;
@@ -419,40 +354,50 @@ export default function DevPage() {
         }
     }, [store, addEvent]);
 
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            const scrollContainer = scrollContainerRef.current;
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+    }, [events]);
+
     if (!user) {
         logger.info('dev-page', '🚫 Rendering null - no user');
         return null;
     }
 
-    if (loadingState.status === 'loading') {
-        logger.debug('dev-page', '⏳ Rendering loading state');
-        return <div><DefaultSpinner /></div>;
-    } else if (loadingState.status === 'error') {
-        logger.error('dev-page', '❌ Rendering error state', { error: loadingState.error });
-        return <div>Error: {loadingState.error}</div>;
-    }
-
-    const uiOverrides = getUiOverrides(false);
-    const uiComponents = getUiComponents(false);
-
     return (
-        <div style={{ display: 'flex', width: '100%', height: '100%', position: 'fixed' }}>
-            <div style={{ width: '70%', height: '100%', position: "absolute", inset: 0 }}>
+        <div style={{ 
+            display: 'flex', 
+            width: '100%', 
+            height: `calc(100vh - ${HEADER_HEIGHT}px)`, 
+            position: 'fixed',
+            top: `${HEADER_HEIGHT}px`
+        }}>
+            <div style={{ 
+                width: `${100 - logPanelWidth}%`, 
+                height: '100%', 
+                position: "absolute", 
+                left: 0,
+                overflow: 'hidden'
+            }}>
                 <Tldraw
                     user={tldrawUser}
                     store={store}
                     onMount={(editor) => {
+                        editorRef.current = editor;
                         handleCanvasEvent(editor);
+                        logger.info('system', '🎨 Tldraw mounted', {
+                            editorId: editor.store.id
+                        });
                     }}
                     onUiEvent={handleUiEvent}
-                    options={options}
-                    embeds={[...defaultEmbedsToKeep, ...customEmbeds]}
-                    tools={customTools}
-                    shapeUtils={[...transcriptionShapeUtils, ...slideShapeUtils, ...graphShapeUtils, ...calendarShapeUtils]}
-                    initialState="select"
-                    overrides={uiOverrides}
-                    components={uiComponents}
+                    tools={devTools}
+                    shapeUtils={allShapeUtils}
+                    bindingUtils={allBindingUtils}
+                    embeds={devEmbeds}
                     assetUrls={customAssets}
+                    autoFocus={true}
                     hideUi={false}
                     inferDarkMode={false}
                     acceptedImageMimeTypes={DEFAULT_SUPPORTED_IMAGE_TYPES}
@@ -464,12 +409,33 @@ export default function DevPage() {
             </div>
             <div
                 style={{
-                    width: '30%',
+                    width: '5px',
+                    height: '100%',
+                    position: 'absolute',
+                    left: `${100 - logPanelWidth}%`,
+                    transform: 'translateX(-50%)',
+                    cursor: 'col-resize',
+                    backgroundColor: 'transparent',
+                    zIndex: 1000,
+                }}
+                onMouseDown={handleDragStart}
+            >
+                <div style={{
+                    width: '1px',
+                    height: '100%',
+                    backgroundColor: '#333',
+                    margin: '0 auto',
+                }} />
+            </div>
+            <div
+                style={{
+                    width: `${logPanelWidth}%`,
                     height: '100%',
                     position: 'absolute',
                     right: 0,
                     display: 'flex',
                     flexDirection: 'column',
+                    overflow: 'hidden'
                 }}
             >
                 <EventMonitoringControls filters={eventFilters} setFilters={setEventFilters} />

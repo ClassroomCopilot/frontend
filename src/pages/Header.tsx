@@ -153,6 +153,12 @@ const Header: React.FC = () => {
                 }
               }}
             >
+              <MenuItem onClick={() => handleNavigation('/tldraw-dev')}>
+                TLDraw Dev
+              </MenuItem>
+              <MenuItem onClick={() => handleNavigation('/dev')}>
+                Dev Tools
+              </MenuItem>
               <MenuItem onClick={() => handleNavigation('/multiplayer')}>
                 Multiplayer
               </MenuItem>
@@ -162,9 +168,6 @@ const Header: React.FC = () => {
               <MenuItem onClick={() => handleNavigation('/teacher-planner')}>
                 Teacher Planner
               </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/morphic')}>
-                Morphic
-              </MenuItem>
               <MenuItem onClick={() => handleNavigation('/settings')}>
                 Settings
               </MenuItem>
@@ -173,12 +176,6 @@ const Header: React.FC = () => {
                 <Divider key="admin-divider" />,
                 <MenuItem key="admin-dashboard" onClick={() => handleNavigation('/admin')}>
                   Admin Dashboard
-                </MenuItem>,
-                <MenuItem key="tldraw-dev" onClick={() => handleNavigation('/tldraw-dev')}>
-                  TLDraw Dev
-                </MenuItem>,
-                <MenuItem key="dev-tools" onClick={() => handleNavigation('/dev')}>
-                  Dev Tools
                 </MenuItem>
               ]}
             </Menu>
