@@ -1,81 +1,42 @@
-// External imports
-import { defaultShapeUtils, defaultBindingUtils, createTLSchemaFromUtils } from '@tldraw/tldraw'
-// TLDraw utils
-import { MicrophoneShapeUtil } from './transcription/MicrophoneShapeUtil';
-import { TranscriptionTextShapeUtil } from './transcription/TranscriptionTextShapeUtil';
-import { SlideShapeUtil, SlideShowShapeUtil } from './slides/SlideShapeUtil';
-import { GraphShapeUtils } from './graph/graphShapeUtil';
-import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
-import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
-import { SlideLayoutBindingUtil } from './slides/SlideLayoutBindingUtil';
+import { createTLSchema, defaultShapeSchemas, defaultBindingSchemas } from '@tldraw/tlschema';
+import { createTLSchemaFromUtils, defaultBindingUtils, defaultShapeUtils } from '@tldraw/tldraw';
+import { ShapeUtils } from './shapes';
+import { allBindingUtils } from './bindings';
 
-const devShapeUtils = [
-    YoutubeEmbedShapeUtil,
-];
+// Create schema with shape definitions
+export const customSchema = createTLSchema({
+    shapes: {
+        ...defaultShapeSchemas,
+        // Dynamically generate shape schemas from ShapeUtils
+        ...Object.values(ShapeUtils).reduce((acc, util) => ({
+            ...acc,
+            [util.type]: {
+                props: util.props,
+                migrations: util.migrations,
+            }
+        }), {})
+    },
+    bindings: {
+        ...defaultBindingSchemas,
+        // Add binding schemas from our custom binding utils
+        ...allBindingUtils.reduce((acc, util) => ({
+            ...acc,
+            [util.type]: {
+                props: util.props,
+                migrations: util.migrations,
+            }
+        }), {})
+    },
+});
 
-const calendarShapeUtils = [
-    CalendarShapeUtil,
-];
-
-const transcriptionShapeUtils = [
-    MicrophoneShapeUtil,
-    TranscriptionTextShapeUtil,
-];
-
-const slideShapeUtils = [
-    SlideShowShapeUtil,
-    SlideShapeUtil,
-];
-
-const graphShapeUtils = [
-    GraphShapeUtils.UserNodeShapeUtil,
-    GraphShapeUtils.DeveloperNodeShapeUtil,
-    GraphShapeUtils.TeacherNodeShapeUtil,
-    GraphShapeUtils.CalendarNodeShapeUtil,
-    GraphShapeUtils.CalendarYearNodeShapeUtil,
-    GraphShapeUtils.CalendarMonthNodeShapeUtil,
-    GraphShapeUtils.CalendarWeekNodeShapeUtil,
-    GraphShapeUtils.CalendarDayNodeShapeUtil,
-    GraphShapeUtils.CalendarTimeChunkNodeShapeUtil,
-    GraphShapeUtils.TeacherTimetableNodeShapeUtil,
-    GraphShapeUtils.TimetableLessonNodeShapeUtil,
-    GraphShapeUtils.PlannedLessonNodeShapeUtil,
-    GraphShapeUtils.SchoolNodeShapeUtil,
-    GraphShapeUtils.DepartmentNodeShapeUtil,
-    GraphShapeUtils.RoomNodeShapeUtil,
-    GraphShapeUtils.PastoralStructureNodeShapeUtil,
-    GraphShapeUtils.YearGroupNodeShapeUtil,
-    GraphShapeUtils.CurriculumStructureNodeShapeUtil,
-    GraphShapeUtils.KeyStageNodeShapeUtil,
-    GraphShapeUtils.KeyStageSyllabusNodeShapeUtil,
-    GraphShapeUtils.YearGroupSyllabusNodeShapeUtil,
-    GraphShapeUtils.SubjectNodeShapeUtil,
-    GraphShapeUtils.TopicNodeShapeUtil,
-    GraphShapeUtils.TopicLessonNodeShapeUtil,
-    GraphShapeUtils.LearningStatementNodeShapeUtil,
-    GraphShapeUtils.ScienceLabNodeShapeUtil,
-    GraphShapeUtils.SchoolTimetableNodeShapeUtil,
-    GraphShapeUtils.AcademicYearNodeShapeUtil,
-    GraphShapeUtils.AcademicTermNodeShapeUtil,
-    GraphShapeUtils.AcademicWeekNodeShapeUtil,
-    GraphShapeUtils.AcademicDayNodeShapeUtil,
-    GraphShapeUtils.AcademicPeriodNodeShapeUtil,
-    GraphShapeUtils.RegistrationPeriodNodeShapeUtil,
-    GraphShapeUtils.SubjectClassNodeShapeUtil,
-    GraphShapeUtils.GeneralRelationshipShapeUtil,
-];
-
-export const customSchema = createTLSchemaFromUtils({
+// Create schema from utils (alternative approach)
+export const schemaFromUtils = createTLSchemaFromUtils({
     shapeUtils: [
         ...defaultShapeUtils,
-        ...transcriptionShapeUtils,
-        ...slideShapeUtils,
-        ...graphShapeUtils,
-        ...calendarShapeUtils,
-        ...devShapeUtils,
+        ...Object.values(ShapeUtils)
     ],
     bindingUtils: [
         ...defaultBindingUtils,
-        SlideLayoutBindingUtil,
+        ...allBindingUtils
     ],
 });

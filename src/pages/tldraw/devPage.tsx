@@ -15,10 +15,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNeo4j } from '../../contexts/Neo4jContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
 import { createTldrawUser } from '../../services/tldraw/tldrawService';
-import { loadUserNodeTldrawFile } from '../../services/tldraw/snapshotService';
 import { localStoreService } from '../../services/tldraw/localStoreService';
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
-import { customAssetUrls } from '../../utils/tldraw/assetUrls';
+import { customAssets } from '../../utils/tldraw/assets';
 import { createSharedStore } from '../../services/tldraw/sharedStoreService';
 import { MicrophoneShapeUtil } from '../../utils/tldraw/transcription/MicrophoneShapeUtil';
 import MicrophoneStateTool from '../../utils/tldraw/transcription/MicrophoneStateTool';
@@ -28,14 +27,8 @@ import { SlideShapeTool, SlideShowShapeTool } from '../../utils/tldraw/slides/Sl
 import { CalendarShapeUtil } from '../../utils/tldraw/calendar/CalendarShapeUtil';
 import { CalendarShapeTool } from '../../utils/tldraw/calendar/CalendarShapeTool';
 import { GraphShapeUtils } from '../../utils/tldraw/graph/graphShapeUtil';
-import { defaultEmbedsToKeep, customEmbeds } from '../../utils/tldraw/embeds/embedSetup';
-import { YoutubeEmbedShapeUtil } from '../../utils/tldraw/embeds/embedShapes';
-import '../../utils/tldraw/tldraw.css';
+import { defaultEmbedsToKeep, customEmbeds } from '../../utils/tldraw/embeds';
 import { logger } from '../../debugConfig';
-
-const devShapeUtils = [
-    YoutubeEmbedShapeUtil,
-];
 
 const calendarShapeUtils = [
     CalendarShapeUtil,
@@ -310,8 +303,7 @@ export default function DevPage() {
             ...transcriptionShapeUtils,
             ...slideShapeUtils,
             ...graphShapeUtils,
-            ...calendarShapeUtils,
-            ...devShapeUtils
+            ...calendarShapeUtils
         ],
         bindingUtils: [...defaultBindingUtils]
     }), []);
@@ -409,7 +401,6 @@ export default function DevPage() {
 
     useEffect(() => {
         if (!user || !userNodes?.privateUserNode || !tldrawUser || !sharedStore) return;
-        loadUserNodeTldrawFile(userNodes?.privateUserNode, store, sharedStore);
         return () => {
             if (sharedStore) {
                 sharedStore.stopAutoSave();
@@ -457,11 +448,11 @@ export default function DevPage() {
                     options={options}
                     embeds={[...defaultEmbedsToKeep, ...customEmbeds]}
                     tools={customTools}
-                    shapeUtils={[...transcriptionShapeUtils, ...slideShapeUtils, ...graphShapeUtils, ...calendarShapeUtils, ...devShapeUtils]}
+                    shapeUtils={[...transcriptionShapeUtils, ...slideShapeUtils, ...graphShapeUtils, ...calendarShapeUtils]}
                     initialState="select"
                     overrides={uiOverrides}
                     components={uiComponents}
-                    assetUrls={customAssetUrls}
+                    assetUrls={customAssets}
                     hideUi={false}
                     inferDarkMode={false}
                     acceptedImageMimeTypes={DEFAULT_SUPPORTED_IMAGE_TYPES}

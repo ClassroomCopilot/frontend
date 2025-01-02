@@ -110,6 +110,16 @@ export default function HomePage() {
 
         <Grid item>
           <Button 
+            onClick={() => navigate('/tldraw-dev')} 
+            variant="contained" 
+            color="primary"
+          >
+            TLDraw Dev
+          </Button>
+        </Grid>
+
+        <Grid item>
+          <Button 
             onClick={() => navigate('/single-player')} 
             variant="contained" 
             color="primary"

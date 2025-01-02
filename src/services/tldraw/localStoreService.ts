@@ -4,16 +4,19 @@ import {
     TLEditorSnapshot,
     loadSnapshot,
     TLAnyShapeUtilConstructor,
-    TLAnyBindingUtilConstructor
+    TLAnyBindingUtilConstructor,
+    TLSchema
 } from '@tldraw/tldraw';
 import { LoadingState } from './snapshotService';
-import { allShapeUtils, devShapeUtils } from '../../utils/tldraw/shapes';
+import { allShapeUtils } from '../../utils/tldraw/shapes';
 import { allBindingUtils } from '../../utils/tldraw/bindings';
 import { logger } from '../../debugConfig';
+import { customSchema } from '../../utils/tldraw/schemas';
 
 interface LocalStoreConfig {
     shapeUtils?: TLAnyShapeUtilConstructor[];
     bindingUtils?: TLAnyBindingUtilConstructor[];
+    schema?: TLSchema;
 }
 
 class LocalStoreService {
@@ -31,8 +34,9 @@ class LocalStoreService {
         if (!this.store) {
             logger.debug('system', '🔄 Creating new TLStore');
             this.store = createTLStore({
-                shapeUtils: config?.shapeUtils || [...allShapeUtils, ...devShapeUtils],
+                shapeUtils: config?.shapeUtils || allShapeUtils,
                 bindingUtils: config?.bindingUtils || allBindingUtils,
+                schema: config?.schema || customSchema,
             });
         }
         return this.store;

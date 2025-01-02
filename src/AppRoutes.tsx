@@ -6,6 +6,7 @@ import AuthPage from './pages/auth/authPage';
 import HomePage from './pages/user/homePage';
 import CalendarPage from './pages/user/calendarPage';
 import DevPage from './pages/tldraw/devPage';
+import TLDrawDevPage from './pages/tldraw/devPlayerPage';
 import SinglePlayerPage from './pages/tldraw/singlePlayerPage';
 import MultiplayerPage from './pages/tldraw/multiplayerUser';
 import AdminPage from './pages/auth/adminPage';
@@ -89,6 +90,12 @@ const AppRoutes = () => {
       <Route path="/calendar" element={
         <ProtectedRoute requireNeo4j>
           <CalendarPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/tldraw-dev" element={
+        <ProtectedRoute>
+          <TLDrawDevPage />
         </ProtectedRoute>
       } />
 

@@ -6,66 +6,27 @@ import { GraphShapeUtils } from './graph/graphShapeUtil';
 import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
 import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
 
-export const devShapeUtils = [
-    YoutubeEmbedShapeUtil,
-];
+// Define all shape utils in a single object for easy maintenance
+export const ShapeUtils = {
+    // Development shapes
+    YoutubeEmbed: YoutubeEmbedShapeUtil,
+    
+    // Calendar shapes
+    Calendar: CalendarShapeUtil,
+    
+    // Transcription shapes
+    Microphone: MicrophoneShapeUtil,
+    TranscriptionText: TranscriptionTextShapeUtil,
+    
+    // Slide shapes
+    Slide: SlideShapeUtil,
+    SlideShow: SlideShowShapeUtil,
+    
+    // Graph shapes
+    ...GraphShapeUtils
+};
 
-const calendarShapeUtils = [
-    CalendarShapeUtil,
-];
+// Export arrays for different use cases
+export const devShapeUtils = [ShapeUtils.YoutubeEmbed];
 
-const transcriptionShapeUtils = [
-    MicrophoneShapeUtil,
-    TranscriptionTextShapeUtil,
-];
-
-const slideShapeUtils = [
-    SlideShowShapeUtil,
-    SlideShapeUtil,
-];
-
-const graphShapeUtils = [
-    GraphShapeUtils.UserNodeShapeUtil,
-    GraphShapeUtils.DeveloperNodeShapeUtil,
-    GraphShapeUtils.TeacherNodeShapeUtil,
-    GraphShapeUtils.StudentNodeShapeUtil,
-    GraphShapeUtils.CalendarNodeShapeUtil,
-    GraphShapeUtils.CalendarYearNodeShapeUtil,
-    GraphShapeUtils.CalendarMonthNodeShapeUtil,
-    GraphShapeUtils.CalendarWeekNodeShapeUtil,
-    GraphShapeUtils.CalendarDayNodeShapeUtil,
-    GraphShapeUtils.CalendarTimeChunkNodeShapeUtil,
-    GraphShapeUtils.TeacherTimetableNodeShapeUtil,
-    GraphShapeUtils.TimetableLessonNodeShapeUtil,
-    GraphShapeUtils.PlannedLessonNodeShapeUtil,
-    GraphShapeUtils.SchoolNodeShapeUtil,
-    GraphShapeUtils.DepartmentNodeShapeUtil,
-    GraphShapeUtils.RoomNodeShapeUtil,
-    GraphShapeUtils.PastoralStructureNodeShapeUtil,
-    GraphShapeUtils.YearGroupNodeShapeUtil,
-    GraphShapeUtils.CurriculumStructureNodeShapeUtil,
-    GraphShapeUtils.KeyStageNodeShapeUtil,
-    GraphShapeUtils.KeyStageSyllabusNodeShapeUtil,
-    GraphShapeUtils.YearGroupSyllabusNodeShapeUtil,
-    GraphShapeUtils.SubjectNodeShapeUtil,
-    GraphShapeUtils.TopicNodeShapeUtil,
-    GraphShapeUtils.TopicLessonNodeShapeUtil,
-    GraphShapeUtils.LearningStatementNodeShapeUtil,
-    GraphShapeUtils.ScienceLabNodeShapeUtil,
-    GraphShapeUtils.SchoolTimetableNodeShapeUtil,
-    GraphShapeUtils.AcademicYearNodeShapeUtil,
-    GraphShapeUtils.AcademicTermNodeShapeUtil,
-    GraphShapeUtils.AcademicWeekNodeShapeUtil,
-    GraphShapeUtils.AcademicDayNodeShapeUtil,
-    GraphShapeUtils.AcademicPeriodNodeShapeUtil,
-    GraphShapeUtils.RegistrationPeriodNodeShapeUtil,
-    GraphShapeUtils.SubjectClassNodeShapeUtil,
-    GraphShapeUtils.GeneralRelationshipShapeUtil,
-];
-
-export const allShapeUtils = [
-    ...calendarShapeUtils,
-    ...transcriptionShapeUtils,
-    ...slideShapeUtils,
-    ...graphShapeUtils,
-];
+export const allShapeUtils = Object.values(ShapeUtils);

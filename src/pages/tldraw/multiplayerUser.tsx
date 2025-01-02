@@ -2,24 +2,31 @@ import { useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
     Tldraw,
-    useTldrawUser,
     Editor,
+    useTldrawUser,
+    DEFAULT_SUPPORTED_IMAGE_TYPES,
+    DEFAULT_SUPPORT_VIDEO_TYPES,
 } from '@tldraw/tldraw';
 import { useSync } from '@tldraw/sync';
-// Local imports
+// App context
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
+// Tldraw services
 import { multiplayerOptions } from '../../services/tldraw/optionsService';
 import { PresentationService } from '../../services/tldraw/presentationService';
+import { createSyncConnectionOptions, handleExternalAsset } from '../../services/tldraw/syncService';
+// Tldraw utils
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
+import { customAssets } from '../../utils/tldraw/assets';
 import { multiplayerTools } from '../../utils/tldraw/tools';
 import { allShapeUtils } from '../../utils/tldraw/shapes';
+import { customSchema } from '../../utils/tldraw/schemas';
 import { allBindingUtils } from '../../utils/tldraw/bindings';
 import { multiplayerEmbeds } from '../../utils/tldraw/embeds';
-import { customSchema } from '../../utils/tldraw/schemas';
-import { createSyncConnectionOptions, handleExternalAsset } from '../../services/tldraw/syncService';
+// App styles
 import '../../utils/tldraw/tldraw.css';
 import '../../utils/tldraw/slides/slides.css';
+// App debug
 import { logger } from '../../debugConfig';
 
 const SYNC_WORKER_URL = `https://` + import.meta.env.VITE_SITE_URL + `/tldraw`;
@@ -38,13 +45,13 @@ export default function TldrawMultiUser() {
     // Create editor user with memoization
     const editorUser = useTldrawUser({
         userPreferences: {
-            id: user?.id ?? '',
+            id: user?.id ?? null,
             name: user?.displayName,
-            color: tldrawPreferences?.color ?? '',
-            locale: tldrawPreferences?.locale || 'en',
-            colorScheme: tldrawPreferences?.colorScheme || 'system',
-            animationSpeed: tldrawPreferences?.animationSpeed || 1,
-            isSnapMode: tldrawPreferences?.isSnapMode || false
+            color: tldrawPreferences?.color,
+            locale: tldrawPreferences?.locale,
+            colorScheme: tldrawPreferences?.colorScheme,
+            animationSpeed: tldrawPreferences?.animationSpeed,
+            isSnapMode: tldrawPreferences?.isSnapMode
         },
         setUserPreferences: setTldrawPreferences
     });
@@ -142,8 +149,14 @@ export default function TldrawMultiUser() {
                 bindingUtils={allBindingUtils}
                 overrides={uiOverrides}
                 components={uiComponents}
-                autoFocus
+                assetUrls={customAssets}
+                autoFocus={true}
                 hideUi={false}
+                acceptedImageMimeTypes={DEFAULT_SUPPORTED_IMAGE_TYPES}
+                acceptedVideoMimeTypes={DEFAULT_SUPPORT_VIDEO_TYPES}
+                maxImageDimension={Infinity}
+                maxAssetSize={100 * 1024 * 1024}
+                renderDebugMenuItems={() => []}
             />
         </div>
     );

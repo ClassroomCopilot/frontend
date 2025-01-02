@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router';
 import {
     Tldraw,
     Editor,
     useTldrawUser,
     DEFAULT_SUPPORT_VIDEO_TYPES,
-    DEFAULT_SUPPORTED_IMAGE_TYPES,
+    DEFAULT_SUPPORTED_IMAGE_TYPES
 } from '@tldraw/tldraw';
 // App context
-import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
 // Tldraw services
 import { localStoreService } from '../../services/tldraw/localStoreService';
@@ -16,10 +14,10 @@ import { PresentationService } from '../../services/tldraw/presentationService';
 // Tldraw utils
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
 import { customAssets } from '../../utils/tldraw/assets';
-import { singlePlayerTools } from '../../utils/tldraw/tools';
+import { devEmbeds } from '../../utils/tldraw/embeds';
 import { allShapeUtils } from '../../utils/tldraw/shapes';
 import { allBindingUtils } from '../../utils/tldraw/bindings';
-import { singlePlayerEmbeds } from '../../utils/tldraw/embeds';
+import { devTools } from '../../utils/tldraw/tools';
 import { customSchema } from '../../utils/tldraw/schemas';
 // Styles
 import '../../utils/tldraw/tldraw.css';
@@ -27,16 +25,16 @@ import '../../utils/tldraw/slides/slides.css';
 // App debug
 import { logger } from '../../debugConfig';
 
-export default function SinglePlayerPage() {
+const devUserId = 'dev-user';
+
+export default function TLDrawDevPage() {
     // 1. All context hooks first
-    const { user } = useAuth();
     const { 
         tldrawPreferences, 
         initializePreferences,
         presentationMode,
         setTldrawPreferences
     } = useTLDraw();
-    const navigate = useNavigate();
 
     // 2. All refs
     const editorRef = useRef<Editor | null>(null);
@@ -44,8 +42,8 @@ export default function SinglePlayerPage() {
     // 4. All memos
     const tldrawUser = useTldrawUser({
         userPreferences: {
-            id: user?.id ?? null,
-            name: user?.displayName,
+            id: devUserId,
+            name: 'Dev User',
             color: tldrawPreferences?.color,
             locale: tldrawPreferences?.locale,
             colorScheme: tldrawPreferences?.colorScheme,
@@ -63,19 +61,18 @@ export default function SinglePlayerPage() {
 
     // Initialize preferences when user is available
     useEffect(() => {
-        if (user?.id && !tldrawPreferences) {
-            logger.debug('single-player-page', '🔄 Initializing preferences for user', { userId: user.id });
-            initializePreferences(user.id);
+        if (!tldrawPreferences) {
+            logger.debug('single-player-page', '🔄 Initializing preferences');
+            initializePreferences(devUserId);
         }
-    }, [user?.id, tldrawPreferences, initializePreferences]);
+    }, [tldrawPreferences, initializePreferences]);
 
-    // Redirect if no user
+    // Load initial data when user node is available
     useEffect(() => {
-        if (!user) {
-            logger.info('single-player-page', '🚪 Redirecting to home - no user logged in');
-            navigate('/');
+        if (!tldrawUser) {
+          return;
         }
-    }, [user, navigate]);
+    }, [tldrawUser, store]);
 
     // Handle presentation mode
     useEffect(() => {
@@ -106,12 +103,12 @@ export default function SinglePlayerPage() {
             <Tldraw
                 user={tldrawUser}
                 store={store}
-                tools={singlePlayerTools}
+                tools={devTools}
                 shapeUtils={allShapeUtils}
                 bindingUtils={allBindingUtils}
                 components={uiComponents}
                 overrides={uiOverrides}
-                embeds={singlePlayerEmbeds}
+                embeds={devEmbeds}
                 assetUrls={customAssets}
                 autoFocus={true}
                 hideUi={false}
@@ -122,11 +119,11 @@ export default function SinglePlayerPage() {
                 maxAssetSize={100 * 1024 * 1024}
                 renderDebugMenuItems={() => []}
                 onMount={(editor) => {
-                    editorRef.current = editor;
                     logger.info('system', '🎨 Tldraw mounted', {
                         editorId: editor.store.id,
                         presentationMode
                     });
+                    editorRef.current = editor;
                 }}
             />
         </div>

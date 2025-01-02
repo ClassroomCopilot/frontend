@@ -59,6 +59,7 @@ export type LogCategory =
     | 'selection'    // For slide/slideshow selection
     | 'camera'       // For camera movements
     | 'tldraw-service' // For tldraw related logs
+    | 'store-service' // For store related logs
 
 interface LogConfig {
     enabled: boolean        // Master switch to turn logging on/off
@@ -144,7 +145,7 @@ export const logger = new DebugLogger()
 logger.setConfig({
     enabled: true,
     level: 'debug',
-    categories: ['app', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool']
+    categories: ['app', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool', 'store-service']
 })
 
 export default logger
