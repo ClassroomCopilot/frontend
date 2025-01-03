@@ -1,7 +1,8 @@
-import { useEditor, createShapeId } from '@tldraw/tldraw'
+import { useEditor, createShapeId, createShapeId as createParentId, IndexKey } from '@tldraw/tldraw'
 import { useNeo4j } from '../../../../contexts/Neo4jContext'
 import graphState from '../../graph/graphStateUtil';
 import { ReactNode, useEffect } from 'react';
+import { NODE_SHAPE_TYPES } from '../../graph/graph-shape-types';
 
 export function ToolsToolbar({ children }: { children: (props: { 
   handlePutUserNode: () => void,
@@ -24,12 +25,24 @@ export function ToolsToolbar({ children }: { children: (props: {
             const centerX = editor.getViewportScreenCenter().x
             const centerY = editor.getViewportScreenCenter().y
             const newNode = {
-                type: 'user_node',
+                type: NODE_SHAPE_TYPES.USER,
                 id: newShapeId,
                 x: centerX,
                 y: centerY,
                 props: {
-                    ...userNodes.privateUserNode
+                    w: 200,
+                    h: 200,
+                    color: 'light-green' as const,
+                    __primarylabel__: 'User',
+                    unique_id: userNodes.privateUserNode.unique_id,
+                    path: userNodes.privateUserNode.path,
+                    created: userNodes.privateUserNode.created,
+                    merged: userNodes.privateUserNode.merged,
+                    user_id: userNodes.privateUserNode.user_id,
+                    user_type: userNodes.privateUserNode.user_type,
+                    user_name: userNodes.privateUserNode.user_name,
+                    user_email: userNodes.privateUserNode.user_email,
+                    worker_node_data: userNodes.privateUserNode.worker_node_data
                 }
             };
             console.log("Creating user shape:", newNode);
@@ -38,13 +51,17 @@ export function ToolsToolbar({ children }: { children: (props: {
             console.log("Getting bounds for user shape:", newShapeId);
             const {bounds} = editor.getShapeGeometry(newShapeId);
             console.log("Updating shape with width:", bounds.w, "and height:", bounds.h);
-            newNode.props.w = bounds.w;
-            newNode.props.h = bounds.h;
-            console.log("Adding node to graphState:", newNode);
             const shapeWithWidthAndHeight = {
                 ...newNode,
                 w: bounds.w,
-                h: bounds.h
+                h: bounds.h,
+                rotation: 0,
+                index: 'a1' as IndexKey,
+                parentId: createParentId('page:page'),
+                isLocked: false,
+                opacity: 1,
+                meta: {},
+                typeName: 'shape' as const
             }
             graphState.addNode(shapeWithWidthAndHeight);
             graphState.setEditor(editor);
