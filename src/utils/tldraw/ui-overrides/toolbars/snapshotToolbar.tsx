@@ -7,9 +7,11 @@ import logger from '../../../../debugConfig';
 import { blankCanvasSnapshot } from '../../../tldraw/assets';
 
 export function SnapshotToolbar({ 
-    children 
+    children,
+    pathFromCalendar
 }: { 
-    children: (props: { save: () => void, resetToBlankCanvas: () => void }) => ReactNode 
+    children: (props: { save: () => void, resetToBlankCanvas: () => void }) => ReactNode,
+    pathFromCalendar: string | null
 }) {
     const editor = useEditor();
     const { addToast } = useToasts();
@@ -17,11 +19,15 @@ export function SnapshotToolbar({
     const [currentPath, setCurrentPath] = useState<string | null>(null);
 
     useEffect(() => {
-        const storedPath = storageService.get(StorageKeys.NODE_FILE_PATH);
-        if (storedPath) {
-            setCurrentPath(storedPath);
+        if (pathFromCalendar) {
+            setCurrentPath(pathFromCalendar);
+        } else {
+            const storedPath = storageService.get(StorageKeys.NODE_FILE_PATH);
+            if (storedPath) {
+                setCurrentPath(storedPath);
+            }
         }
-    }, []);
+    }, [pathFromCalendar]);
 
     const save = useCallback(async () => {
         try {
