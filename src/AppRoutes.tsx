@@ -16,6 +16,7 @@ import TeacherPlanner from './pages/react-flow/teacherPlanner';
 import MorphicPage from './pages/morphicPage';
 import NotFound from './pages/user/NotFound';
 import NotFoundPublic from './pages/NotFoundPublic';
+import ShareHandler from './pages/tldraw/ShareHandler';
 import { logger } from './debugConfig';
 
 const AppRoutes: React.FC = () => {
@@ -37,6 +38,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<TLDrawCanvas />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/share" element={<ShareHandler />} />
 
         {/* Super Admin only routes */}
         <Route

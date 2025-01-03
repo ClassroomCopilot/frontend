@@ -74,6 +74,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
     "vite-plugin-mkcert": "^1.17.5",
+    "vite-plugin-pwa": "^0.21.1",
     "vitest": "^1.6.0"
   }
 }
