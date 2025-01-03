@@ -44,12 +44,19 @@ export default function TldrawMultiUser() {
     const navigate = useNavigate();
     const editorRef = useRef<Editor | null>(null);
 
+    // Memoize user information to ensure consistency
+    const userInfo = useMemo(() => ({
+        id: user?.id ?? '',
+        name: user?.displayName ?? user?.email?.split('@')[0] ?? 'Anonymous User',
+        color: tldrawPreferences?.color ?? `hsl(${Math.random() * 360}, 70%, 50%)`
+    }), [user?.id, user?.displayName, user?.email, tldrawPreferences?.color]);
+
     // Create editor user with memoization
     const editorUser = useTldrawUser({
         userPreferences: {
-            id: user?.id ?? '',
-            name: user?.displayName,
-            color: tldrawPreferences?.color,
+            id: userInfo.id,
+            name: userInfo.name,
+            color: userInfo.color,
             locale: tldrawPreferences?.locale,
             colorScheme: tldrawPreferences?.colorScheme,
             animationSpeed: tldrawPreferences?.animationSpeed,
@@ -59,17 +66,22 @@ export default function TldrawMultiUser() {
     });
 
     const connectionOptions = useMemo(() => createSyncConnectionOptions({
-        userId: user?.id ?? '',
-        displayName: user?.displayName,
-        color: tldrawPreferences?.color ?? `hsl(${Math.random() * 360}, 70%, 50%)`,
+        userId: userInfo.id,
+        displayName: userInfo.name,
+        color: userInfo.color,
         baseUrl: SYNC_WORKER_URL
-    }), [user, tldrawPreferences]);
+    }), [userInfo]);
 
     const store = useSync({
         ...connectionOptions,
         schema: customSchema,
         shapeUtils: allShapeUtils,
-        bindingUtils: allBindingUtils
+        bindingUtils: allBindingUtils,
+        userInfo: {
+            id: userInfo.id,
+            name: userInfo.name,
+            color: userInfo.color
+        }
     });
 
     // Log connection status changes

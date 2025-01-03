@@ -12,6 +12,7 @@ export interface CCUser extends SupabaseUser {
 
 interface CCUserMetadata {
   role: UserRole;
+  display_name: string;
   tldraw_preferences?: TLUserPreferences;
 }
 
@@ -66,11 +67,13 @@ export type AuthCredentials = EmailCredentials | MicrosoftCredentials;
 export const convertToCCUser = (
   user: SupabaseUser
 ): CCUser => {
+  const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Anonymous User';
   return {
     ...user,
-    displayName: user.user_metadata?.display_name,
+    displayName,
     user_metadata: {
       role: user.user_metadata?.role,
+      display_name: displayName,
       tldraw_preferences: user.user_metadata?.tldraw_preferences
     }
   };

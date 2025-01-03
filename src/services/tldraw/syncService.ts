@@ -7,12 +7,11 @@ import {
     AssetRecordType,
     getHashForString,
 } from '@tldraw/tldraw';
-import { TLSyncUserInfo } from '@tldraw/sync';
 import { logger } from '../../debugConfig';
 
 export interface SyncConnectionOptions {
     userId: string;
-    displayName?: string;
+    displayName: string;
     color: string;
     roomId?: string;
     baseUrl: string;
@@ -22,16 +21,14 @@ export function createSyncConnectionOptions(options: SyncConnectionOptions) {
     const {
         userId,
         displayName,
-        color,
         roomId = 'multiplayer',
         baseUrl
     } = options;
 
-    const syncUserInfo: TLSyncUserInfo = {
-        id: userId,
-        name: displayName,
-        color: color
-    };
+    // Ensure we have valid user info
+    if (!userId || !displayName) {
+        logger.warn('sync-service', 'Missing user information', { userId, displayName });
+    }
 
     const multiplayerAssets: TLAssetStore = {
         async upload(_asset: unknown, file: File) {
@@ -67,7 +64,6 @@ export function createSyncConnectionOptions(options: SyncConnectionOptions) {
 
     return {
         uri: `${baseUrl}/connect/${roomId}`,
-        syncUserInfo,
         assets: multiplayerAssets
     };
 }
