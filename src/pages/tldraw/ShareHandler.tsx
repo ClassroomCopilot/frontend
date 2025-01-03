@@ -2,6 +2,18 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logger } from '../../debugConfig';
 
+interface LaunchParams {
+  files: FileSystemFileHandle[];
+}
+
+interface LaunchQueue {
+  setConsumer(callback: (params: LaunchParams) => Promise<void>): void;
+}
+
+interface WindowWithLaunchQueue extends Window {
+  launchQueue: LaunchQueue;
+}
+
 const ShareHandler = () => {
   const navigate = useNavigate();
 
@@ -10,7 +22,7 @@ const ShareHandler = () => {
       try {
         // Handle files shared through Web Share Target API
         if ('launchQueue' in window) {
-          (window as any).launchQueue.setConsumer(async (launchParams: any) => {
+          (window as WindowWithLaunchQueue).launchQueue.setConsumer(async (launchParams: LaunchParams) => {
             if (!launchParams.files.length) {
               logger.debug('share-handler', 'No files shared');
               return;
