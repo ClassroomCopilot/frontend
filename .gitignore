@@ -15,3 +15,9 @@ package-lock.json
 
 # Secrets
 .env
+
+# PWA dev files
+dev-dist/
+dev-dist/sw.js
+dev-dist/registerSW.js
+dev-dist/workbox-*.js
