@@ -1,10 +1,10 @@
 import { useCallback, ReactNode, useEffect, useState } from 'react';
-import { useEditor, loadSnapshot, TLStoreSnapshot, useToasts } from '@tldraw/tldraw';
-import { useNeo4j } from '../../../contexts/Neo4jContext';
-import { saveNodeSnapshotToDatabase } from '../../../services/tldraw/snapshotService';
-import { StorageKeys, storageService } from '../../../services/auth/localStorageService';
-import logger from '../../../debugConfig';
-import blankCanvasSnapshotData from './blankCanvasSnapshotData.json';
+import { useEditor, loadSnapshot, useToasts } from '@tldraw/tldraw';
+import { useNeo4j } from '../../../../contexts/Neo4jContext';
+import { saveNodeSnapshotToDatabase } from '../../../../services/tldraw/snapshotService';
+import { StorageKeys, storageService } from '../../../../services/auth/localStorageService';
+import logger from '../../../../debugConfig';
+import { blankCanvasSnapshot } from '../../../tldraw/assets';
 
 export function SnapshotToolbar({ 
     children 
@@ -71,8 +71,7 @@ export function SnapshotToolbar({
     }, [editor, currentPath, userDbName, workerDbName, addToast]);
 
     const resetToBlankCanvas = useCallback(() => {
-        const blankSnapshot: TLStoreSnapshot = blankCanvasSnapshotData as TLStoreSnapshot;
-        loadSnapshot(editor.store, blankSnapshot);
+        loadSnapshot(editor.store, blankCanvasSnapshot);
         addToast({
             title: 'Canvas reset',
             description: 'The canvas has been reset to blank.',

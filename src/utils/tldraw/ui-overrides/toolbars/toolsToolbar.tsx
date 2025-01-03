@@ -1,6 +1,6 @@
 import { useEditor, createShapeId } from '@tldraw/tldraw'
-import { useNeo4j } from '../../../contexts/Neo4jContext'
-import graphState from '../graph/graphStateUtil';
+import { useNeo4j } from '../../../../contexts/Neo4jContext'
+import graphState from '../../graph/graphStateUtil';
 import { ReactNode, useEffect } from 'react';
 
 export function ToolsToolbar({ children }: { children: (props: { 
@@ -36,7 +36,7 @@ export function ToolsToolbar({ children }: { children: (props: {
             editor.createShape(newNode);
             console.log("User shape created:", newNode);
             console.log("Getting bounds for user shape:", newShapeId);
-            const bounds = editor.getShapeGeometry(newShapeId).bounds;
+            const {bounds} = editor.getShapeGeometry(newShapeId);
             console.log("Updating shape with width:", bounds.w, "and height:", bounds.h);
             newNode.props.w = bounds.w;
             newNode.props.h = bounds.h;

@@ -6,9 +6,9 @@ import {
     useRelevantStyles
 } from '@tldraw/tldraw';
 
-import { SnapshotToolbar } from './../../../toolbars/snapshotToolbar';
-import { UserToolbar } from './../../../toolbars/userToolbar';
-import { ToolsToolbar } from './../../../toolbars/toolsToolbar';
+import { SnapshotToolbar } from '../../toolbars/snapshotToolbar';
+import { UserToolbar } from '../../toolbars/userToolbar';
+import { ToolsToolbar } from '../../toolbars/toolsToolbar';
 
 export const RegularStylePanel = (props: TLUiStylePanelProps) => {
     const emojiButtonStyle = {

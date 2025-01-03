@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { ReactNode } from 'react';
-import { logger } from '../../../debugConfig';
+import { logger } from '../../../../debugConfig';
 
 export function UserToolbar({ children }: { children: (props: { handleLogout: () => Promise<void>, handleNavUserHome: () => void }) => ReactNode }) {
     const { logout } = useAuth();

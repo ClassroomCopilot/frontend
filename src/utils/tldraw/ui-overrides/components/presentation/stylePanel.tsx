@@ -1,14 +1,12 @@
 import {
     DefaultStylePanel,
-    DefaultStylePanelContent,
     TLUiStylePanelProps,
-    TldrawUiButton,
-    useRelevantStyles
+    TldrawUiButton
 } from '@tldraw/tldraw';
 
-import { SnapshotToolbar } from './../../../toolbars/snapshotToolbar';
-import { UserToolbar } from './../../../toolbars/userToolbar';
-import { ToolsToolbar } from './../../../toolbars/toolsToolbar';
+import { SnapshotToolbar } from '../../toolbars/snapshotToolbar';
+import { UserToolbar } from '../../toolbars/userToolbar';
+import { ToolsToolbar } from '../../toolbars/toolsToolbar';
 
 export const PresentationStylePanel = (props: TLUiStylePanelProps) => {
     const emojiButtonStyle = {
@@ -68,16 +66,13 @@ export const PresentationStylePanel = (props: TLUiStylePanelProps) => {
                     )}
                 </SnapshotToolbar>
                 <ToolsToolbar>
-                    {({ handlePutUserNode, handleOpenOneNote, handleAddCalendar: toolbarHandleAddCalendar }) => (
+                    {({ handlePutUserNode, handleAddCalendar: toolbarHandleAddCalendar }) => (
                         <div style={toolbarStyle}>
                             <TldrawUiButton type="icon" title="Add User Node" onClick={handlePutUserNode} style={emojiButtonStyle}>
                                 👤
                             </TldrawUiButton>
                             <TldrawUiButton type="icon" title="Add Calendar" onClick={toolbarHandleAddCalendar} style={emojiButtonStyle}>
                                 📅
-                            </TldrawUiButton>
-                            <TldrawUiButton type="icon" title="Open OneNote" onClick={handleOpenOneNote} style={emojiButtonStyle}>
-                                📓
                             </TldrawUiButton>
                         </div>
                     )}
