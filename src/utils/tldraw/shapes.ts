@@ -5,6 +5,8 @@ import { SlideShapeUtil, SlideShowShapeUtil } from './slides/SlideShapeUtil';
 import { GraphShapeUtils } from './graph/graphShapeUtil';
 import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
 import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
+import { CCSettingsShapeUtil } from './cc-base/CCSettingsShapeUtil'
+import { CCCalendarShapeUtil } from './cc-base/CCCalendarShapeUtil'
 
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
@@ -23,10 +25,18 @@ export const ShapeUtils = {
     SlideShow: SlideShowShapeUtil,
     
     // Graph shapes
-    ...GraphShapeUtils
+    ...GraphShapeUtils,
+
+    // CC shapes
+    CCSettings: CCSettingsShapeUtil,
+    CCCalendar: CCCalendarShapeUtil,
 };
 
 // Export arrays for different use cases
-export const devShapeUtils = [ShapeUtils.YoutubeEmbed];
+export const devShapeUtils = [
+    ShapeUtils.CCSettings,
+    ShapeUtils.CCCalendar,
+    ShapeUtils.YoutubeEmbed
+];
 
 export const allShapeUtils = Object.values(ShapeUtils);

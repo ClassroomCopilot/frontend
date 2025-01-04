@@ -27,9 +27,11 @@ import { PresentationKeyboardShortcutsDialog } from './presentation/keyboardShor
 import { PresentationActionsMenu } from './presentation/actionsMenu';
 import { PresentationContextMenu } from './presentation/contextMenu';
 import { PresentationDebugMenu } from './presentation/debugMenu';
+import { CCShapesPanel } from './shared/CCShapesPanel';
 
 export const regularComponentsIndex: TLComponents = {
     Toolbar: RegularToolbar,
+    InFrontOfTheCanvas: CCShapesPanel,
     HelperButtons: RegularHelperButtons,
     HelpMenu: RegularHelpMenu,
     MainMenu: RegularMainMenu,
@@ -46,6 +48,7 @@ export const regularComponentsIndex: TLComponents = {
 
 export const presentationComponentsIndex: TLComponents = {
     Toolbar: PresentationToolbar,
+    InFrontOfTheCanvas: CCShapesPanel,
     HelperButtons: PresentationHelperButtons,
     HelpMenu: PresentationHelpMenu,
     MainMenu: PresentationMainMenu,

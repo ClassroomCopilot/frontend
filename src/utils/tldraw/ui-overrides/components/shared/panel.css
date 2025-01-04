@@ -1,0 +1,14 @@
+.shape-button {
+    padding: 8px;
+    background-color: var(--color-muted);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--color-text);
+    transition: background-color 0.2s;
+  }
+  
+  .shape-button:hover {
+    background-color: var(--color-hover);
+  }

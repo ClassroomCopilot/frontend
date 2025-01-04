@@ -57,6 +57,7 @@ export const getUiComponents = (presentationMode: boolean): TLComponents => {
 // Regular components configuration
 const regularComponents: TLComponents = {
     Toolbar: regularComponentsIndex.Toolbar,
+    InFrontOfTheCanvas: regularComponentsIndex.InFrontOfTheCanvas,
     KeyboardShortcutsDialog: regularComponentsIndex.KeyboardShortcutsDialog,
     HelperButtons: regularComponentsIndex.HelperButtons,
     ActionsMenu: regularComponentsIndex.ActionsMenu,
@@ -74,6 +75,7 @@ const regularComponents: TLComponents = {
 // Presentation components configuration
 const presentationComponents: TLComponents = {
     Toolbar: presentationComponentsIndex.Toolbar,
+    InFrontOfTheCanvas: presentationComponentsIndex.InFrontOfTheCanvas,
     KeyboardShortcutsDialog: presentationComponentsIndex.KeyboardShortcutsDialog,
     HelperButtons: presentationComponentsIndex.HelperButtons,
     ActionsMenu: presentationComponentsIndex.ActionsMenu,
