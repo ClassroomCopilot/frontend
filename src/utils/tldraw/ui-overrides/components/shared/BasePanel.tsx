@@ -1,6 +1,42 @@
 import React, { useState } from 'react';
 import { TldrawUiButton } from '@tldraw/tldraw';
 
+const PANEL_STYLES = {
+  DIMENSIONS: {
+    WIDTH: '150px',
+    TOP_OFFSET: '20%',
+    BOTTOM_OFFSET: '40%',
+  },
+  SPACING: {
+    PADDING: {
+      DEFAULT: '8px',
+      HANDLE: '20px',
+      BUTTON: '4px',
+    },
+    GAP: '4px',
+  },
+  TYPOGRAPHY: {
+    TITLE: {
+      SIZE: '14px',
+      WEIGHT: 'bold',
+    },
+    DROPDOWN: {
+      SIZE: '12px',
+    },
+    BUTTON: {
+      SIZE: '12px',
+    },
+  },
+  HANDLE: {
+    WIDTH: '24px',
+    BORDER_RADIUS: '0 4px 4px 0',
+  },
+  Z_INDEX: {
+    HANDLE: 999,
+    PANEL: 1000,
+  },
+} as const;
+
 interface BasePanelProps {
   title: string;
   panelTypes?: Array<{id: string, label: string}>;
@@ -30,11 +66,11 @@ export const BasePanel: React.FC<BasePanelProps> = ({
             top: '50%',
             transform: 'translateY(-50%)',
             backgroundColor: 'var(--color-panel)',
-            padding: '8px',
-            borderRadius: '0 4px 4px 0',
+            padding: PANEL_STYLES.SPACING.PADDING.HANDLE,
+            borderRadius: PANEL_STYLES.HANDLE.BORDER_RADIUS,
             cursor: 'pointer',
             boxShadow: 'var(--shadow-2)',
-            zIndex: 999,
+            zIndex: PANEL_STYLES.Z_INDEX.HANDLE,
           }}
         >
           ›
@@ -47,31 +83,31 @@ export const BasePanel: React.FC<BasePanelProps> = ({
           style={{
             position: 'absolute',
             left: 0,
-            top: '20%',
-            height: 'calc(100% - 40%)',
-            width: '240px',
+            top: PANEL_STYLES.DIMENSIONS.TOP_OFFSET,
+            height: `calc(100% - ${PANEL_STYLES.DIMENSIONS.BOTTOM_OFFSET})`,
+            width: PANEL_STYLES.DIMENSIONS.WIDTH,
             backgroundColor: 'var(--color-panel)',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: 'var(--shadow-2)',
-            zIndex: 1000,
-            borderRadius: '0 4px 4px 0',
+            zIndex: PANEL_STYLES.Z_INDEX.PANEL,
+            borderRadius: PANEL_STYLES.HANDLE.BORDER_RADIUS,
           }}
         >
           <div 
             className="panel-header"
             style={{
-              padding: '8px',
+              padding: PANEL_STYLES.SPACING.PADDING.DEFAULT,
               borderBottom: '1px solid var(--color-divider)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_STYLES.SPACING.GAP }}>
               <span style={{ 
-                fontSize: '14px', 
-                fontWeight: 'bold' 
+                fontSize: PANEL_STYLES.TYPOGRAPHY.TITLE.SIZE, 
+                fontWeight: PANEL_STYLES.TYPOGRAPHY.TITLE.WEIGHT 
               }}>
                 {title}
               </span>
@@ -83,7 +119,7 @@ export const BasePanel: React.FC<BasePanelProps> = ({
                   style={{
                     backgroundColor: 'transparent',
                     border: 'none',
-                    fontSize: '12px',
+                    fontSize: PANEL_STYLES.TYPOGRAPHY.DROPDOWN.SIZE,
                     color: 'var(--color-text-secondary)',
                   }}
                 >
@@ -100,8 +136,8 @@ export const BasePanel: React.FC<BasePanelProps> = ({
               type="icon"
               onClick={() => setIsExpanded(false)}
               style={{
-                padding: '4px',
-                fontSize: '12px',
+                padding: PANEL_STYLES.SPACING.PADDING.BUTTON,
+                fontSize: PANEL_STYLES.TYPOGRAPHY.BUTTON.SIZE,
               }}
             >
               Hide
@@ -113,7 +149,7 @@ export const BasePanel: React.FC<BasePanelProps> = ({
             style={{
               flex: 1,
               overflow: 'auto',
-              padding: '8px',
+              padding: PANEL_STYLES.SPACING.PADDING.DEFAULT,
             }}
           >
             {children}

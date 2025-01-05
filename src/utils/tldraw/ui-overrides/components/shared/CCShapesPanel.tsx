@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditor, createShapeId, DefaultColorStyle } from '@tldraw/tldraw';
+import { useEditor, createShapeId } from '@tldraw/tldraw';
 import { useAuth } from '../../../../../contexts/AuthContext';
 import { BasePanel } from './BasePanel';
 
@@ -8,53 +8,68 @@ const PANEL_TYPES = [
   { id: 'slides', label: 'Slides' },
 ];
 
+const SHAPE_CONFIGS = {
+  'cc-calendar': {
+    width: 400,
+    height: 600,
+    xOffset: 200,
+    yOffset: 300,
+    defaultProps: {
+      title: 'Calendar',
+      headerColor: '#3e6589',
+      isLocked: false,
+      date: new Date().toISOString(),
+      events: [],
+      view: 'timeGridWeek',
+    }
+  },
+  'cc-settings': {
+    width: 400,
+    height: 500,
+    xOffset: 200,
+    yOffset: 250,
+    defaultProps: {
+      title: 'User Settings',
+      headerColor: '#3e6589',
+      isLocked: false,
+    }
+  }
+} as const;
+
 export const CCShapesPanel: React.FC = () => {
   const editor = useEditor();
   const { user, userRole } = useAuth();
   const [currentPanelType, setCurrentPanelType] = React.useState('cc-shapes');
 
-  const handleCreateShape = (shapeType: string) => {
-    if (!editor) {
-      return;
-    }
+  const handleCreateShape = (shapeType: keyof typeof SHAPE_CONFIGS) => {
+    if (!editor) return;
 
-    // Get the current camera center point
     const { x, y } = editor.getViewportScreenCenter();
-    
-    // Create shape based on type
+    const config = SHAPE_CONFIGS[shapeType];
     const shapeId = createShapeId();
     
+    const baseProps = {
+      id: shapeId,
+      type: shapeType,
+      x: x - config.xOffset,
+      y: y - config.yOffset,
+      props: {
+        w: config.width,
+        h: config.height,
+        ...config.defaultProps,
+      },
+    };
+
     switch (shapeType) {
       case 'cc-calendar':
-        editor.createShape({
-          id: shapeId,
-          type: 'cc-calendar',
-          x: x - 200,
-          y: y - 250,
-          props: {
-            title: 'Calendar',
-            w: 400,
-            h: 500,
-            color: DefaultColorStyle.defaultValue,
-            isLocked: false,
-            date: new Date().toISOString(),
-            events: [],
-          },
-        });
+        editor.createShape(baseProps);
         break;
 
       case 'cc-settings':
         editor.createShape({
-          id: shapeId,
-          type: 'cc-settings',
-          x: x - 200,
-          y: y - 250,
+          ...baseProps,
           props: {
-            title: 'User Settings',
-            w: 400,
-            h: 500,
-            color: DefaultColorStyle.defaultValue,
-            isLocked: false,
+            ...baseProps.props,
             userEmail: user?.email || '',
             userRole: userRole || '',
             isTeacher: userRole?.includes('teacher') || false,
@@ -63,7 +78,6 @@ export const CCShapesPanel: React.FC = () => {
         break;
     }
 
-    // Select the newly created shape
     editor.select(shapeId);
   };
 
