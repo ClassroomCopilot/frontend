@@ -1,8 +1,8 @@
-import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShapeUtil } from './CCBaseShapeUtil'
 import { DefaultColorStyle, Rectangle2d, TLBaseShape } from '@tldraw/tldraw'
 import { T } from '@tldraw/validate'
-import { CCCalendarShape } from './types'
-import { CalendarComponent } from './CalendarComponent'
+import { CCCalendarShape } from './cc-calendar/types'
+import { CalendarComponent } from './cc-calendar/CalendarComponent'
 
 export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
   static type = 'cc-calendar'

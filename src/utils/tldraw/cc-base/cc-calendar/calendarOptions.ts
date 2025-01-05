@@ -40,7 +40,9 @@ export const renderEventContent = (arg: EventContentArg) => {
   const textColor = TimetableNeoDBService.getContrastColor(backgroundColor);
 
   const formatEventTime = (date: Date | null) => {
-    if (!date) return '';
+    if (!date) {
+      return '';
+    }
     return formatDate(date, {
       hour: '2-digit',
       minute: '2-digit',
@@ -115,8 +117,7 @@ export const getBaseCalendarOptions = (): Partial<CalendarOptions> => ({
   themeSystem: 'standard',
   eventContent: renderEventContent,
   eventClassNames: (arg: { event: { extendedProps?: { subjectClass?: string; color?: string } } }) => {
-    const classes = [arg.event.extendedProps?.subjectClass || ''];
-    return classes;
+    return [arg.event.extendedProps?.subjectClass || ''];
   },
   eventDidMount: (arg: { event: { extendedProps?: { color?: string }; id: string }; el: HTMLElement }) => {
     if (arg.event.extendedProps?.color) {

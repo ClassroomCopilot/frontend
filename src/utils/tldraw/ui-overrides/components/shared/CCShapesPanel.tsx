@@ -42,7 +42,9 @@ export const CCShapesPanel: React.FC = () => {
   const [currentPanelType, setCurrentPanelType] = React.useState('cc-shapes');
 
   const handleCreateShape = (shapeType: keyof typeof SHAPE_CONFIGS) => {
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
 
     const { x, y } = editor.getViewportScreenCenter();
     const config = SHAPE_CONFIGS[shapeType];

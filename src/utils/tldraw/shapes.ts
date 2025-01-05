@@ -6,7 +6,7 @@ import { GraphShapeUtils } from './graph/graphShapeUtil';
 import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
 import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
 import { CCSettingsShapeUtil } from './cc-base/CCSettingsShapeUtil'
-import { CCCalendarShapeUtil } from './cc-base/cc-calendar/CCCalendarShapeUtil'
+import { CCCalendarShapeUtil } from './cc-base/CCCalendarShapeUtil'
 
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
