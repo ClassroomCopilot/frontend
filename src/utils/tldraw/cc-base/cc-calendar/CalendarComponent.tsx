@@ -9,7 +9,7 @@ import { ClassFilterModal, ViewMenuModal, EventDetailsModal } from './CalendarMo
 import { useCalendarOptions } from './useCalendarOptions'
 import { openTldrawFile } from './utils'
 import { CC_BASE_STYLE_CONSTANTS } from '../cc-styles'
-import { CCCalendarShape } from './types'
+import { CCCalendarShape } from './../CCCalendarShapeUtil'
 
 export type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listYear' | 'listMonth' | 'listWeek' | 'listDay' | 'timeGridYear' | 'timeGridMonth'
 
