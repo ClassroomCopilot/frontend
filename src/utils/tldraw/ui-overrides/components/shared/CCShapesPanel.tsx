@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useEditor, createShapeId } from '@tldraw/tldraw';
 import { BasePanel } from './BasePanel';
+import { CCSlidesPanel } from './CCSlidesPanel';
+import { BUTTON_STYLES } from './panel-styles';
 
 const PANEL_TYPES = [
-  { id: 'cc-shapes', label: 'CC Shapes' },
+  { id: 'cc-shapes', label: 'Shapes' },
   { id: 'slides', label: 'Slides' },
 ];
 
@@ -52,6 +54,19 @@ const SHAPE_CONFIGS = {
 export const CCShapesPanel: React.FC = () => {
   const editor = useEditor();
   const [currentPanelType, setCurrentPanelType] = React.useState('cc-shapes');
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.base-panel') && !target.closest('.panel-handle')) {
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleCreateShape = (shapeType: keyof typeof SHAPE_CONFIGS) => {
     if (!editor) {
@@ -111,29 +126,60 @@ export const CCShapesPanel: React.FC = () => {
     }
   };
 
+  // If current panel type is slides, render the CCSlidesPanel
+  if (currentPanelType === 'slides') {
+    return (
+      <CCSlidesPanel 
+        onPanelTypeChange={setCurrentPanelType} 
+        isExpanded={isExpanded}
+        onExpandedChange={setIsExpanded}
+      />
+    );
+  }
+
+  // Otherwise render the CC Shapes panel
   return (
     <BasePanel
-      title="CC Shapes"
       panelTypes={PANEL_TYPES}
       currentPanelType={currentPanelType}
       onPanelTypeChange={setCurrentPanelType}
+      isExpanded={isExpanded}
+      onExpandedChange={setIsExpanded}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <button 
           onClick={() => handleCreateShape('cc-calendar')}
-          className="shape-button"
+          style={BUTTON_STYLES.SHAPE_BUTTON}
+          onMouseOver={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
+          }}
+          onMouseOut={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
+          }}
         >
           Calendar Shape
         </button>
         <button 
           onClick={() => handleCreateShape('cc-settings')}
-          className="shape-button"
+          style={BUTTON_STYLES.SHAPE_BUTTON}
+          onMouseOver={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
+          }}
+          onMouseOut={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
+          }}
         >
           Settings Shape
         </button>
         <button 
           onClick={() => handleCreateShape('cc-live-transcription')}
-          className="shape-button"
+          style={BUTTON_STYLES.SHAPE_BUTTON}
+          onMouseOver={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
+          }}
+          onMouseOut={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
+          }}
         >
           Live Transcription
         </button>

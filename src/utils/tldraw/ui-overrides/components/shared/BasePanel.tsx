@@ -1,65 +1,32 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { TldrawUiButton } from '@tldraw/tldraw';
-
-const PANEL_STYLES = {
-  DIMENSIONS: {
-    WIDTH: '150px',
-    TOP_OFFSET: '20%',
-    BOTTOM_OFFSET: '40%',
-  },
-  SPACING: {
-    PADDING: {
-      DEFAULT: '8px',
-      HANDLE: '20px',
-      BUTTON: '4px',
-    },
-    GAP: '4px',
-  },
-  TYPOGRAPHY: {
-    TITLE: {
-      SIZE: '14px',
-      WEIGHT: 'bold',
-    },
-    DROPDOWN: {
-      SIZE: '12px',
-    },
-    BUTTON: {
-      SIZE: '12px',
-    },
-  },
-  HANDLE: {
-    WIDTH: '24px',
-    BORDER_RADIUS: '0 4px 4px 0',
-  },
-  Z_INDEX: {
-    HANDLE: 999,
-    PANEL: 1000,
-  },
-} as const;
+import { PANEL_DIMENSIONS, PANEL_STYLES, SELECT_STYLES } from './panel-styles';
 
 interface BasePanelProps {
-  title: string;
   panelTypes?: Array<{id: string, label: string}>;
   onPanelTypeChange?: (panelType: string) => void;
   currentPanelType?: string;
   children: React.ReactNode;
+  isExpanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
 }
 
 export const BasePanel: React.FC<BasePanelProps> = ({
-  title,
   panelTypes,
   onPanelTypeChange,
-  currentPanelType,
-  children
+  currentPanelType = 'cc-shapes',
+  children,
+  isExpanded,
+  onExpandedChange
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const dimensions = PANEL_DIMENSIONS[currentPanelType as keyof typeof PANEL_DIMENSIONS];
 
   return (
     <>
       {!isExpanded && (
         <div 
           className="panel-handle"
-          onClick={() => setIsExpanded(true)}
+          onClick={() => onExpandedChange(true)}
           style={{
             position: 'absolute',
             left: 0,
@@ -83,9 +50,9 @@ export const BasePanel: React.FC<BasePanelProps> = ({
           style={{
             position: 'absolute',
             left: 0,
-            top: PANEL_STYLES.DIMENSIONS.TOP_OFFSET,
-            height: `calc(100% - ${PANEL_STYLES.DIMENSIONS.BOTTOM_OFFSET})`,
-            width: PANEL_STYLES.DIMENSIONS.WIDTH,
+            top: dimensions.topOffset,
+            height: `calc(100% - ${dimensions.bottomOffset})`,
+            width: dimensions.width,
             backgroundColor: 'var(--color-panel)',
             display: 'flex',
             flexDirection: 'column',
@@ -104,37 +71,33 @@ export const BasePanel: React.FC<BasePanelProps> = ({
               alignItems: 'center',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_STYLES.SPACING.GAP }}>
-              <span style={{ 
-                fontSize: PANEL_STYLES.TYPOGRAPHY.TITLE.SIZE, 
-                fontWeight: PANEL_STYLES.TYPOGRAPHY.TITLE.WEIGHT 
-              }}>
-                {title}
-              </span>
-              
-              {panelTypes && (
-                <select 
-                  value={currentPanelType}
-                  onChange={(e) => onPanelTypeChange?.(e.target.value)}
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    fontSize: PANEL_STYLES.TYPOGRAPHY.DROPDOWN.SIZE,
-                    color: 'var(--color-text-secondary)',
-                  }}
-                >
-                  {panelTypes.map(type => (
-                    <option key={type.id} value={type.id}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+            {panelTypes && (
+              <select 
+                value={currentPanelType}
+                onChange={(e) => onPanelTypeChange?.(e.target.value)}
+                style={SELECT_STYLES.PANEL_TYPE_SELECT}
+                onMouseOver={(e) => {
+                  Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT_HOVER);
+                }}
+                onMouseOut={(e) => {
+                  Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT);
+                }}
+              >
+                {panelTypes.map(type => (
+                  <option 
+                    key={type.id} 
+                    value={type.id}
+                    style={SELECT_STYLES.PANEL_TYPE_OPTION}
+                  >
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            )}
             
             <TldrawUiButton
               type="icon"
-              onClick={() => setIsExpanded(false)}
+              onClick={() => onExpandedChange(false)}
               style={{
                 padding: PANEL_STYLES.SPACING.PADDING.BUTTON,
                 fontSize: PANEL_STYLES.TYPOGRAPHY.BUTTON.SIZE,
