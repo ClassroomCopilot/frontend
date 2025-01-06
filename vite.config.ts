@@ -30,7 +30,7 @@ export default defineConfig(async ({ mode }) => {
           name: 'Classroom Copilot',
           short_name: 'ClassCopilot',
           start_url: '/',
-          display: 'minimal-ui',
+          display: 'fullscreen',
           background_color: '#ffffff',
           theme_color: '#000000',
           icons: [
