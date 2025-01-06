@@ -57,16 +57,34 @@ export const CCShapesPanel: React.FC = () => {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!editor) {
+      return;
+    }
+
+    const handleOutsideInteraction = (e: PointerEvent) => {
+      if (!isExpanded) {
+        return;
+      }
+
       const target = e.target as HTMLElement;
-      if (!target.closest('.base-panel') && !target.closest('.panel-handle')) {
-        setIsExpanded(false);
+      const isOutsidePanel = !target.closest('.base-panel') && !target.closest('.panel-handle');
+
+      if (isOutsidePanel) {
+        e.preventDefault();
+        e.stopPropagation();
+        requestAnimationFrame(() => {
+          setIsExpanded(false);
+        });
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const container = editor.getContainer();
+    container.addEventListener('pointerdown', handleOutsideInteraction, { capture: true });
+    
+    return () => {
+      container.removeEventListener('pointerdown', handleOutsideInteraction, { capture: true });
+    };
+  }, [editor, isExpanded]);
 
   const handleCreateShape = (shapeType: keyof typeof SHAPE_CONFIGS) => {
     if (!editor) {

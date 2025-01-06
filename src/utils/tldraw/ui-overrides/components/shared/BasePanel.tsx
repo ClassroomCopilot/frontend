@@ -27,6 +27,10 @@ export const BasePanel: React.FC<BasePanelProps> = ({
         <div 
           className="panel-handle"
           onClick={() => onExpandedChange(true)}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            onExpandedChange(true);
+          }}
           style={{
             position: 'absolute',
             left: 0,
@@ -38,6 +42,7 @@ export const BasePanel: React.FC<BasePanelProps> = ({
             cursor: 'pointer',
             boxShadow: 'var(--shadow-2)',
             zIndex: PANEL_STYLES.Z_INDEX.HANDLE,
+            touchAction: 'none',
           }}
         >
           ›
