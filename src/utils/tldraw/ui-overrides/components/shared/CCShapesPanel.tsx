@@ -1,6 +1,5 @@
 import React from 'react';
 import { useEditor, createShapeId } from '@tldraw/tldraw';
-import { useAuth } from '../../../../../contexts/AuthContext';
 import { BasePanel } from './BasePanel';
 
 const PANEL_TYPES = [
@@ -33,12 +32,25 @@ const SHAPE_CONFIGS = {
       headerColor: '#3e6589',
       isLocked: false,
     }
+  },
+  'cc-live-transcription': {
+    width: 300,
+    height: 400,
+    xOffset: 200,
+    yOffset: 150,
+    defaultProps: {
+      title: 'Live Transcription',
+      headerColor: '#3e6589',
+      isLocked: false,
+      isRecording: false,
+      text: '',
+      isConfirmed: false,
+    }
   }
 } as const;
 
 export const CCShapesPanel: React.FC = () => {
   const editor = useEditor();
-  const { user, userRole } = useAuth();
   const [currentPanelType, setCurrentPanelType] = React.useState('cc-shapes');
 
   const handleCreateShape = (shapeType: keyof typeof SHAPE_CONFIGS) => {
@@ -55,32 +67,48 @@ export const CCShapesPanel: React.FC = () => {
       type: shapeType,
       x: x - config.xOffset,
       y: y - config.yOffset,
-      props: {
-        w: config.width,
-        h: config.height,
-        ...config.defaultProps,
-      },
+      rotation: 0,
+      isLocked: false,
     };
 
     switch (shapeType) {
       case 'cc-calendar':
-        editor.createShape(baseProps);
+        editor.createShape({
+          ...baseProps,
+          props: {
+            ...config.defaultProps,
+            w: config.width,
+            h: config.height,
+          },
+        });
         break;
-
+      case 'cc-live-transcription':
+        editor.createShape({
+          ...baseProps,
+          props: {
+            title: 'Live Transcription',
+            w: config.width,
+            h: config.height,
+            headerColor: '#3e6589',
+            isLocked: false,
+            isRecording: false,
+            segments: []
+          },
+        });
+        break;
       case 'cc-settings':
         editor.createShape({
           ...baseProps,
           props: {
-            ...baseProps.props,
-            userEmail: user?.email || '',
-            userRole: userRole || '',
-            isTeacher: userRole?.includes('teacher') || false,
+            ...config.defaultProps,
+            w: config.width,
+            h: config.height,
           },
         });
         break;
+      default:
+        break;
     }
-
-    editor.select(shapeId);
   };
 
   return (
@@ -102,6 +130,12 @@ export const CCShapesPanel: React.FC = () => {
           className="shape-button"
         >
           Settings Shape
+        </button>
+        <button 
+          onClick={() => handleCreateShape('cc-live-transcription')}
+          className="shape-button"
+        >
+          Live Transcription
         </button>
       </div>
     </BasePanel>

@@ -7,6 +7,7 @@ import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
 import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
 import { CCSettingsShapeUtil } from './cc-base/CCSettingsShapeUtil'
 import { CCCalendarShapeUtil } from './cc-base/CCCalendarShapeUtil'
+import { CCLiveTranscriptionShapeUtil } from './cc-base/CCLiveTranscriptionShapeUtil'
 
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
@@ -30,13 +31,15 @@ export const ShapeUtils = {
     // CC shapes
     CCSettings: CCSettingsShapeUtil,
     CCCalendar: CCCalendarShapeUtil,
+    CCLiveTranscription: CCLiveTranscriptionShapeUtil,
 };
 
 // Export arrays for different use cases
 export const devShapeUtils = [
     ShapeUtils.CCSettings,
     ShapeUtils.CCCalendar,
-    ShapeUtils.YoutubeEmbed
+    ShapeUtils.YoutubeEmbed,
+    ShapeUtils.CCLiveTranscription,
 ];
 
 export const allShapeUtils = Object.values(ShapeUtils);
