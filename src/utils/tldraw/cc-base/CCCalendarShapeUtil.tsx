@@ -1,49 +1,30 @@
-import { CCBaseShapeUtil } from './CCBaseShapeUtil'
-import { DefaultColorStyle, Rectangle2d, TLBaseShape } from '@tldraw/tldraw'
-import { T } from '@tldraw/validate'
-import { CCCalendarShape } from './cc-calendar/types'
-import { CalendarComponent } from './cc-calendar/CalendarComponent'
+import { CCBaseShape, CCBaseShapeUtil } from './CCBaseShapeUtil'
+import { ccShapeProps, getDefaultCCCalendarProps } from './cc-props'
+import { ccShapeMigrations } from './cc-migrations'
+import { Rectangle2d } from 'tldraw'
+import { CalendarComponent, CalendarViewType } from './cc-calendar/CalendarComponent'
+import { TeacherTimetableEvent } from '../../../services/graph/timetableNeoDBService'
+
+export interface CCCalendarShape extends CCBaseShape {
+  type: 'cc-calendar'
+  props: CCBaseShape['props'] & {
+    date: string
+    selectedDate: string
+    view: CalendarViewType
+    events: TeacherTimetableEvent[]
+  }
+}
 
 export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
-  static type = 'cc-calendar'
-  type = 'cc-calendar'
+  static override type = 'cc-calendar' as const;
+  static override props = ccShapeProps.calendar;
+  static override migrations = ccShapeMigrations.calendar;
 
-  static props = {
-    ...CCBaseShapeUtil.props,
-    date: T.string,
-    selectedDate: T.string,
-    view: T.string,
-    events: T.arrayOf(T.object({
-      id: T.string,
-      title: T.string,
-      start: T.string,
-      end: T.string,
-      groupId: T.optional(T.string),
-      extendedProps: T.object({
-        subjectClass: T.string,
-        color: T.string,
-        periodCode: T.string,
-        path: T.optional(T.string),
-      })
-    }))
+  override getDefaultProps(): CCCalendarShape['props'] {
+    return getDefaultCCCalendarProps() as CCCalendarShape['props'];
   }
 
-  getDefaultProps(): CCCalendarShape['props'] {
-    const currentDate = new Date().toISOString()
-    return {
-      ...super.getDefaultProps(),
-      title: 'Calendar',
-      w: 400,
-      h: 800, // Increased from 500 to better accommodate week view
-      headerColor: DefaultColorStyle.defaultValue,
-      date: currentDate,
-      selectedDate: currentDate,
-      view: 'timeGridWeek',
-      events: [],
-    }
-  }
-
-  onCreate = (shape: TLBaseShape<'cc-calendar', CCCalendarShape['props']>) => {
+  onCreate = (shape: CCCalendarShape) => {
     // Force a resize after creation to ensure calendar renders correctly
     setTimeout(() => {
       const element = document.getElementById(shape.id)
@@ -61,11 +42,11 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
     }
   }
 
-  renderContent = (shape: CCCalendarShape) => {
+  override renderContent = (shape: CCCalendarShape) => {
     return <CalendarComponent shape={shape} />
   }
 
-  indicator = (shape: CCCalendarShape) => {
+  override indicator = (shape: CCCalendarShape) => {
     return (
       <rect
         width={shape.props.w}
@@ -77,7 +58,7 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
     )
   }
 
-  getGeometry(shape: CCCalendarShape) {
+  override getGeometry(shape: CCCalendarShape) {
     return new Rectangle2d({
       width: shape.props.w,
       height: shape.props.h,
@@ -85,11 +66,11 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
     })
   }
 
-  isAspectRatioLocked = () => false
-  canResize = () => true
-  canBind = () => false
+  override isAspectRatioLocked = () => false
+  override canResize = () => true
+  override canBind = () => false
 
-  onResize = (
+  override onResize = (
     shape: CCCalendarShape,
     info: { initialShape: CCCalendarShape; scaleX: number; scaleY: number }
   ) => {

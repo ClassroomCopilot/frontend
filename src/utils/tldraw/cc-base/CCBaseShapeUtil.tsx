@@ -8,10 +8,11 @@ import {
   Box,
   TLHandleType,
   IndexKey,
-  DefaultColorStyle,
   HTMLContainer,
-} from '@tldraw/tldraw'
-import { T } from '@tldraw/validate'
+} from 'tldraw'
+import { ccShapeProps, getDefaultCCBaseProps } from './cc-props'
+import { ccShapeMigrations } from './cc-migrations'
+import { CC_BASE_STYLE_CONSTANTS } from './cc-styles'
 
 // Base shape interface that all CC shapes will extend
 export interface CCBaseShape extends TLBaseShape<string, { h: number; w: number; }> {
@@ -25,49 +26,10 @@ export interface CCBaseShape extends TLBaseShape<string, { h: number; w: number;
   }
 }
 
-// Style constants
-export const STYLE_CONSTANTS = {
-  // Dimensions
-  BASE_HEADER_HEIGHT: 32,
-  HANDLE_WIDTH: 8,
-  CONTENT_PADDING: 8,
-  HEADER_PADDING: '4px 8px',
-  BORDER_RADIUS: 4,
-  
-  // Minimum dimensions
-  MIN_DIMENSIONS: {
-    width: 100,
-    height: 100,
-  },
-
-  // Container styles
-  CONTAINER: {
-    borderRadius: '4px',
-    boxShadow: '0 2px 4px var(--color-muted-1)',
-  },
-
-  // Header styles
-  HEADER: {
-    borderTopLeftRadius: '4px',
-    borderTopRightRadius: '4px',
-  },
-
-  // Content styles
-  CONTENT: {
-    backgroundColor: 'white',
-  }
-} as const
-
 export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShapeUtil<T> {
-  static type = 'cc-base'
-
-  static props = {
-    w: T.number,
-    h: T.number,
-    title: T.string,
-    headerColor: T.string,
-    isLocked: T.boolean,
-  }
+  static override type = 'cc-base'
+  static override props = ccShapeProps.base
+  static override migrations = ccShapeMigrations.base
 
   // Default component that renders the shape's container and title
   component = (shape: T) => {
@@ -82,8 +44,8 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
           width: toDomPrecision(w),
           height: toDomPrecision(h),
           backgroundColor: headerColor,
-          borderRadius: STYLE_CONSTANTS.CONTAINER.borderRadius,
-          boxShadow: STYLE_CONSTANTS.CONTAINER.boxShadow,
+          borderRadius: CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius,
+          boxShadow: CC_BASE_STYLE_CONSTANTS.CONTAINER.boxShadow,
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -94,11 +56,11 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
             top: 0,
             left: 0,
             width: '100%',
-            height: STYLE_CONSTANTS.BASE_HEADER_HEIGHT,
+            height: CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT,
             backgroundColor: headerColor,
-            borderTopLeftRadius: STYLE_CONSTANTS.HEADER.borderTopLeftRadius,
-            borderTopRightRadius: STYLE_CONSTANTS.HEADER.borderTopRightRadius,
-            padding: STYLE_CONSTANTS.HEADER_PADDING,
+            borderTopLeftRadius: CC_BASE_STYLE_CONSTANTS.HEADER.borderTopLeftRadius,
+            borderTopRightRadius: CC_BASE_STYLE_CONSTANTS.HEADER.borderTopRightRadius,
+            padding: CC_BASE_STYLE_CONSTANTS.HEADER_PADDING,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -111,13 +73,13 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
         <div
           style={{
             position: 'absolute',
-            top: STYLE_CONSTANTS.BASE_HEADER_HEIGHT,
+            top: CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT,
             left: 0,
             right: 0,
             bottom: 0,
             overflow: 'auto',
-            padding: STYLE_CONSTANTS.CONTENT_PADDING,
-            backgroundColor: STYLE_CONSTANTS.CONTENT.backgroundColor,
+            padding: CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING,
+            backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
           }}
         >
           {this.renderContent(shape)}
@@ -146,7 +108,7 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
   }
 
   // Override to provide shape-specific handles
-  getHandles(shape: T): TLHandle[] {
+  override getHandles(shape: T): TLHandle[] {
     const handles: TLHandle[] = []
     
     // Add default binding handles on each side
@@ -184,20 +146,14 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
         width={toDomPrecision(w)}
         height={toDomPrecision(h)}
         fill="none"
-        rx={STYLE_CONSTANTS.BORDER_RADIUS}
-        ry={STYLE_CONSTANTS.BORDER_RADIUS}
+        rx={CC_BASE_STYLE_CONSTANTS.BORDER_RADIUS}
+        ry={CC_BASE_STYLE_CONSTANTS.BORDER_RADIUS}
       />
     )
   }
 
   // Create default shape properties
-  getDefaultProps(): T['props'] {
-    return {
-      title: 'Untitled',
-      w: STYLE_CONSTANTS.MIN_DIMENSIONS.width,
-      h: STYLE_CONSTANTS.MIN_DIMENSIONS.height,
-      headerColor: DefaultColorStyle.defaultValue,
-      isLocked: false,
-    } as T['props']
+  override getDefaultProps(): T['props'] {
+    return getDefaultCCBaseProps() as T['props']
   }
 } 

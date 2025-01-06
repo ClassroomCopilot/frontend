@@ -5,7 +5,7 @@ import { TeacherTimetableEvent } from '../../../../services/graph/timetableNeoDB
 import { LoadingState } from '../../../../services/tldraw/snapshotService'
 import { Editor } from '@tldraw/tldraw'
 import logger from '../../../../debugConfig'
-import { applicationButtonStyle, optionButtonStyle } from './styles'
+import { CC_CALENDAR_STYLE_CONSTANTS } from '../cc-styles'
 
 // Common modal styles
 const modalStyles = {
@@ -84,7 +84,7 @@ export const ClassFilterModal: React.FC<ClassFilterModalProps> = ({
       <button
         key={subjectClass}
         style={{
-          ...optionButtonStyle,
+          ...CC_CALENDAR_STYLE_CONSTANTS.OPTION_BUTTON,
           backgroundColor: isSelected ? color : '#ffffff',
           color: isSelected ? '#ffffff' : '#000000',
           border: `2px solid ${color}`,
@@ -112,7 +112,7 @@ export const ClassFilterModal: React.FC<ClassFilterModalProps> = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {subjectClasses.map(renderClassFilterButton)}
       </div>
-      <button style={applicationButtonStyle} onClick={onClose}>Close</button>
+      <button style={CC_CALENDAR_STYLE_CONSTANTS.APPLICATION_BUTTON} onClick={onClose}>Close</button>
     </Modal>
   )
 }
@@ -139,8 +139,8 @@ export const ViewMenuModal: React.FC<ViewMenuModalProps> = ({
     <ViewMenu 
       onSelect={onViewSelect}
       onClose={onClose}
-      optionButtonStyle={optionButtonStyle}
-      applicationButtonStyle={applicationButtonStyle}
+      optionButtonStyle={CC_CALENDAR_STYLE_CONSTANTS.OPTION_BUTTON}
+      applicationButtonStyle={CC_CALENDAR_STYLE_CONSTANTS.APPLICATION_BUTTON}
     />
   </Modal>
 )
@@ -208,12 +208,12 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             )}
             
             {selectedEvent.extendedProps?.path && fileLoadingState.status !== 'loading' && (
-              <button style={applicationButtonStyle} onClick={handleOpenFile}>
+              <button style={CC_CALENDAR_STYLE_CONSTANTS.APPLICATION_BUTTON} onClick={handleOpenFile}>
                 Open Tldraw File <FaExternalLinkAlt style={{ marginLeft: '8px' }} />
               </button>
             )}
           </div>
-          <button style={applicationButtonStyle} onClick={onClose}>Close</button>
+          <button style={CC_CALENDAR_STYLE_CONSTANTS.APPLICATION_BUTTON} onClick={onClose}>Close</button>
         </>
       )}
     </Modal>

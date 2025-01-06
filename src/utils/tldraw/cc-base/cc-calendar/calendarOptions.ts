@@ -4,7 +4,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import { TimetableNeoDBService } from '../../../../services/graph/timetableNeoDBService'
-import { calendarEventStyle } from './styles'
+import { CC_CALENDAR_STYLE_CONSTANTS } from '../cc-styles'
 
 // Calendar layout constants
 export const CALENDAR_LAYOUT = {
@@ -57,8 +57,8 @@ export const renderEventContent = (arg: EventContentArg) => {
 
   return {
     html: `
-      <div class="fc-event-main-frame" style="background-color: ${calendarEventStyle.mainFrame.backgroundColor}; color: ${textColor}; display: ${calendarEventStyle.mainFrame.display}; align-items: ${calendarEventStyle.mainFrame.alignItems}; justify-content: ${calendarEventStyle.mainFrame.justifyContent}; min-height: ${calendarEventStyle.mainFrame.minHeight}; padding: ${calendarEventStyle.mainFrame.padding}; border-radius: ${calendarEventStyle.mainFrame.borderRadius};">
-        <div class="fc-event-title fc-sticky" style="color: ${textColor}; font-size: ${calendarEventStyle.title.fontSize}; font-weight: ${calendarEventStyle.title.fontWeight}; text-align: ${calendarEventStyle.title.textAlign}; overflow: ${calendarEventStyle.title.overflow}; text-overflow: ${calendarEventStyle.title.textOverflow}; white-space: ${calendarEventStyle.title.whiteSpace}; opacity: ${calendarEventStyle.title.opacity}; padding: ${calendarEventStyle.title.padding}; width: ${calendarEventStyle.title.width}; letter-spacing: ${calendarEventStyle.title.letterSpacing}; margin: ${calendarEventStyle.title.margin};">${arg.event.title}</div>
+      <div class="fc-event-main-frame" style="background-color: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.backgroundColor}; color: ${textColor}; display: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.display}; align-items: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.alignItems}; justify-content: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.justifyContent}; min-height: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.minHeight}; padding: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.padding}; border-radius: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.mainFrame.borderRadius};">
+        <div class="fc-event-title fc-sticky" style="color: ${textColor}; font-size: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.fontSize}; font-weight: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.fontWeight}; text-align: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.textAlign}; overflow: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.overflow}; text-overflow: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.textOverflow}; white-space: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.whiteSpace}; opacity: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.opacity}; padding: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.padding}; width: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.width}; letter-spacing: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.letterSpacing}; margin: ${CC_CALENDAR_STYLE_CONSTANTS.EVENT.title.margin};">${arg.event.title}</div>
       </div>
     `
   };

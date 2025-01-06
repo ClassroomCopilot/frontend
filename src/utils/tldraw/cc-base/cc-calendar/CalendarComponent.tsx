@@ -5,11 +5,13 @@ import { DateSelectArg, ViewMountArg } from '@fullcalendar/core'
 import { useNeo4j } from '../../../../contexts/Neo4jContext'
 import { LoadingState } from '../../../../services/tldraw/snapshotService'
 import { TimetableNeoDBService, TeacherTimetableEvent } from '../../../../services/graph/timetableNeoDBService'
-import { CCCalendarShape } from './types'
 import { ClassFilterModal, ViewMenuModal, EventDetailsModal } from './CalendarModals'
 import { useCalendarOptions } from './useCalendarOptions'
 import { openTldrawFile } from './utils'
-import { STYLE_CONSTANTS } from '../CCBaseShapeUtil'
+import { CC_BASE_STYLE_CONSTANTS } from '../cc-styles'
+import { CCCalendarShape } from './types'
+
+export type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listYear' | 'listMonth' | 'listWeek' | 'listDay' | 'timeGridYear' | 'timeGridMonth'
 
 interface CalendarComponentProps {
   shape: CCCalendarShape
@@ -44,7 +46,9 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
 
   const loadEvents = useCallback(async () => {
     const now = Date.now()
-    if (now - lastFetchRef.current < 60000) return;
+    if (now - lastFetchRef.current < 60000) {
+      return;
+    }
     lastFetchRef.current = now
 
     if ((events && events.length > 0) || isLoading || error || !userNodes?.connectedNodes.teacher) {
@@ -150,16 +154,16 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
 
   // Calculate available height for calendar
   const getAvailableHeight = useCallback(() => {
-    const totalPadding = STYLE_CONSTANTS.CONTENT_PADDING * 2
-    const availableHeight = shape.props.h - STYLE_CONSTANTS.BASE_HEADER_HEIGHT - totalPadding
-    return Math.max(availableHeight, STYLE_CONSTANTS.MIN_DIMENSIONS.height)
+    const totalPadding = CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING * 2
+    const availableHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT - totalPadding
+    return Math.max(availableHeight, CC_BASE_STYLE_CONSTANTS.MIN_DIMENSIONS.height)
   }, [shape.props.h])
 
   // Calculate available width for calendar
   const getAvailableWidth = useCallback(() => {
-    const totalPadding = STYLE_CONSTANTS.CONTENT_PADDING * 2
+    const totalPadding = CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING * 2
     const availableWidth = shape.props.w - totalPadding
-    return Math.max(availableWidth, STYLE_CONSTANTS.MIN_DIMENSIONS.width)
+    return Math.max(availableWidth, CC_BASE_STYLE_CONSTANTS.MIN_DIMENSIONS.width)
   }, [shape.props.w])
 
   const calendarOptions = useCalendarOptions({
@@ -195,8 +199,8 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
         height: getAvailableHeight(),
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: STYLE_CONSTANTS.CONTENT.backgroundColor,
-        padding: STYLE_CONSTANTS.CONTENT_PADDING,
+        backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
+        padding: CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING,
         color: 'black',
         pointerEvents: 'all',
         display: 'flex',

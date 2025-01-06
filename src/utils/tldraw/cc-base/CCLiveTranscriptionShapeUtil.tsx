@@ -1,8 +1,10 @@
 import React from 'react';
-import { CCBaseShape, CCBaseShapeUtil, STYLE_CONSTANTS } from './CCBaseShapeUtil';
-import { T } from '@tldraw/validate';
+import { CCBaseShape, CCBaseShapeUtil } from './CCBaseShapeUtil';
+import { TLShapeId } from 'tldraw';
 import { TranscriptionManager } from './cc-transcription/TranscriptionManager';
-import { TLShapeId } from '@tldraw/tldraw';
+import { ccShapeProps, getDefaultCCLiveTranscriptionProps } from './cc-props';
+import { ccShapeMigrations } from './cc-migrations';
+import { CC_BASE_STYLE_CONSTANTS } from './cc-styles';
 
 export interface TranscriptionSegment {
   id: string
@@ -28,42 +30,17 @@ export interface CCLiveTranscriptionShape extends CCBaseShape {
 }
 
 export class CCLiveTranscriptionShapeUtil extends CCBaseShapeUtil<CCLiveTranscriptionShape> {
-  static type = 'cc-live-transcription' as const;
-  static props = {
-    ...CCBaseShapeUtil.props,
-    isRecording: T.boolean,
-    segments: T.arrayOf(T.object({
-      id: T.string,
-      text: T.string,
-      completed: T.boolean,
-      start: T.string,
-      end: T.string,
-    })),
-    currentSegment: T.object({
-      id: T.string,
-      text: T.string,
-      completed: T.boolean,
-      start: T.string,
-      end: T.string,
-    }).optional(),
-    lastProcessedSegment: T.string.optional(),
+  static override type = 'cc-live-transcription' as const;
+  static override props = ccShapeProps.liveTranscription;
+  static override migrations = ccShapeMigrations.liveTranscription;
+
+  override getDefaultProps(): CCLiveTranscriptionShape['props'] {
+    return getDefaultCCLiveTranscriptionProps() as CCLiveTranscriptionShape['props'];
   }
 
-  getDefaultProps(): CCLiveTranscriptionShape['props'] {
-    return {
-      ...super.getDefaultProps(),
-      title: 'Live Transcription',
-      headerColor: '#3e6589',
-      isRecording: false,
-      segments: [],
-      currentSegment: undefined,
-      lastProcessedSegment: undefined,
-    }
-  }
-
-  renderContent(shape: CCLiveTranscriptionShape): React.ReactNode {
+  override renderContent = (shape: CCLiveTranscriptionShape) => {
     const { isRecording, segments, currentSegment } = shape.props;
-    const contentHeight = shape.props.h - STYLE_CONSTANTS.BASE_HEADER_HEIGHT - 2 * STYLE_CONSTANTS.CONTENT_PADDING;
+    const contentHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT - 2 * CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING;
     const controlsHeight = 80;
     const transcriptHeight = contentHeight - controlsHeight;
 

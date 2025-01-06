@@ -1,12 +1,17 @@
 import { CCBaseShape, CCBaseShapeUtil } from './CCBaseShapeUtil'
-import { DefaultColorStyle } from '@tldraw/tldraw'
-import { T } from '@tldraw/validate'
+import { ccShapeProps, getDefaultCCSettingsProps } from './cc-props'
+import { ccShapeMigrations } from './cc-migrations'
 import { Container, Typography, Paper, Box, Button } from '@mui/material'
 import { useAuth } from '../../../contexts/AuthContext'
 
 export interface CCSettingsShape extends CCBaseShape {
   type: 'cc-settings'
-  props: CCBaseShape['props'] & {
+  props: {
+    title: string
+    w: number
+    h: number
+    headerColor: string
+    isLocked: boolean
     userEmail: string
     userRole: string
     isTeacher: boolean
@@ -14,35 +19,20 @@ export interface CCSettingsShape extends CCBaseShape {
 }
 
 export class CCSettingsShapeUtil extends CCBaseShapeUtil<CCSettingsShape> {
-  static type = 'cc-settings'
-  type = 'cc-settings'
+  static override type = 'cc-settings' as const
+  static override props = ccShapeProps.settings
+  static override migrations = ccShapeMigrations.settings
 
-  static props = {
-    ...CCBaseShapeUtil.props,
-    userEmail: T.string,
-    userRole: T.string,
-    isTeacher: T.boolean,
+  override getDefaultProps(): CCSettingsShape['props'] {
+    return getDefaultCCSettingsProps() as CCSettingsShape['props']
   }
 
-  getDefaultProps(): CCSettingsShape['props'] {
-    return {
-      ...super.getDefaultProps(),
-      title: 'User Settings',
-      w: 400,
-      h: 500,
-      headerColor: DefaultColorStyle.defaultValue,
-      userEmail: '',
-      userRole: '',
-      isTeacher: false,
-    }
-  }
-
-  renderContent = (shape: CCSettingsShape) => {
+  override renderContent = () => {
     // Use AuthContext to show real-time user data
-    const { user, userRole: currentRole } = useAuth();
-    const currentEmail = user?.email || shape.props.userEmail;
-    const currentUserRole = currentRole || shape.props.userRole;
-    const isCurrentTeacher = currentRole?.includes('teacher') || shape.props.isTeacher;
+    const { user, userRole: currentRole } = useAuth()
+    const currentEmail = user?.email || ''
+    const currentUserRole = currentRole || ''
+    const isCurrentTeacher = currentRole?.includes('teacher') || false
 
     return (
       <Container>
