@@ -1,62 +1,174 @@
-import { createShapeId, createShapePropsMigrationIds, createShapePropsMigrationSequence } from 'tldraw'
+import { TLRecord, TLShape } from '@tldraw/tldraw'
+import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps } from './cc-props'
 
-const baseVersions = createShapePropsMigrationIds('cc-base', { Initial: 1 })
-const calendarVersions = createShapePropsMigrationIds('cc-calendar', { Initial: 1 })
-const transcriptionVersions = createShapePropsMigrationIds('cc-live-transcription', { Initial: 1 })
-const settingsVersions = createShapePropsMigrationIds('cc-settings', { Initial: 1 })
+// Export both shape and binding migrations
+export const ccBindingMigrations = {
+  'cc-slide-layout': {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'binding') return record
+          if (record.type !== 'cc-slide-layout') return record
+          return {
+            ...record,
+            props: {
+              ...getDefaultCCSlideLayoutBindingProps(),
+              ...record.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+}
 
 export const ccShapeMigrations = {
-  base: createShapePropsMigrationSequence({
-    sequence: [
-      {
-        id: baseVersions.Initial,
-        up: (props) => props,
-      },
-    ],
-  }),
-
-  calendar: createShapePropsMigrationSequence({
-    sequence: [
-      {
-        id: calendarVersions.Initial,
-        up: (props) => {
-          if (!Array.isArray(props.events)) {
-            props.events = []
-          }
-          if (typeof props.date !== 'string') {
-            props.date = new Date().toISOString()
-          }
-          if (!props.view) {
-            props.view = 'timeGridWeek'
+  base: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-base') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCBaseProps(),
+              ...shape.props,
+            },
           }
         },
-      },
-    ],
-  }),
-
-  liveTranscription: createShapePropsMigrationSequence({
-    sequence: [
-      {
-        id: transcriptionVersions.Initial,
-        up: (props) => {
-          if (!Array.isArray(props.segments)) {
-            props.segments = []
-          }
-          props.segments = props.segments.map((segment: { id?: string }) => ({
-            ...segment,
-            id: segment.id || createShapeId(),
-          }))
+        down: (record: TLRecord) => {
+          return record
         },
       },
-    ],
-  }),
+    },
+  },
 
-  settings: createShapePropsMigrationSequence({
-    sequence: [
-      {
-        id: settingsVersions.Initial,
-        up: (props) => props,
+  calendar: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-calendar') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCCalendarProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
       },
-    ],
-  }),
+    },
+  },
+
+  liveTranscription: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-live-transcription') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCLiveTranscriptionProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  settings: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-settings') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCSettingsProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  slideshow: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-slideshow') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCSlideShowProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  slide: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-slide') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCSlideProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
 } 

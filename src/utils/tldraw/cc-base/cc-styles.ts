@@ -3,9 +3,24 @@ export const CC_BASE_STYLE_CONSTANTS = {
   // Dimensions
   BASE_HEADER_HEIGHT: 32,
   HANDLE_WIDTH: 8,
-  CONTENT_PADDING: 8,
-  HEADER_PADDING: '4px 8px',
-  BORDER_RADIUS: 4,
+  CONTENT_PADDING: 16,
+  HEADER_PADDING: 8,
+  BORDER_RADIUS: 8,
+  BORDER_WIDTH: 2,
+  FONT_FAMILY: 'Inter, sans-serif',
+  FONT_SIZES: {
+    small: 12,
+    medium: 14,
+    large: 16,
+  },
+  COLORS: {
+    primary: '#3e6589',
+    secondary: '#718096',
+    background: '#ffffff',
+    border: '#e2e8f0',
+    text: '#1a202c',
+    textLight: '#718096',
+  },
   
   // Minimum dimensions
   MIN_DIMENSIONS: {
@@ -84,4 +99,22 @@ export const CC_CALENDAR_STYLE_CONSTANTS = {
       margin: '0px 0px',
     }
   }
+} as const 
+
+// Slideshow specific styles
+export const CC_SLIDESHOW_STYLE_CONSTANTS = {
+  DEFAULT_SLIDE_WIDTH: 800,
+  DEFAULT_SLIDE_HEIGHT: 600,
+  SLIDE_HEADER_HEIGHT: 40,
+  SLIDE_HEADER_PADDING: 8,
+  SLIDE_CONTENT_PADDING: 16,
+  SLIDE_BORDER_RADIUS: 4,
+  SLIDE_BORDER_WIDTH: 1,
+  SLIDE_SPACING: 16,
+  SLIDE_COLORS: {
+    background: '#ffffff',
+    border: '#e2e8f0',
+    text: '#ffffff',
+    secondary: '#718096',
+  },
 } as const 

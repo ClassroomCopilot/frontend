@@ -35,7 +35,7 @@ export class CCLiveTranscriptionShapeUtil extends CCBaseShapeUtil<CCLiveTranscri
   static override migrations = ccShapeMigrations.liveTranscription;
 
   override getDefaultProps(): CCLiveTranscriptionShape['props'] {
-    return getDefaultCCLiveTranscriptionProps() as CCLiveTranscriptionShape['props'];
+    return getDefaultCCLiveTranscriptionProps() as unknown as CCLiveTranscriptionShape['props'];
   }
 
   override renderContent = (shape: CCLiveTranscriptionShape) => {

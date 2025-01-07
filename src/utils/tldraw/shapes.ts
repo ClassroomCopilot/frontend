@@ -1,45 +1,17 @@
 // Custom tldraw utils
-import { MicrophoneShapeUtil } from './transcription/MicrophoneShapeUtil';
-import { TranscriptionTextShapeUtil } from './transcription/TranscriptionTextShapeUtil';
-import { SlideShapeUtil, SlideShowShapeUtil } from './slides/SlideShapeUtil';
-import { GraphShapeUtils } from './graph/graphShapeUtil';
-import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
-import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
-import { CCSettingsShapeUtil } from './cc-base/CCSettingsShapeUtil'
+import { CCSlideShowShapeUtil } from './cc-base/CCSlideShowShapeUtil'
+import { CCSlideShapeUtil } from './cc-base/CCSlideShapeUtil'
 import { CCCalendarShapeUtil } from './cc-base/CCCalendarShapeUtil'
+import { CCSettingsShapeUtil } from './cc-base/CCSettingsShapeUtil'
 import { CCLiveTranscriptionShapeUtil } from './cc-base/CCLiveTranscriptionShapeUtil'
 
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
-    // Development shapes
-    YoutubeEmbed: YoutubeEmbedShapeUtil,
-    
-    // Calendar shapes
-    Calendar: CalendarShapeUtil,
-    
-    // Transcription shapes
-    Microphone: MicrophoneShapeUtil,
-    TranscriptionText: TranscriptionTextShapeUtil,
-    
-    // Slide shapes
-    Slide: SlideShapeUtil,
-    SlideShow: SlideShowShapeUtil,
-    
-    // Graph shapes
-    ...GraphShapeUtils,
+  CCSlideShow: CCSlideShowShapeUtil,
+  CCSlide: CCSlideShapeUtil,
+  CCCalendar: CCCalendarShapeUtil,
+  CCSettings: CCSettingsShapeUtil,
+  CCLiveTranscription: CCLiveTranscriptionShapeUtil,
+}
 
-    // CC shapes
-    CCSettings: CCSettingsShapeUtil,
-    CCCalendar: CCCalendarShapeUtil,
-    CCLiveTranscription: CCLiveTranscriptionShapeUtil,
-};
-
-// Export arrays for different use cases
-export const devShapeUtils = [
-    ShapeUtils.CCSettings,
-    ShapeUtils.CCCalendar,
-    ShapeUtils.YoutubeEmbed,
-    ShapeUtils.CCLiveTranscription,
-];
-
-export const allShapeUtils = Object.values(ShapeUtils);
+export const allShapeUtils = Object.values(ShapeUtils)

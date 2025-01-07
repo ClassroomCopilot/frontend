@@ -1,4 +1,5 @@
 import { SlideShapeTool, SlideShowShapeTool } from './slides/SlideShapeTool';
+import { CCSlideShowShapeTool, CCSlideShapeTool } from './cc-base/CCSlideShapeTool';
 import MicrophoneStateTool from './transcription/MicrophoneStateTool';
 import { CalendarShapeTool } from './calendar/CalendarShapeTool';
 import { HeartStickerTool, SmileyStickerTool, StarStickerTool } from './tools/sticker-tool';
@@ -9,6 +10,8 @@ export const baseTools = [
     SlideShowShapeTool,
     SlideShapeTool,
     CalendarShapeTool,
+    CCSlideShowShapeTool,
+    CCSlideShapeTool,
 ] as const;
 
 // Sticker tools that can be added to any mode

@@ -350,17 +350,6 @@ export class SlideShapeUtil extends ShapeUtil<SlideShape> {
 	}
 
 	override onBeforeCreate = (shape: SlideShape) => {
-		/*
-		return {
-			...shape,
-			props: {
-				...shape.props,
-				isCurrentSlide: false,
-				parentId: null,
-				slideIndex: 0,
-			},
-		}
-		*/
 		return shape
 	}
 
