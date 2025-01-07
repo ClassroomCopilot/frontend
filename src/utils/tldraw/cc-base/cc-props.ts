@@ -17,7 +17,19 @@ export const ccShapeProps = {
     date: T.string,
     selectedDate: T.string,
     view: T.string,
-    events: T.arrayOf(T.object({})),
+    events: T.arrayOf(T.object({
+      id: T.string,
+      title: T.string,
+      start: T.string,
+      end: T.string,
+      groupId: T.string.optional(),
+      extendedProps: T.object({
+        subjectClass: T.string,
+        color: T.string,
+        periodCode: T.string,
+        path: T.string.optional()
+      })
+    })),
   },
 
   liveTranscription: {
