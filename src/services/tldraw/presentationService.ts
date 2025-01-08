@@ -52,12 +52,10 @@ export class PresentationService {
                 type: 'frame',
                 x: 0,
                 y: 0,
-                opacity: 0,
                 props: {
                     w: 1,
                     h: 1,
-                    name: 'camera-proxy',
-                    opacity: 0
+                    name: 'camera-proxy'
                 }
             })
         }
