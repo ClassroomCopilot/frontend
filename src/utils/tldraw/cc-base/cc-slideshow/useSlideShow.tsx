@@ -3,17 +3,6 @@ import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideShape } from './CCSlideShapeUtil'
 import { logger } from '../../../../debugConfig'
 
-// Declare custom event type
-declare module '@tldraw/tldraw' {
-  interface TLEventMap {
-    'custom-presentation-slide-change': {
-      slideId: string
-      slideshowId: string
-      index: number
-    }
-  }
-}
-
 // Atoms for tracking current slideshow and slide
 export const $currentSlideShow = atom<CCSlideShowShape | null>('current slideshow', null)
 export const $currentSlide = atom<CCSlideShape | null>('current slide', null)
@@ -97,48 +86,26 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
       }
     })
 
-    // Always update UI atoms
-    logger.debug('selection', '🔄 Updating UI state atoms', {
-      previousSlide: $currentSlide.get()?.id,
-      newSlide: slide.id,
-      previousSlideshow: $currentSlideShow.get()?.id,
-      newSlideshow: parentSlideshow.id
-    })
-    
-    $currentSlide.set(slide)
-    $currentSlideShow.set(parentSlideshow)
-
-    // Handle camera movement
-    const bounds = editor.getShapePageBounds(slide.id)
-    if (bounds) {
-      logger.debug('camera', '🎥 Moving camera', {
-        slideId: slide.id,
-        bounds,
-        isPresentation
+    // Only update UI atoms if not in presentation mode
+    if (!isPresentation) {
+      logger.debug('selection', '🔄 Updating UI state atoms', {
+        previousSlide: $currentSlide.get()?.id,
+        newSlide: slide.id,
+        previousSlideshow: $currentSlideShow.get()?.id,
+        newSlideshow: parentSlideshow.id
       })
       
-      if (isPresentation) {
-        // Stop any existing camera animation
-        editor.stopCameraAnimation()
-        
-        // In presentation mode, use a smoother animation and fit to screen
-        const viewportBounds = editor.getViewportScreenBounds()
-        const scale = Math.min(
-          viewportBounds.width / bounds.width,
-          viewportBounds.height / bounds.height,
-          1
-        )
+      $currentSlide.set(slide)
+      $currentSlideShow.set(parentSlideshow)
 
-        editor.zoomToBounds(bounds, {
-          animation: {
-            duration: 500,
-            easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-          },
-          targetZoom: scale,
-          inset: 0
+      // Move camera for non-presentation mode
+      const bounds = editor.getShapePageBounds(slide.id)
+      if (bounds) {
+        logger.debug('camera', '🎥 Moving camera (non-presentation)', {
+          slideId: slide.id,
+          bounds
         })
-      } else {
-        // In regular mode, just center on the slide
+        
         editor.zoomToBounds(bounds, { 
           animation: { duration: 500 }, 
           inset: 0,
@@ -146,17 +113,7 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
         })
       }
     }
-
-    // Broadcast the slide change to other users if in presentation mode
-    if (isPresentation) {
-      editor.emit('custom-presentation-slide-change', {
-        slideId: slide.id,
-        slideshowId: parentSlideshow.id,
-        index: slideIndex
-      })
-    }
   })
-
   logger.info('navigation', '✅ Slide transition complete', {
     slideId: slide.id,
     slideIndex,
