@@ -1,10 +1,10 @@
 import React from 'react';
-import { CCBaseShape, CCBaseShapeUtil } from './CCBaseShapeUtil';
-import { TLShapeId } from 'tldraw';
-import { TranscriptionManager } from './cc-transcription/TranscriptionManager';
-import { ccShapeProps, getDefaultCCLiveTranscriptionProps } from './cc-props';
-import { ccShapeMigrations } from './cc-migrations';
-import { CC_BASE_STYLE_CONSTANTS } from './cc-styles';
+import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil';
+import { TLShapeId } from '@tldraw/tldraw';
+import { TranscriptionManager } from '../cc-transcription/TranscriptionManager';
+import { ccShapeProps, getDefaultCCLiveTranscriptionProps } from '../cc-props';
+import { ccShapeMigrations } from '../cc-migrations';
+import { CC_BASE_STYLE_CONSTANTS } from '../cc-styles';
 
 export interface TranscriptionSegment {
   id: string
@@ -40,7 +40,7 @@ export class CCLiveTranscriptionShapeUtil extends CCBaseShapeUtil<CCLiveTranscri
 
   override renderContent = (shape: CCLiveTranscriptionShape) => {
     const { isRecording, segments, currentSegment } = shape.props;
-    const contentHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT - 2 * CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING;
+    const contentHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.HEADER.height - 2 * CC_BASE_STYLE_CONSTANTS.CONTENT.padding;
     const controlsHeight = 80;
     const transcriptHeight = contentHeight - controlsHeight;
 

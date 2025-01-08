@@ -3,7 +3,6 @@ import {
     TLUiOverrides,
     TldrawUiToastsProvider,
     TLUiToast,
-    Editor,
     TLUiToastsContextType,
     Atom,
     atom
@@ -16,7 +15,7 @@ import { presentationUiOverridesIndex, regularUiOverridesIndex } from './ui-over
 // Toast Wrapper Component
 const ToastWrapper = ({ children }: { children: ReactNode }) => {
     // Create custom toast overrides
-    const toastOverrides = (editor: Editor): TLUiToastsContextType => {
+    const toastOverrides = (): TLUiToastsContextType => {
         const toasts: Atom<TLUiToast[]> = atom('toasts', []);
 
         return {

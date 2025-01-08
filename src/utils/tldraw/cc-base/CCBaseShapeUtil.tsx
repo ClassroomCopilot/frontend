@@ -10,7 +10,7 @@ import {
   IndexKey,
   HTMLContainer,
 } from 'tldraw'
-import { ccShapeProps, getDefaultCCBaseProps } from './cc-props'
+import { ccShapeProps } from './cc-props'
 import { ccShapeMigrations } from './cc-migrations'
 import { CC_BASE_STYLE_CONSTANTS } from './cc-styles'
 
@@ -30,6 +30,25 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
   static override type = 'cc-base'
   static override props = ccShapeProps.base
   static override migrations = ccShapeMigrations.base
+  
+  // Default indicator for the shape
+  indicator = (shape: T) => {
+    const {
+      props: { w, h },
+    } = shape
+    
+    return (
+      <rect
+        width={toDomPrecision(w)}
+        height={toDomPrecision(h)}
+        fill="none"
+        rx={CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius}
+        ry={CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius}
+        stroke={CC_BASE_STYLE_CONSTANTS.COLORS.border}
+        strokeWidth={CC_BASE_STYLE_CONSTANTS.CONTAINER.borderWidth}
+      />
+    )
+  }
 
   // Default component that renders the shape's container and title
   component = (shape: T) => {
@@ -56,11 +75,11 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
             top: 0,
             left: 0,
             width: '100%',
-            height: CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT,
+            height: CC_BASE_STYLE_CONSTANTS.HEADER.height,
+            padding: CC_BASE_STYLE_CONSTANTS.HEADER.padding,
             backgroundColor: headerColor,
-            borderTopLeftRadius: CC_BASE_STYLE_CONSTANTS.HEADER.borderTopLeftRadius,
-            borderTopRightRadius: CC_BASE_STYLE_CONSTANTS.HEADER.borderTopRightRadius,
-            padding: CC_BASE_STYLE_CONSTANTS.HEADER_PADDING,
+            borderTopLeftRadius: CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius,
+            borderTopRightRadius: CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -73,12 +92,12 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
         <div
           style={{
             position: 'absolute',
-            top: CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT,
+            top: CC_BASE_STYLE_CONSTANTS.HEADER.height,
             left: 0,
             right: 0,
             bottom: 0,
             overflow: 'auto',
-            padding: CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING,
+            padding: CC_BASE_STYLE_CONSTANTS.CONTENT.padding,
             backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
           }}
         >
@@ -108,7 +127,7 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
   }
 
   // Override to provide shape-specific handles
-  override getHandles(shape: T): TLHandle[] {
+  getHandles(shape: T): TLHandle[] {
     const handles: TLHandle[] = []
     
     // Add default binding handles on each side
@@ -135,25 +154,4 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
   // Abstract method that each shape must implement to render its content
   abstract renderContent(shape: T): React.ReactNode
 
-  // Default indicator for the shape
-  indicator = (shape: T) => {
-    const {
-      props: { w, h },
-    } = shape
-    
-    return (
-      <rect
-        width={toDomPrecision(w)}
-        height={toDomPrecision(h)}
-        fill="none"
-        rx={CC_BASE_STYLE_CONSTANTS.BORDER_RADIUS}
-        ry={CC_BASE_STYLE_CONSTANTS.BORDER_RADIUS}
-      />
-    )
-  }
-
-  // Create default shape properties
-  override getDefaultProps(): T['props'] {
-    return getDefaultCCBaseProps() as T['props']
-  }
 } 

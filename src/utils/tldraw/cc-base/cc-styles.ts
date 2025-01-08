@@ -1,49 +1,47 @@
 // Style constants used by all CC shapes
 export const CC_BASE_STYLE_CONSTANTS = {
-  // Dimensions
-  BASE_HEADER_HEIGHT: 32,
-  HANDLE_WIDTH: 8,
-  CONTENT_PADDING: 16,
-  HEADER_PADDING: 8,
-  BORDER_RADIUS: 8,
-  BORDER_WIDTH: 2,
   FONT_FAMILY: 'Inter, sans-serif',
   FONT_SIZES: {
     small: 12,
     medium: 14,
     large: 16,
   },
+  // Container styles
+  CONTAINER: {
+    borderRadius: '4px',
+    borderWidth: '2px',
+    borderColor: '#e2e8f0',
+    boxShadow: '0 2px 4px var(--color-muted-1)',
+  },
+  HEADER: {
+    height: 32,
+    padding: 8,
+    borderRadius: 4,
+  },
+  CONTENT: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    backgroundColor: 'white',
+  },
+  HANDLE: {
+    width: 8,
+  },
   COLORS: {
     primary: '#3e6589',
+    primary_dark: '#2e4a69',
     secondary: '#718096',
+    secondary_dark: '#5a687a',
     background: '#ffffff',
     border: '#e2e8f0',
     text: '#1a202c',
     textLight: '#718096',
   },
-  
   // Minimum dimensions
   MIN_DIMENSIONS: {
     width: 100,
     height: 100,
   },
-
-  // Container styles
-  CONTAINER: {
-    borderRadius: '4px',
-    boxShadow: '0 2px 4px var(--color-muted-1)',
-  },
-
-  // Header styles
-  HEADER: {
-    borderTopLeftRadius: '4px',
-    borderTopRightRadius: '4px',
-  },
-
-  // Content styles
-  CONTENT: {
-    backgroundColor: 'white',
-  }
 } as const 
 
 // Calendar specific styles

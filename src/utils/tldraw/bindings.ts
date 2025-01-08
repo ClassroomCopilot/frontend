@@ -1,6 +1,6 @@
 // TLDraw bindings
 import { TLAnyBindingUtilConstructor } from '@tldraw/tldraw'
-import { CCSlideLayoutBindingUtil } from './cc-base/CCSlideLayoutBindingUtil'
+import { CCSlideLayoutBindingUtil } from './cc-base/cc-slideshow/CCSlideLayoutBindingUtil'
 import { ccBindingProps } from './cc-base/cc-props'
 
 // Export CC bindings

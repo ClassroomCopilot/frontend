@@ -1,6 +1,11 @@
 import { TLUiOverrides, computed } from '@tldraw/tldraw'
-import { getSlidesFromPage, moveToSlide, $currentSlide, $currentSlideShow, getSlideShowsFromPage, moveToSlideShow } from '../../../slides/useSlides'
-import { SlideShape, SlideShowShape } from '../../../slides/SlideShapeUtil'
+import { 
+    moveToSlide, 
+    $currentSlideShow, 
+    getSlideShowsFromPage, 
+    moveToSlideShow 
+} from '../../../cc-base/cc-slideshow/useSlideShow'
+import { CCSlideShape } from '../../../cc-base/cc-slideshow/CCSlideShapeUtil'
 import { logger } from '../../../../../debugConfig'
 
 export const actionsRegularUiOverrides: TLUiOverrides = {
@@ -16,7 +21,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
             },
         }
 
-        const $slides = computed('slides', () => getSlidesFromPage(editor));
+        // Navigation actions
         actions['next-slide'] = {
             id: 'next-slide',
             label: 'Next slide',
@@ -29,7 +34,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                 }
 
                 const nextIndex = (currentShow.props.currentSlideIndex + 1) % currentShow.props.slides.length
-                const nextSlide = editor.getShape(currentShow.props.slides[nextIndex]) as SlideShape
+                const nextSlide = editor.getShape(currentShow.props.slides[nextIndex]) as CCSlideShape
                 
                 if (nextSlide) {
                     logger.info('navigation', '⌨️ Next slide shortcut', {
@@ -39,10 +44,11 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                         slideshowId: currentShow.id,
                         timestamp: new Date().toISOString()
                     })
-                    moveToSlide(editor, nextSlide, true)
+                    moveToSlide(editor, nextSlide)
                 }
             },
         };
+
         actions['previous-slide'] = {
             id: 'previous-slide',
             label: 'Previous slide',
@@ -55,7 +61,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                 }
 
                 const prevIndex = (currentShow.props.currentSlideIndex - 1 + currentShow.props.slides.length) % currentShow.props.slides.length
-                const prevSlide = editor.getShape(currentShow.props.slides[prevIndex]) as SlideShape
+                const prevSlide = editor.getShape(currentShow.props.slides[prevIndex]) as CCSlideShape
                 
                 if (prevSlide) {
                     logger.info('navigation', '⌨️ Previous slide shortcut', {
@@ -65,20 +71,21 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                         slideshowId: currentShow.id,
                         timestamp: new Date().toISOString()
                     })
-                    moveToSlide(editor, prevSlide, true)
+                    moveToSlide(editor, prevSlide)
                 }
             },
         };
+
         const $slideshows = computed('slideshows', () => getSlideShowsFromPage(editor));
+        
         actions['next-slideshow'] = {
             id: 'next-slideshow',
-            label: 'Next slide',
+            label: 'Next slideshow',
             kbd: 'ctrl+right',
             onSelect() {
-                console.log('next-slideshow')
                 const slideshows = $slideshows.get();
                 const currentSlideshow = $currentSlideShow.get();
-                const index = slideshows.findIndex((s) => s.id === currentSlideshow?.id);
+                const index = slideshows.findIndex((show) => show.id === currentSlideshow?.id);
                 const nextSlideshow = slideshows[index + 1] ?? currentSlideshow ?? slideshows[0];
                 if (nextSlideshow) {
                     editor.stopCameraAnimation();
@@ -86,15 +93,15 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                 }
             },
         };
+
         actions['previous-slideshow'] = {
             id: 'previous-slideshow',
             label: 'Previous slideshow',
             kbd: 'ctrl+left',
             onSelect() {
-                console.log('previous-slideshow')
                 const slideshows = $slideshows.get();
                 const currentSlideshow = $currentSlideShow.get();
-                const index = slideshows.findIndex((s) => s.id === currentSlideshow?.id);
+                const index = slideshows.findIndex((show) => show.id === currentSlideshow?.id);
                 const previousSlideshow = slideshows[index - 1] ?? currentSlideshow ?? slideshows[slideshows.length - 1];
                 if (previousSlideshow) {
                     editor.stopCameraAnimation();
@@ -102,6 +109,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                 }
             },
         };
+
         return actions;
     }
 };

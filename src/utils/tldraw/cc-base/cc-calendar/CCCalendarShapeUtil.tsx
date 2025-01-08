@@ -1,9 +1,9 @@
-import { CCBaseShape, CCBaseShapeUtil } from './CCBaseShapeUtil'
-import { ccShapeProps, getDefaultCCCalendarProps } from './cc-props'
-import { ccShapeMigrations } from './cc-migrations'
+import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { ccShapeProps, getDefaultCCCalendarProps } from '../cc-props'
+import { ccShapeMigrations } from '../cc-migrations'
 import { Rectangle2d } from 'tldraw'
-import { CalendarComponent, CalendarViewType } from './cc-calendar/CalendarComponent'
-import { TeacherTimetableEvent } from '../../../services/graph/timetableNeoDBService'
+import { CalendarComponent, CalendarViewType } from './CalendarComponent'
+import { TeacherTimetableEvent } from '../../../../services/graph/timetableNeoDBService'
 
 export interface CCCalendarShape extends CCBaseShape {
   type: 'cc-calendar'
@@ -44,18 +44,6 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
 
   override renderContent = (shape: CCCalendarShape) => {
     return <CalendarComponent shape={shape} />
-  }
-
-  override indicator = (shape: CCCalendarShape) => {
-    return (
-      <rect
-        width={shape.props.w}
-        height={shape.props.h}
-        fill="none"
-        stroke="lightgray"
-        strokeWidth={1}
-      />
-    )
   }
 
   override getGeometry(shape: CCCalendarShape) {

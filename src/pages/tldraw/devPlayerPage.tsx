@@ -4,7 +4,8 @@ import {
     Editor,
     useTldrawUser,
     DEFAULT_SUPPORT_VIDEO_TYPES,
-    DEFAULT_SUPPORTED_IMAGE_TYPES
+    DEFAULT_SUPPORTED_IMAGE_TYPES,
+    TLAnyShapeUtilConstructor
 } from '@tldraw/tldraw';
 // App context
 import { useTLDraw } from '../../contexts/TLDrawContext';
@@ -23,7 +24,6 @@ import { customSchema } from '../../utils/tldraw/schemas';
 import { HEADER_HEIGHT } from '../../pages/Layout';
 // Styles
 import '../../utils/tldraw/tldraw.css';
-import '../../utils/tldraw/slides/slides.css';
 // App debug
 import { logger } from '../../debugConfig';
 
@@ -57,7 +57,7 @@ export default function TLDrawDevPage() {
 
     const store = useMemo(() => localStoreService.getStore({
         schema: customSchema,
-        shapeUtils: allShapeUtils,
+        shapeUtils: [...allShapeUtils] as TLAnyShapeUtilConstructor[],
         bindingUtils: allBindingUtils
     }), []);
 
@@ -113,7 +113,7 @@ export default function TLDrawDevPage() {
                 user={tldrawUser}
                 store={store}
                 tools={devTools}
-                shapeUtils={allShapeUtils}
+                shapeUtils={allShapeUtils as TLAnyShapeUtilConstructor[]}
                 bindingUtils={allBindingUtils}
                 components={uiComponents}
                 overrides={uiOverrides}

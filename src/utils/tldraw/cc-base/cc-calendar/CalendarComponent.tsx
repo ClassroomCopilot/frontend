@@ -9,7 +9,7 @@ import { ClassFilterModal, ViewMenuModal, EventDetailsModal } from './CalendarMo
 import { useCalendarOptions } from './useCalendarOptions'
 import { openTldrawFile } from './utils'
 import { CC_BASE_STYLE_CONSTANTS } from '../cc-styles'
-import { CCCalendarShape } from './../CCCalendarShapeUtil'
+import { CCCalendarShape } from './CCCalendarShapeUtil'
 
 export type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listYear' | 'listMonth' | 'listWeek' | 'listDay' | 'timeGridYear' | 'timeGridMonth'
 
@@ -154,14 +154,14 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
 
   // Calculate available height for calendar
   const getAvailableHeight = useCallback(() => {
-    const totalPadding = CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING * 2
-    const availableHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.BASE_HEADER_HEIGHT - totalPadding
+    const totalPadding = CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2
+    const availableHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.HEADER.height - totalPadding
     return Math.max(availableHeight, CC_BASE_STYLE_CONSTANTS.MIN_DIMENSIONS.height)
   }, [shape.props.h])
 
   // Calculate available width for calendar
   const getAvailableWidth = useCallback(() => {
-    const totalPadding = CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING * 2
+    const totalPadding = CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2
     const availableWidth = shape.props.w - totalPadding
     return Math.max(availableWidth, CC_BASE_STYLE_CONSTANTS.MIN_DIMENSIONS.width)
   }, [shape.props.w])
@@ -200,7 +200,7 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
         position: 'relative',
         overflow: 'hidden',
         backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
-        padding: CC_BASE_STYLE_CONSTANTS.CONTENT_PADDING,
+        padding: CC_BASE_STYLE_CONSTANTS.CONTENT.padding,
         color: 'black',
         pointerEvents: 'all',
         display: 'flex',

@@ -1,4 +1,4 @@
-import { BaseBoxShapeTool, StateNode, TLPointerEventInfo } from '@tldraw/tldraw'
+import { BaseBoxShapeTool, StateNode } from '@tldraw/tldraw'
 
 export class CCSlideShowShapeTool extends BaseBoxShapeTool {
   static override id = 'cc-slideshow'

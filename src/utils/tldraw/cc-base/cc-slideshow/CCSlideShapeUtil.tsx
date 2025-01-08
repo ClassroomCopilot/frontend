@@ -1,30 +1,29 @@
-import { ShapeUtil, TLBaseShape, HTMLContainer, DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, Rectangle2d } from '@tldraw/tldraw'
-import { getDefaultCCSlideProps } from './cc-props'
-import { CC_SLIDESHOW_STYLE_CONSTANTS } from './cc-styles'
-import { ccShapeProps } from './cc-props'
-import { ccShapeMigrations } from './cc-migrations'
+import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle } from '@tldraw/tldraw'
+import { getDefaultCCSlideProps } from '../cc-props'
+import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
+import { ccShapeProps } from '../cc-props'
+import { ccShapeMigrations } from '../cc-migrations'
+import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
 
-type CCSlideShowShapeProps = {
-  w: number
-  h: number
-  slides: string[]
-  slidePattern: 'vertical' | 'horizontal' | 'grid'
+type CCSlideShowShapeProps = CCSlideShowShape['props']
+
+export interface CCSlideShape extends CCBaseShape {
+  type: 'cc-slide'
+  props: {
+    title: string
+    w: number
+    h: number
+    headerColor: string
+    isLocked: boolean
+  }
 }
 
-export type CCSlideShape = TLBaseShape<'cc-slide', {
-  title: string
-  w: number
-  h: number
-  headerColor: string
-  isLocked: boolean
-}>
-
-export class CCSlideShapeUtil extends ShapeUtil<CCSlideShape> {
-  static type = 'cc-slide' as const
-  static props = ccShapeProps.slide
-  static migrations = ccShapeMigrations.slide
+export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
+  static override type = 'cc-slide' as const
+  static override props = ccShapeProps.slide
+  static override migrations = ccShapeMigrations.slide
 
   static styles = {
     color: DefaultColorStyle,
@@ -32,111 +31,18 @@ export class CCSlideShapeUtil extends ShapeUtil<CCSlideShape> {
     size: DefaultSizeStyle,
   }
 
-  getDefaultProps() {
-    return getDefaultCCSlideProps()
+  getDefaultProps(): CCSlideShape['props'] {
+    return getDefaultCCSlideProps() as CCSlideShape['props']
   }
 
-  getGeometry(shape: CCSlideShape) {
-    return new Rectangle2d({
-      width: shape.props.w,
-      height: shape.props.h,
-      isFilled: true,
-    })
+  renderContent() {
+    return null
   }
-
-  component(shape: CCSlideShape) {
-    const { title, headerColor } = shape.props
-    const { SLIDE_COLORS } = CC_SLIDESHOW_STYLE_CONSTANTS
-
-    return (
-      <HTMLContainer
-        id={shape.id}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: SLIDE_COLORS.background,
-            borderRadius: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_BORDER_RADIUS,
-            border: `${CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_BORDER_WIDTH}px solid ${SLIDE_COLORS.border}`,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div
-            style={{
-              height: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
-              padding: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_PADDING,
-              backgroundColor: headerColor,
-              color: SLIDE_COLORS.text,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '14px',
-              fontWeight: 'bold',
-            }}
-          >
-            <span>{title}</span>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              padding: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING,
-              overflow: 'auto',
-            }}
-          />
-        </div>
-      </HTMLContainer>
-    )
-  }
-
-  indicator(shape: CCSlideShape) {
-    const isHovered = this.editor.getHoveredShapeId() === shape.id;
-
-    return (
-      <>
-        <rect 
-          width={shape.props.w} 
-          height={CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT}
-          fill="none"
-          stroke={isHovered ? "var(--color-selected)" : "none"}
-          strokeWidth={2}
-        />
-        <rect 
-          width={shape.props.w} 
-          height={shape.props.h}
-          fill="none"
-          stroke={isHovered ? "var(--color-selected)" : "none"}
-          strokeWidth={2}
-        />
-      </>
-    )
-  }
-
-  onPointerEnter = () => {
-    this.editor.setCursor({ type: 'pointer' });
-  }
-
-  onPointerLeave = () => {
-    this.editor.setCursor({ type: 'default' });
-  }
-
-  canEdit = () => true
-  hideResizeHandles = () => false
+  
+  canResize = () => false
   hideRotateHandle = () => true
-  hideSelectionBoundsFg = () => false
-  hideSelectionBoundsBg = () => false
-  canUnmount = () => true
 
-  onBeforeCreate(shape: CCSlideShape): CCSlideShape {
-    return shape
-  }
-
-  override canBind({ fromShapeType, toShapeType, bindingType }: {
+  canBind({ fromShapeType, toShapeType, bindingType }: {
     fromShapeType: string
     toShapeType: string
     bindingType: string
@@ -144,7 +50,11 @@ export class CCSlideShapeUtil extends ShapeUtil<CCSlideShape> {
     return fromShapeType === 'cc-slideshow' && toShapeType === 'cc-slide' && bindingType === 'cc-slide-layout'
   }
 
-  override onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
+  onBeforeCreate(shape: CCSlideShape): CCSlideShape {
+    return shape
+  }
+
+  onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
     const bindings = this.editor.getBindingsToShape(current.id, 'cc-slide-layout')
     const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
 
@@ -344,7 +254,7 @@ export class CCSlideShapeUtil extends ShapeUtil<CCSlideShape> {
     }
   }
 
-  override onTranslateEnd = (shape: CCSlideShape) => {
+  onTranslateEnd = (shape: CCSlideShape) => {
     const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
     const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
 
@@ -488,65 +398,6 @@ export class CCSlideShapeUtil extends ShapeUtil<CCSlideShape> {
         });
       }
     }
-  }
-
-  onPointerDown = (shape: CCSlideShape, event: { x: number; y: number }) => {
-    const { y } = event;
-    
-    // If clicking on header, ensure this slide is selected
-    if (y <= CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT) {
-      // First deselect everything
-      this.editor.selectNone();
-      // Then select only this slide
-      this.editor.select(shape.id);
-      return true;  // Indicate we've handled the event
-    }
-
-    return false;  // Let other handlers process the event
-  }
-
-  isPointInShape(shape: CCSlideShape, point: { x: number; y: number }, margin?: number) {
-    const { y } = point;
-    
-    // Give highest priority to header area for dragging
-    if (y <= CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT) {
-      return {
-        isHit: true,
-        priority: 2  // Higher priority than slideshow
-      };
-    }
-
-    // For the rest of the shape, use default hit testing with lower priority
-    return {
-      isHit: this.getGeometry(shape).bounds.containsPoint(point, margin ?? 0),
-      priority: 1
-    };
-  }
-
-  hitTestPoint(shape: CCSlideShape, point: { x: number; y: number }, margin?: number) {
-    const { y } = point;
-    
-    // Give highest priority to header area for dragging
-    if (y <= CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT) {
-      return {
-        isHit: true,
-        priority: 2  // Higher priority than slideshow
-      };
-    }
-
-    // For the rest of the shape, use default hit testing with lower priority
-    return {
-      isHit: this.getGeometry(shape).bounds.containsPoint(point, margin ?? 0),
-      priority: 1
-    };
-  }
-
-  shouldRenderIndicator = () => {
-    return true;  // Always show indicator to help with dragging
-  }
-
-  canDrag = () => {
-    return true;  // Always allow dragging
   }
 
   getParentId = (shape: CCSlideShape) => {

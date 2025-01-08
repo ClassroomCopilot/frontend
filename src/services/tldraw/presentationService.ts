@@ -24,7 +24,7 @@ export class PresentationService {
         // Find initial slideshow to track
         const slideshows = this.editor.getSortedChildIdsForParent(this.editor.getCurrentPageId())
             .map(id => this.editor.getShape(id))
-            .filter(shape => shape?.type === 'slideshow')
+            .filter(shape => shape?.type === 'cc-slideshow')
 
         logger.debug('presentation', '🔍 Found slideshows', {
             count: slideshows.length,

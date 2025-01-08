@@ -11,11 +11,11 @@ export const toolsRegularUiOverrides: TLUiOverrides = {
         onSelect: () => editor.setCurrentTool('microphone'),
       },
       slide: {
-        id: 'slide',
+        id: 'cc-slide',
         icon: 'group',
         label: 'Slide',
         kbd: 's',
-        onSelect: () => editor.setCurrentTool('slide'),
+        onSelect: () => editor.setCurrentTool('cc-slide'),
       },
     }
 
