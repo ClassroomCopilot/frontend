@@ -91,7 +91,7 @@ export const actionsPresentationUiOverrides: TLUiOverrides = {
                 const nextSlideshow = slideshows[index + 1] ?? currentSlideshow ?? slideshows[0];
                 if (nextSlideshow) {
                     editor.stopCameraAnimation();
-                    moveToSlideShow(editor, nextSlideshow);
+                    moveToSlideShow(editor, nextSlideshow, true);
                 }
             },
         };
@@ -107,7 +107,7 @@ export const actionsPresentationUiOverrides: TLUiOverrides = {
                 const previousSlideshow = slideshows[index - 1] ?? currentSlideshow ?? slideshows[slideshows.length - 1];
                 if (previousSlideshow) {
                     editor.stopCameraAnimation();
-                    moveToSlideShow(editor, previousSlideshow);
+                    moveToSlideShow(editor, previousSlideshow, true);
                 }
             },
         };

@@ -44,7 +44,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                         slideshowId: currentShow.id,
                         timestamp: new Date().toISOString()
                     })
-                    moveToSlide(editor, nextSlide)
+                    moveToSlide(editor, nextSlide, false)
                 }
             },
         };
@@ -71,7 +71,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                         slideshowId: currentShow.id,
                         timestamp: new Date().toISOString()
                     })
-                    moveToSlide(editor, prevSlide)
+                    moveToSlide(editor, prevSlide, false)
                 }
             },
         };
@@ -89,7 +89,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                 const nextSlideshow = slideshows[index + 1] ?? currentSlideshow ?? slideshows[0];
                 if (nextSlideshow) {
                     editor.stopCameraAnimation();
-                    moveToSlideShow(editor, nextSlideshow);
+                    moveToSlideShow(editor, nextSlideshow, false);
                 }
             },
         };
@@ -105,7 +105,7 @@ export const actionsRegularUiOverrides: TLUiOverrides = {
                 const previousSlideshow = slideshows[index - 1] ?? currentSlideshow ?? slideshows[slideshows.length - 1];
                 if (previousSlideshow) {
                     editor.stopCameraAnimation();
-                    moveToSlideShow(editor, previousSlideshow);
+                    moveToSlideShow(editor, previousSlideshow, false);
                 }
             },
         };

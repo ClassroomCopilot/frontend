@@ -70,6 +70,9 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
     totalSlides: parentSlideshow.props.slides.length
   })
   
+  // Stop any ongoing camera animations before making changes
+  editor.stopCameraAnimation()
+  
   editor.batch(() => {
     logger.debug('navigation', '🔄 Starting slide transition', {
       from: parentSlideshow.props.currentSlideIndex,
@@ -86,34 +89,38 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
       }
     })
 
-    // Only update UI atoms if not in presentation mode
-    if (!isPresentation) {
-      logger.debug('selection', '🔄 Updating UI state atoms', {
-        previousSlide: $currentSlide.get()?.id,
-        newSlide: slide.id,
-        previousSlideshow: $currentSlideShow.get()?.id,
-        newSlideshow: parentSlideshow.id
+    // Update UI atoms regardless of presentation mode
+    // This ensures consistent state tracking
+    $currentSlide.set(slide)
+    $currentSlideShow.set(parentSlideshow)
+
+    // Handle camera movement
+    const bounds = editor.getShapePageBounds(slide.id)
+    if (bounds) {
+      logger.debug('camera', '🎥 Moving camera', {
+        slideId: slide.id,
+        bounds,
+        isPresentation
       })
       
-      $currentSlide.set(slide)
-      $currentSlideShow.set(parentSlideshow)
-
-      // Move camera for non-presentation mode
-      const bounds = editor.getShapePageBounds(slide.id)
-      if (bounds) {
-        logger.debug('camera', '🎥 Moving camera (non-presentation)', {
-          slideId: slide.id,
-          bounds
+      if (isPresentation) {
+        // In presentation mode, use a faster animation with different zoom
+        editor.zoomToBounds(bounds, {
+          animation: { duration: 350 },
+          inset: 20,
+          targetZoom: Math.min(editor.getViewportScreenBounds().width / bounds.width, 1)
         })
-        
-        editor.zoomToBounds(bounds, { 
-          animation: { duration: 500 }, 
+      } else {
+        // In regular mode, use standard animation
+        editor.zoomToBounds(bounds, {
+          animation: { duration: 500 },
           inset: 0,
           targetZoom: 1
         })
       }
     }
   })
+
   logger.info('navigation', '✅ Slide transition complete', {
     slideId: slide.id,
     slideIndex,
@@ -121,7 +128,18 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
   })
 }
 
-export function moveToSlideShow(editor: Editor, slideshow: CCSlideShowShape) {
+export function moveToSlideShow(editor: Editor, slideshow: CCSlideShowShape, isPresentation: boolean = false) {
+  logger.info('navigation', '🎯 Moving to slideshow', {
+    slideshowId: slideshow.id,
+    currentIndex: slideshow.props.currentSlideIndex,
+    isPresentation,
+    timestamp: new Date().toISOString()
+  })
+
+  // Stop any ongoing camera animations
+  editor.stopCameraAnimation()
+
+  // Update current slideshow state
   $currentSlideShow.set(slideshow)
   
   // Move to the current slide in the slideshow
@@ -129,7 +147,13 @@ export function moveToSlideShow(editor: Editor, slideshow: CCSlideShowShape) {
   const currentSlide = editor.getShape(currentSlideId) as CCSlideShape | undefined
   
   if (currentSlide) {
-    moveToSlide(editor, currentSlide)
+    moveToSlide(editor, currentSlide, isPresentation)
+  } else {
+    logger.warn('navigation', '⚠️ Could not find current slide in slideshow', {
+      slideshowId: slideshow.id,
+      currentSlideId,
+      currentIndex: slideshow.props.currentSlideIndex
+    })
   }
 }
 
