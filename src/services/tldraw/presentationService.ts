@@ -1,6 +1,6 @@
 import { Editor, TLShapeId } from '@tldraw/tldraw'
 import { logger } from '../../debugConfig'
-import { moveToSlide } from '../../utils/tldraw/cc-base/cc-slideshow/useSlideShow'
+import { moveToSlide, getCurrentSlideId } from '../../utils/tldraw/cc-base/cc-slideshow/useSlideShow'
 import { CCSlideShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShapeUtil'
 
 interface PresentationSlideChangeEvent {
@@ -25,6 +25,19 @@ export class PresentationService {
 
   startPresentationMode() {
     logger.info('presentation', '🎬 Starting presentation mode')
+
+    // Move to current slide with presentation mode enabled
+    const currentSlideId = getCurrentSlideId()
+    if (currentSlideId) {
+      const currentSlide = this.editor.getShape(currentSlideId as TLShapeId) as CCSlideShape | undefined
+      if (currentSlide) {
+        logger.info('presentation', '🎯 Moving to initial slide', {
+          slideId: currentSlideId,
+          timestamp: new Date().toISOString()
+        })
+        moveToSlide(this.editor, currentSlide, true)
+      }
+    }
 
     // Listen for slide change events
     const handleSlideChange = (event: PresentationSlideChangeEvent) => {
