@@ -81,7 +81,9 @@ export class PresentationService {
                     fromType: from.typeName,
                     toType: to.typeName,
                     fromShapeType: (from as TLShape).type,
-                    toShapeType: (to as TLShape).type
+                    toShapeType: (to as TLShape).type,
+                    fromId: (from as TLShape).id,
+                    toId: (to as TLShape).id
                 })
 
                 // Check if it's a shape first
@@ -94,8 +96,8 @@ export class PresentationService {
                 const toShape = to as TLShape
 
                 // Check if it's our slideshow
-                if (fromShape.type !== 'slideshow' || toShape.type !== 'slideshow') {
-                    logger.debug('presentation', '⏭️ Not a slideshow change')
+                if (fromShape.type !== 'cc-slideshow' || toShape.type !== 'cc-slideshow') {
+                    logger.debug('presentation', '⏭️ Not a cc-slideshow change')
                     continue
                 }
 
@@ -231,7 +233,11 @@ export class PresentationService {
             }
         }
 
-        const cleanup = () => {
+        // Set up store listener and get cleanup function
+        const storeCleanup = this.editor.store.listen(handleStoreChange)
+
+        // Return cleanup function
+        return () => {
             logger.info('presentation', '🧹 Running presentation mode cleanup')
             
             // Remove store listener
@@ -250,46 +256,12 @@ export class PresentationService {
                 currentSlideshow: this.initialSlideshow?.id
             })
         }
-
-        const storeCleanup = this.editor.store.listen(handleStoreChange, { 
-            source: 'all',
-            scope: 'document'
-        })
-
-        // Move to initial slide
-        const currentSlide = this.editor.getShape(
-            this.initialSlideshow.props.slides[this.initialSlideshow.props.currentSlideIndex]
-        ) as CCSlideShape
-
-        if (currentSlide) {
-            logger.info('presentation', '📍 Moving to initial slide', {
-                slideId: currentSlide.id,
-                index: this.initialSlideshow.props.currentSlideIndex
-            })
-
-            const bounds = this.editor.getShapePageBounds(currentSlide.id)
-            if (bounds) {
-                this.editor.zoomToBounds(bounds, {
-                    animation: { duration: 500 },
-                    inset: 0,
-                    targetZoom: 1
-                })
-            }
-        }
-
-        return cleanup
     }
 
     stopPresentationMode() {
-        logger.info('system', '⏹️ Stopping presentation mode', {
-            editorId: this.editor.store.id
-        })
-        
-        // Clean up camera proxy
         if (this.editor.getShape(this.cameraProxyId)) {
+            logger.debug('camera', '🗑️ Removing camera proxy shape')
             this.editor.deleteShape(this.cameraProxyId)
         }
-        
-        this.initialSlideshow = null
     }
 }
