@@ -70,9 +70,6 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
     totalSlides: parentSlideshow.props.slides.length
   })
   
-  // Stop any ongoing camera animations before making changes
-  editor.stopCameraAnimation()
-  
   editor.batch(() => {
     logger.debug('navigation', '🔄 Starting slide transition', {
       from: parentSlideshow.props.currentSlideIndex,
@@ -80,6 +77,7 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
     })
 
     // Update the slideshow's currentSlideIndex
+    // This will trigger PresentationService's store listener which handles camera updates
     editor.updateShape<CCSlideShowShape>({
       id: parentSlideshow.id,
       type: 'cc-slideshow',
@@ -89,36 +87,9 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
       }
     })
 
-    // Update UI atoms regardless of presentation mode
-    // This ensures consistent state tracking
+    // Update UI atoms for state tracking
     $currentSlide.set(slide)
     $currentSlideShow.set(parentSlideshow)
-
-    // Handle camera movement
-    const bounds = editor.getShapePageBounds(slide.id)
-    if (bounds) {
-      logger.debug('camera', '🎥 Moving camera', {
-        slideId: slide.id,
-        bounds,
-        isPresentation
-      })
-      
-      if (isPresentation) {
-        // In presentation mode, use a faster animation with different zoom
-        editor.zoomToBounds(bounds, {
-          animation: { duration: 350 },
-          inset: 20,
-          targetZoom: Math.min(editor.getViewportScreenBounds().width / bounds.width, 1)
-        })
-      } else {
-        // In regular mode, use standard animation
-        editor.zoomToBounds(bounds, {
-          animation: { duration: 500 },
-          inset: 0,
-          targetZoom: 1
-        })
-      }
-    }
   })
 
   logger.info('navigation', '✅ Slide transition complete', {
@@ -135,9 +106,6 @@ export function moveToSlideShow(editor: Editor, slideshow: CCSlideShowShape, isP
     isPresentation,
     timestamp: new Date().toISOString()
   })
-
-  // Stop any ongoing camera animations
-  editor.stopCameraAnimation()
 
   // Update current slideshow state
   $currentSlideShow.set(slideshow)
