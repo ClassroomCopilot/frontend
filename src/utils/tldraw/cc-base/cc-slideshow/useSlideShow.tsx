@@ -3,6 +3,17 @@ import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideShape } from './CCSlideShapeUtil'
 import { logger } from '../../../../debugConfig'
 
+// Declare custom event type
+declare module '@tldraw/tldraw' {
+  interface TLEventMap {
+    'custom-presentation-slide-change': {
+      slideId: string
+      slideshowId: string
+      index: number
+    }
+  }
+}
+
 // Atoms for tracking current slideshow and slide
 export const $currentSlideShow = atom<CCSlideShowShape | null>('current slideshow', null)
 export const $currentSlide = atom<CCSlideShape | null>('current slide', null)
@@ -97,15 +108,29 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
       
       $currentSlide.set(slide)
       $currentSlideShow.set(parentSlideshow)
+    }
 
-      // Move camera for non-presentation mode
-      const bounds = editor.getShapePageBounds(slide.id)
-      if (bounds) {
-        logger.debug('camera', '🎥 Moving camera (non-presentation)', {
-          slideId: slide.id,
-          bounds
+    // Always update camera for presentation mode
+    const bounds = editor.getShapePageBounds(slide.id)
+    if (bounds) {
+      logger.debug('camera', '🎥 Moving camera', {
+        slideId: slide.id,
+        bounds,
+        isPresentation
+      })
+      
+      if (isPresentation) {
+        // In presentation mode, use a smoother animation and fit to screen
+        editor.zoomToBounds(bounds, {
+          animation: { duration: 500 },
+          targetZoom: Math.min(
+            editor.getViewportScreenBounds().width / bounds.width,
+            editor.getViewportScreenBounds().height / bounds.height,
+            1
+          )
         })
-        
+      } else {
+        // In regular mode, just center on the slide
         editor.zoomToBounds(bounds, { 
           animation: { duration: 500 }, 
           inset: 0,
@@ -113,7 +138,17 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
         })
       }
     }
+
+    // Broadcast the slide change to other users if in presentation mode
+    if (isPresentation) {
+      editor.emit('custom-presentation-slide-change', {
+        slideId: slide.id,
+        slideshowId: parentSlideshow.id,
+        index: slideIndex
+      })
+    }
   })
+
   logger.info('navigation', '✅ Slide transition complete', {
     slideId: slide.id,
     slideIndex,
