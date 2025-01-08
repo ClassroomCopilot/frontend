@@ -36,12 +36,9 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
     moveToSlide(editor, slide, presentationMode)
   }
 
-  const handlePresentationToggle = () => {
-    logger.info('slides-panel', '🔄 Toggling presentation mode', {
-      currentMode: presentationMode,
-      timestamp: new Date().toISOString()
-    })
-    togglePresentationMode()
+  const handleTogglePresentation = () => {
+    logger.info('presentation', '🔄 Toggling presentation mode from slides panel')
+    togglePresentationMode(editor)
   }
 
   const renderSlideshow = (slideshow: CCSlideShowShape) => {
@@ -95,7 +92,7 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
             className="slides-panel-button presentation-button"
             data-active={presentationMode}
             data-testid="toggle-presentation"
-            onClick={handlePresentationToggle}
+            onClick={handleTogglePresentation}
           >
             {presentationMode ? 'Exit Presentation' : 'Present'}
           </TldrawUiButton>
