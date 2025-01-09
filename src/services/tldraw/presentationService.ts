@@ -55,7 +55,8 @@ export class PresentationService {
                 props: {
                     w: 1,
                     h: 1,
-                    name: 'camera-proxy'
+                    name: 'camera-proxy',
+                    opacity: 0 // Make it invisible
                 }
             })
         }
@@ -155,19 +156,27 @@ export class PresentationService {
                             logger.debug('camera', '⏹️ Stopped existing camera animation')
 
                             try {
-                                // First try to animate the proxy shape
+                                // First update and animate the proxy shape to match the slide's size and position
                                 logger.debug('camera', '🎯 Animating proxy shape', {
                                     proxyId: this.cameraProxyId,
-                                    targetX: bounds.center.x,
-                                    targetY: bounds.center.y
+                                    targetX: bounds.minX,
+                                    targetY: bounds.minY,
+                                    targetWidth: bounds.width,
+                                    targetHeight: bounds.height
                                 })
 
                                 this.editor.animateShape(
                                     {
                                         id: this.cameraProxyId,
                                         type: 'frame',
-                                        x: bounds.center.x,
-                                        y: bounds.center.y,
+                                        x: bounds.minX,
+                                        y: bounds.minY,
+                                        props: {
+                                            w: bounds.width,
+                                            h: bounds.height,
+                                            name: 'camera-proxy',
+                                            opacity: 0
+                                        }
                                     },
                                     {
                                         animation: {
@@ -181,18 +190,37 @@ export class PresentationService {
                                     }
                                 )
 
-                                // Then try to move the camera
+                                // Calculate viewport dimensions
+                                const viewport = this.editor.getViewportPageBounds()
+                                const viewportAspectRatio = viewport.width / viewport.height
+                                const shapeAspectRatio = bounds.width / bounds.height
+
+                                // Calculate zoom level to fit shape in viewport with padding
+                                const padding = 32 // Padding in pixels
+                                let targetZoom
+                                if (viewportAspectRatio > shapeAspectRatio) {
+                                    // Viewport is wider than shape - fit to height
+                                    targetZoom = (viewport.height - padding * 2) / bounds.height
+                                } else {
+                                    // Viewport is taller than shape - fit to width
+                                    targetZoom = (viewport.width - padding * 2) / bounds.width
+                                }
+
+                                // Then move the camera
                                 logger.debug('camera', '🎥 Attempting camera movement', {
                                     targetBounds: bounds,
-                                    targetZoom: 1
+                                    targetZoom,
+                                    viewportDimensions: {
+                                        width: viewport.width,
+                                        height: viewport.height
+                                    }
                                 })
 
                                 this.editor.zoomToBounds(bounds, {
                                     animation: { duration: 500 },
-                                    targetZoom: 1,
-                                    inset: 0,
-                                    force: true,
-                                    immediate: true
+                                    targetZoom,
+                                    inset: padding,
+                                    force: true
                                 })
 
                                 logger.info('camera', '✅ Camera movement completed')
