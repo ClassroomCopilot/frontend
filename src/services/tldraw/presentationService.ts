@@ -48,6 +48,7 @@ export class PresentationService {
                     w: bounds.width,
                     h: bounds.height,
                     name: 'camera-proxy',
+                    opacity: 0.001 // TLDraw requires a small non-zero value for opacity
                 }
             })
 
@@ -125,6 +126,7 @@ export class PresentationService {
                     w: 1,
                     h: 1,
                     name: 'camera-proxy',
+                    opacity: 0.001 // TLDraw requires a small non-zero value for opacity
                 }
             })
         }
