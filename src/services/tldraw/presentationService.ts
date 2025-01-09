@@ -7,30 +7,69 @@ export class PresentationService {
     private editor: Editor
     private initialSlideshow: CCSlideShowShape | null = null
     private cameraProxyId = createShapeId('camera-proxy')
+    private lastUserInteractionTime = 0
+    private readonly USER_INTERACTION_DEBOUNCE = 1000 // 1 second
 
     constructor(editor: Editor) {
         this.editor = editor
-        logger.debug('system', '🎥 PresentationService initialized', { 
-            editorId: editor.store.id,
-            storeExists: !!editor.store
-        })
+        logger.debug('system', '🎥 PresentationService initialized')
+    }
+
+    private moveToShape(shape: CCSlideShape | CCSlideShowShape) {
+        const bounds = this.editor.getShapePageBounds(shape.id)
+        if (!bounds) {
+            logger.warn('presentation', '⚠️ Could not get bounds for shape')
+            return
+        }
+
+        // Stop any existing camera movement
+        this.editor.stopCameraAnimation()
+
+        try {
+            // Update proxy shape to match shape bounds
+            this.editor.updateShape({
+                id: this.cameraProxyId,
+                type: 'frame',
+                x: bounds.minX,
+                y: bounds.minY,
+                props: {
+                    w: bounds.width,
+                    h: bounds.height,
+                    name: 'camera-proxy',
+                    opacity: 0
+                }
+            })
+
+            // Get viewport and calculate optimal zoom
+            const viewport = this.editor.getViewportPageBounds()
+            const padding = 32
+            const targetZoom = Math.min(
+                (viewport.width - padding * 2) / bounds.width,
+                (viewport.height - padding * 2) / bounds.height
+            )
+
+            // Move camera to new position
+            this.editor.zoomToBounds(bounds, {
+                animation: {
+                    duration: 500,
+                    easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+                },
+                targetZoom,
+                inset: padding
+            })
+
+        } catch (error) {
+            logger.error('presentation', '❌ Error during shape transition', { error })
+        }
     }
 
     startPresentationMode() {
-        logger.info('presentation', '🎥 Starting presentation mode', {
-            editorId: this.editor.store.id,
-            currentPage: this.editor.getCurrentPageId()
-        })
+        logger.info('presentation', '🎥 Starting presentation mode')
         
         // Find initial slideshow to track
         const slideshows = this.editor.getSortedChildIdsForParent(this.editor.getCurrentPageId())
             .map(id => this.editor.getShape(id))
             .filter(shape => shape?.type === 'cc-slideshow')
-
-        logger.debug('presentation', '🔍 Found slideshows', {
-            count: slideshows.length,
-            ids: slideshows.map(s => s?.id)
-        })
 
         if (slideshows.length === 0) {
             logger.warn('presentation', '⚠️ No slideshows found')
@@ -38,15 +77,9 @@ export class PresentationService {
         }
 
         this.initialSlideshow = slideshows[0] as CCSlideShowShape
-        logger.info('presentation', '🎯 Tracking slideshow', { 
-            slideshowId: this.initialSlideshow.id,
-            currentIndex: this.initialSlideshow.props.currentSlideIndex,
-            slideCount: this.initialSlideshow.props.slides.length
-        })
 
         // Create camera proxy shape if it doesn't exist
         if (!this.editor.getShape(this.cameraProxyId)) {
-            logger.debug('camera', '🎥 Creating camera proxy shape')
             this.editor.createShape({
                 id: this.cameraProxyId,
                 type: 'frame',
@@ -61,16 +94,20 @@ export class PresentationService {
         }
 
         const handleStoreChange = (event: TLStoreEventInfo) => {
-            // Only log high-level store changes at info level
+            // Debounce user interaction logs
             if (event.source === 'user') {
-                logger.debug('presentation', '📝 User interaction received')
+                const now = Date.now()
+                if (now - this.lastUserInteractionTime > this.USER_INTERACTION_DEBOUNCE) {
+                    logger.debug('presentation', '📝 User interaction received')
+                    this.lastUserInteractionTime = now
+                }
             }
 
             if (!event.changes.updated) return
 
             // Only process shape updates
             const shapeUpdates = Object.entries(event.changes.updated)
-                .filter(([_, [from, to]]) => 
+                .filter(([, [from, to]]) => 
                     from.typeName === 'shape' && 
                     to.typeName === 'shape' &&
                     (from as TLShape).type === 'cc-slideshow' &&
@@ -79,7 +116,7 @@ export class PresentationService {
 
             if (shapeUpdates.length === 0) return
 
-            for (const [_, [from, to]] of shapeUpdates) {
+            for (const [, [from, to]] of shapeUpdates) {
                 const fromShape = from as TLShape
                 const toShape = to as TLShape
 
@@ -104,50 +141,7 @@ export class PresentationService {
                     continue
                 }
 
-                const bounds = this.editor.getShapePageBounds(currentSlide.id)
-                if (!bounds) {
-                    logger.warn('presentation', '⚠️ Could not get bounds for slide')
-                    continue
-                }
-
-                // Stop any existing camera movement
-                this.editor.stopCameraAnimation()
-
-                try {
-                    // Update proxy shape to match slide bounds
-                    this.editor.updateShape({
-                        id: this.cameraProxyId,
-                        type: 'frame',
-                        x: bounds.minX,
-                        y: bounds.minY,
-                        props: {
-                            w: bounds.width,
-                            h: bounds.height,
-                            name: 'camera-proxy',
-                        }
-                    })
-
-                    // Get viewport and calculate optimal zoom
-                    const viewport = this.editor.getViewportPageBounds()
-                    const padding = 32
-                    const targetZoom = Math.min(
-                        (viewport.width - padding * 2) / bounds.width,
-                        (viewport.height - padding * 2) / bounds.height
-                    )
-
-                    // Move camera to new position
-                    this.editor.zoomToBounds(bounds, {
-                        animation: {
-                            duration: 500,
-                            easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-                        },
-                        targetZoom,
-                        inset: padding
-                    })
-
-                } catch (error) {
-                    logger.error('presentation', '❌ Error during slide transition', { error })
-                }
+                this.moveToShape(currentSlide)
             }
         }
 
@@ -157,29 +151,19 @@ export class PresentationService {
         // Return cleanup function
         return () => {
             logger.info('presentation', '🧹 Running presentation mode cleanup')
-            
-            // Remove store listener
             storeCleanup()
-
-            // Clean up proxy shape
-            if (this.editor.getShape(this.cameraProxyId)) {
-                logger.debug('camera', '🗑️ Removing camera proxy shape')
-                this.editor.deleteShape(this.cameraProxyId)
-            }
-
-            // Log final state
-            logger.debug('presentation', '📊 Final presentation state', {
-                camera: this.editor.getCamera(),
-                zoom: this.editor.getZoomLevel(),
-                currentSlideshow: this.initialSlideshow?.id
-            })
+            this.stopPresentationMode()
         }
     }
 
     stopPresentationMode() {
         if (this.editor.getShape(this.cameraProxyId)) {
-            logger.debug('camera', '🗑️ Removing camera proxy shape')
             this.editor.deleteShape(this.cameraProxyId)
         }
+    }
+
+    // Public method to move to any shape (slide or slideshow)
+    zoomToShape(shape: CCSlideShape | CCSlideShowShape) {
+        this.moveToShape(shape)
     }
 }

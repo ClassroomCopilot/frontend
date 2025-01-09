@@ -26,7 +26,7 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
   const editor = useEditor()
   const slideshows = useSlideShows()
   const currentSlide = useCurrentSlide()
-  const { presentationMode, togglePresentationMode } = useTLDraw()
+  const { presentationMode, togglePresentationMode, presentationService } = useTLDraw()
 
   const handleSlideClick = (slide: CCSlideShape) => {
     logger.info('selection', '🖱️ Slide clicked in panel', {
@@ -41,14 +41,33 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
     togglePresentationMode(editor)
   }
 
+  const handleZoomToSlideshow = (slideshow: CCSlideShowShape) => {
+    if (presentationMode && presentationService) {
+      presentationService.zoomToShape(slideshow)
+    }
+  }
+
   const renderSlideshow = (slideshow: CCSlideShowShape) => {
     return (
       <div key={slideshow.id} className="slideshow-container">
         <div className="slideshow-header">
-          <h3>{slideshow.props.title || 'Untitled Slideshow'}</h3>
-          <span className="slide-count">
-            {slideshow.props.slides.length} slides
-          </span>
+          <div className="slideshow-title">
+            <h3>{slideshow.props.title || 'Untitled Slideshow'}</h3>
+            <span className="slide-count">
+              {slideshow.props.slides.length} slides
+            </span>
+          </div>
+          {presentationMode && (
+            <TldrawUiButton
+              type="icon"
+              className="zoom-button"
+              data-testid="zoom-to-slideshow"
+              onClick={() => handleZoomToSlideshow(slideshow)}
+              title="Zoom to slideshow"
+            >
+              🔍
+            </TldrawUiButton>
+          )}
         </div>
         <div className="slides-list">
           {slideshow.props.slides.map((slideId, index) => {
@@ -156,10 +175,29 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
           align-items: center;
         }
 
+        .slideshow-title {
+          flex: 1;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-right: 8px;
+        }
+
         .slideshow-header h3 {
           margin: 0;
           font-size: 14px;
           font-weight: 500;
+        }
+
+        .zoom-button {
+          padding: 4px;
+          min-width: 24px;
+          height: 24px;
+          border-radius: 4px;
+        }
+
+        .zoom-button:hover {
+          background-color: var(--color-hover);
         }
 
         .slide-count {
