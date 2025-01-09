@@ -9,24 +9,36 @@ export class PresentationService {
     private cameraProxyId = createShapeId('camera-proxy')
     private lastUserInteractionTime = 0
     private readonly USER_INTERACTION_DEBOUNCE = 1000 // 1 second
+    private zoomLevels = new Map<string, number>() // Track zoom levels by shape dimensions
+    private isMoving = false
 
     constructor(editor: Editor) {
         this.editor = editor
         logger.debug('system', '🎥 PresentationService initialized')
     }
 
-    private moveToShape(shape: CCSlideShape | CCSlideShowShape) {
+    private getShapeDimensionKey(width: number, height: number): string {
+        return `${Math.round(width)}_${Math.round(height)}`
+    }
+
+    private async moveToShape(shape: CCSlideShape | CCSlideShowShape): Promise<void> {
+        if (this.isMoving) {
+            logger.debug('presentation', '⏳ Movement in progress, queueing next movement')
+            // Wait for current movement to complete
+            await new Promise(resolve => setTimeout(resolve, 100))
+            return this.moveToShape(shape)
+        }
+
+        this.isMoving = true
         const bounds = this.editor.getShapePageBounds(shape.id)
         if (!bounds) {
             logger.warn('presentation', '⚠️ Could not get bounds for shape')
+            this.isMoving = false
             return
         }
 
-        // Stop any existing camera movement
-        this.editor.stopCameraAnimation()
-
         try {
-            // Update proxy shape to match shape bounds
+            // Phase 1: Update proxy shape instantly
             this.editor.updateShape({
                 id: this.cameraProxyId,
                 type: 'frame',
@@ -40,13 +52,30 @@ export class PresentationService {
                 }
             })
 
-            // Get viewport and calculate optimal zoom
+            // Wait for a frame to ensure bounds are updated
+            await new Promise(resolve => requestAnimationFrame(resolve))
+
+            // Phase 2: Calculate and apply camera movement
             const viewport = this.editor.getViewportPageBounds()
             const padding = 32
-            const targetZoom = Math.min(
-                (viewport.width - padding * 2) / bounds.width,
-                (viewport.height - padding * 2) / bounds.height
-            )
+            const dimensionKey = this.getShapeDimensionKey(bounds.width, bounds.height)
+            
+            // Get existing zoom level for this shape size or calculate new one
+            let targetZoom = this.zoomLevels.get(dimensionKey)
+            if (!targetZoom) {
+                targetZoom = Math.min(
+                    (viewport.width - padding * 2) / bounds.width,
+                    (viewport.height - padding * 2) / bounds.height
+                )
+                this.zoomLevels.set(dimensionKey, targetZoom)
+                logger.debug('presentation', '📏 New zoom level calculated', { 
+                    dimensions: dimensionKey, 
+                    zoom: targetZoom 
+                })
+            }
+
+            // Stop any existing camera movement
+            this.editor.stopCameraAnimation()
 
             // Move camera to new position
             this.editor.zoomToBounds(bounds, {
@@ -58,13 +87,21 @@ export class PresentationService {
                 inset: padding
             })
 
+            // Wait for animation to complete
+            await new Promise(resolve => setTimeout(resolve, 500))
+
         } catch (error) {
             logger.error('presentation', '❌ Error during shape transition', { error })
+        } finally {
+            this.isMoving = false
         }
     }
 
     startPresentationMode() {
         logger.info('presentation', '🎥 Starting presentation mode')
+        
+        // Reset zoom levels on start
+        this.zoomLevels.clear()
         
         // Find initial slideshow to track
         const slideshows = this.editor.getSortedChildIdsForParent(this.editor.getCurrentPageId())
@@ -141,7 +178,7 @@ export class PresentationService {
                     continue
                 }
 
-                this.moveToShape(currentSlide)
+                void this.moveToShape(currentSlide)
             }
         }
 
@@ -157,6 +194,8 @@ export class PresentationService {
     }
 
     stopPresentationMode() {
+        this.zoomLevels.clear()
+        this.isMoving = false
         if (this.editor.getShape(this.cameraProxyId)) {
             this.editor.deleteShape(this.cameraProxyId)
         }
@@ -164,6 +203,6 @@ export class PresentationService {
 
     // Public method to move to any shape (slide or slideshow)
     zoomToShape(shape: CCSlideShape | CCSlideShowShape) {
-        this.moveToShape(shape)
+        void this.moveToShape(shape)
     }
 }
