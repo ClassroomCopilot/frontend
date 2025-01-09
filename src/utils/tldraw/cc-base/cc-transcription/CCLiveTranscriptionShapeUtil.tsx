@@ -39,6 +39,10 @@ export class CCLiveTranscriptionShapeUtil extends CCBaseShapeUtil<CCLiveTranscri
   }
 
   override renderContent = (shape: CCLiveTranscriptionShape) => {
+    return this.renderShapeContent(shape)
+  }
+
+  renderShapeContent = (shape: CCLiveTranscriptionShape) => {
     const { isRecording, segments, currentSegment } = shape.props;
     const contentHeight = shape.props.h - CC_BASE_STYLE_CONSTANTS.HEADER.height - 2 * CC_BASE_STYLE_CONSTANTS.CONTENT.padding;
     const controlsHeight = 80;
@@ -207,12 +211,13 @@ export class CCLiveTranscriptionShapeUtil extends CCBaseShapeUtil<CCLiveTranscri
 
     console.log('Current state:', { id, isRecording });
 
-    // When starting new recording, reset to default props
+    // When starting new recording, preserve existing props but reset segments
     const newProps = !isRecording ? {
-      ...this.getDefaultProps(),
+      ...shape.props,
       isRecording: true,
-      w: shape.props.w,
-      h: shape.props.h,
+      segments: [],
+      currentSegment: undefined,
+      lastProcessedSegment: undefined,
     } : {
       ...shape.props,
       isRecording: false,

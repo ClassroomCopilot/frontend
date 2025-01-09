@@ -9,6 +9,11 @@ export const PANEL_DIMENSIONS = {
     topOffset: '10%',
     bottomOffset: '20%',
   },
+  'youtube': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
 } as const;
 
 export const PANEL_STYLES = {

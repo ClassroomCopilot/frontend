@@ -31,23 +31,23 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     size: DefaultSizeStyle,
   }
 
-  getDefaultProps(): CCSlideShape['props'] {
+  override getDefaultProps(): CCSlideShape['props'] {
     return getDefaultCCSlideProps() as CCSlideShape['props']
   }
 
-  renderContent() {
-    return null
-  }
-  
-  canResize = () => false
-  hideRotateHandle = () => true
+  override canResize = () => false
+  override isAspectRatioLocked = () => true
+  override hideResizeHandles = () => true
+  override hideRotateHandle = () => true
+  override canEdit = () => false
 
-  canBind({ fromShapeType, toShapeType, bindingType }: {
-    fromShapeType: string
-    toShapeType: string
-    bindingType: string
-  }) {
-    return fromShapeType === 'cc-slideshow' && toShapeType === 'cc-slide' && bindingType === 'cc-slide-layout'
+  override canBind(args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean {
+    return args.fromShapeType === 'cc-slideshow' && args.toShapeType === 'cc-slide' && args.bindingType === 'cc-slide-layout'
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  override renderContent = (shape: CCSlideShape) => {
+    return <div />
   }
 
   onBeforeCreate(shape: CCSlideShape): CCSlideShape {

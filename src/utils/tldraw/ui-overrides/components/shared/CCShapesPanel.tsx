@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useEditor, createShapeId } from '@tldraw/tldraw';
 import { BasePanel } from './BasePanel';
 import { CCSlidesPanel } from './CCSlidesPanel';
+import { CCYoutubePanel } from './CCYoutubePanel';
 import { BUTTON_STYLES } from './panel-styles';
 import { CC_SHAPE_CONFIGS } from '../../../cc-base/cc-configs';
 import { createSlideshow } from '../../../cc-base/shape-helpers/slideshow-helpers';
@@ -9,6 +10,7 @@ import { createSlideshow } from '../../../cc-base/shape-helpers/slideshow-helper
 const PANEL_TYPES = [
   { id: 'cc-shapes', label: 'Shapes' },
   { id: 'slides', label: 'Slides' },
+  { id: 'youtube', label: 'YouTube' },
 ];
 
 export const CCShapesPanel: React.FC = () => {
@@ -91,6 +93,17 @@ export const CCShapesPanel: React.FC = () => {
   if (currentPanelType === 'slides') {
     return (
       <CCSlidesPanel 
+        onPanelTypeChange={setCurrentPanelType} 
+        isExpanded={isExpanded}
+        onExpandedChange={setIsExpanded}
+      />
+    );
+  }
+
+  // If current panel type is youtube, render the CCYoutubePanel
+  if (currentPanelType === 'youtube') {
+    return (
+      <CCYoutubePanel 
         onPanelTypeChange={setCurrentPanelType} 
         isExpanded={isExpanded}
         onExpandedChange={setIsExpanded}

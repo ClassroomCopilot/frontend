@@ -26,6 +26,12 @@ export class CCSettingsShapeUtil extends CCBaseShapeUtil<CCSettingsShape> {
     return getDefaultCCSettingsProps() as CCSettingsShape['props']
   }
 
+  override canResize = () => false
+  override isAspectRatioLocked = () => false
+  override hideResizeHandles = () => true
+  override hideRotateHandle = () => false
+  override canEdit = () => false
+
   override renderContent = () => {
     return <SettingsComponent />
   }

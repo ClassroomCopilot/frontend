@@ -1,6 +1,15 @@
 import { T } from '@tldraw/tldraw'
 
-// First, create a constant for the base props validation
+// Define the base props interface
+export interface CCBaseProps {
+  title: string
+  w: number
+  h: number
+  headerColor: string
+  isLocked: boolean
+}
+
+// Create a constant for the base props validation
 const baseShapeProps = {
   title: T.string,
   w: T.number,
@@ -69,6 +78,17 @@ export const ccShapeProps = {
   slide: {
     ...baseShapeProps,
   },
+
+  'cc-youtube-embed': {
+    ...baseShapeProps,
+    video_url: T.string,
+    transcript: T.arrayOf(T.object({
+      start: T.number,
+      duration: T.number,
+      text: T.string,
+    })),
+    transcriptVisible: T.boolean,
+  },
 }
 
 export const ccBindingProps = {
@@ -135,5 +155,19 @@ export function getDefaultCCSlideLayoutBindingProps() {
   return {
     placeholder: false,
     isMovingWithParent: false,
+  }
+}
+
+export function getDefaultCCYoutubeEmbedProps() {
+  return {
+    ...getDefaultCCBaseProps(),
+    title: 'YouTube Video',
+    w: 800,
+    h: 450,
+    headerColor: '#ff0000',
+    isLocked: false,
+    video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    transcript: [],
+    transcriptVisible: true,
   }
 }

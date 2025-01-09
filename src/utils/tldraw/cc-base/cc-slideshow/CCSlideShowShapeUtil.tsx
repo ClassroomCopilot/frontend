@@ -33,16 +33,15 @@ export class CCSlideShowShapeUtil extends CCBaseShapeUtil<CCSlideShowShape> {
     return getDefaultCCSlideShowProps() as CCSlideShowShape['props']
   }
 
-  renderContent() {
-    return null
+  override canResize = () => false
+  override isAspectRatioLocked = () => true
+  override hideResizeHandles = () => false
+  override hideRotateHandle = () => false
+  override canEdit = () => false
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  override canBind(args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean {
+    return true
   }
-
-  canResize = () => false
-  isAspectRatioLocked = () => true
-  hideResizeHandles = () => true
-  hideRotateHandle = () => true
-  canEdit = () => false
-  canBind = () => true
 
   onBeforeCreate(shape: CCSlideShowShape): CCSlideShowShape {
     return shape
@@ -60,5 +59,9 @@ export class CCSlideShowShapeUtil extends CCBaseShapeUtil<CCSlideShowShape> {
         slides: children
       }
     }]
+  }
+
+  override renderContent = (shape: CCSlideShowShape) => {
+    return <div />
   }
 } 

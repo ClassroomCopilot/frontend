@@ -54,7 +54,7 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
     })
   }
 
-  override isAspectRatioLocked = () => false
+  override isAspectRatioLocked = () => true
   override canResize = () => true
   override canBind = () => false
 

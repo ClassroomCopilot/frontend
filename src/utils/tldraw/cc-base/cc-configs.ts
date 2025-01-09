@@ -69,5 +69,19 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
       slidePattern: 'horizontal',
       numSlides: 4,
     }
+  },
+  'cc-youtube-embed': {
+    width: 800,
+    height: 450,
+    xOffset: 400,
+    yOffset: 225,
+    defaultProps: {
+      title: 'YouTube Video',
+      headerColor: '#ff0000',
+      isLocked: false,
+      video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      transcript: [],
+      transcriptVisible: true,
+    }
   }
 }

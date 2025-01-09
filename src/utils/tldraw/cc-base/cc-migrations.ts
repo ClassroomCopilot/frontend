@@ -1,5 +1,5 @@
 import { TLRecord, TLShape } from '@tldraw/tldraw'
-import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps } from './cc-props'
+import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps, getDefaultCCYoutubeEmbedProps } from './cc-props'
 
 // Export both shape and binding migrations
 export const ccBindingMigrations = {
@@ -161,6 +161,30 @@ export const ccShapeMigrations = {
             ...shape,
             props: {
               ...getDefaultCCSlideProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  'cc-youtube-embed': {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-youtube-embed') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCYoutubeEmbedProps(),
               ...shape.props,
             },
           }

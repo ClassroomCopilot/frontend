@@ -1,6 +1,6 @@
 import { Editor, TLShapeId } from '@tldraw/tldraw';
 import { TranscriptionService } from './transcriptionService';
-import { CCLiveTranscriptionShapeUtil } from '../CCLiveTranscriptionShapeUtil';
+import { CCLiveTranscriptionShapeUtil } from './CCLiveTranscriptionShapeUtil';
 
 export class TranscriptionManager {
   private static instances = new WeakMap<Editor, TranscriptionManager>();

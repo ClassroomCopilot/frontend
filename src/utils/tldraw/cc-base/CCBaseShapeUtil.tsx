@@ -1,95 +1,124 @@
-import React from 'react';
-import {
-  BaseBoxShapeUtil,
-  TLBaseShape,
-  TLHandle,
-  Vec,
-  toDomPrecision,
-  Box,
-  TLHandleType,
-  IndexKey,
-  HTMLContainer,
-} from 'tldraw'
-import { ccShapeProps } from './cc-props'
-import { ccShapeMigrations } from './cc-migrations'
+import React from 'react'
+import { BaseBoxShapeUtil, HTMLContainer, TLBaseShape, toDomPrecision } from '@tldraw/tldraw'
 import { CC_BASE_STYLE_CONSTANTS } from './cc-styles'
 
-// Base shape interface that all CC shapes will extend
-export interface CCBaseShape extends TLBaseShape<string, { h: number; w: number; }> {
-  type: string
-  props: {
-    title: string
-    w: number
-    h: number
-    headerColor: string
-    isLocked: boolean
-  }
+export interface CCBaseShape extends TLBaseShape<string, {
+  title: string
+  w: number
+  h: number
+  headerColor: string
+  isLocked: boolean
+}> {}
+
+export interface ToolbarItem {
+  id: string
+  icon: string | React.ReactNode
+  label: string
+  onClick: (e: React.MouseEvent, shape: CCBaseShape) => void
+  isActive?: boolean
 }
 
 export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShapeUtil<T> {
-  static override type = 'cc-base'
-  static override props = ccShapeProps.base
-  static override migrations = ccShapeMigrations.base
-  
-  // Default indicator for the shape
-  indicator = (shape: T) => {
-    const {
-      props: { w, h },
-    } = shape
-    
+  abstract renderContent: (shape: T) => React.ReactElement
+
+  indicator(shape: T) {
     return (
       <rect
-        width={toDomPrecision(w)}
-        height={toDomPrecision(h)}
+        width={shape.props.w}
+        height={shape.props.h}
         fill="none"
         rx={CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius}
-        ry={CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius}
         stroke={CC_BASE_STYLE_CONSTANTS.COLORS.border}
         strokeWidth={CC_BASE_STYLE_CONSTANTS.CONTAINER.borderWidth}
       />
     )
   }
 
-  // Default component that renders the shape's container and title
-  component = (shape: T) => {
-    const {
-      props: { w, h, title, headerColor, isLocked },
-    } = shape
+  getToolbarItems(shape: T): ToolbarItem[] {
+    return []
+  }
 
+  component(shape: T) {
+    const {
+      props: { w, h, isLocked },
+    } = shape
+    const toolbarItems = this.getToolbarItems(shape)
+    
     return (
       <HTMLContainer
         id={shape.id}
         style={{
           width: toDomPrecision(w),
           height: toDomPrecision(h),
-          backgroundColor: headerColor,
+          backgroundColor: shape.props.headerColor,
           borderRadius: CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius,
           boxShadow: CC_BASE_STYLE_CONSTANTS.CONTAINER.boxShadow,
           overflow: 'hidden',
           position: 'relative',
         }}
       >
+        {/* Header */}
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: CC_BASE_STYLE_CONSTANTS.HEADER.height,
+            backgroundColor: shape.props.headerColor,
             padding: CC_BASE_STYLE_CONSTANTS.HEADER.padding,
-            backgroundColor: headerColor,
-            borderTopLeftRadius: CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius,
-            borderTopRightRadius: CC_BASE_STYLE_CONSTANTS.CONTAINER.borderRadius,
+            height: CC_BASE_STYLE_CONSTANTS.HEADER.height,
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'space-between',
+            alignItems: 'center',
             cursor: isLocked ? 'not-allowed' : 'move',
+            pointerEvents: 'all',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
-          <span style={{ fontWeight: 'bold', color: "white" }}>{title}</span>
-          {isLocked && <span style={{ color: 'white' }}>🔒</span>}
+          <span style={{ color: 'white', fontWeight: 'bold' }}>{shape.props.title}</span>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', pointerEvents: 'all' }}>
+            {toolbarItems.map((item) => (
+              <button
+                key={item.id}
+                title={item.label}
+                onClick={(e) => {
+                  console.log('Button clicked:', item.id)
+                  e.preventDefault()
+                  e.stopPropagation()
+                  item.onClick(e, shape)
+                }}
+                onPointerDown={(e) => {
+                  console.log('Button pointer down:', item.id)
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  color: 'white',
+                  opacity: item.isActive ? 1 : 0.7,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'all',
+                  fontSize: '16px',
+                  width: '24px',
+                  height: '24px',
+                  zIndex: 100,
+                  userSelect: 'none',
+                  position: 'relative',
+                  touchAction: 'none',
+                }}
+              >
+                <div style={{ pointerEvents: 'none' }}>
+                  {item.icon}
+                </div>
+              </button>
+            ))}
+            {isLocked && <span style={{ color: 'white' }}>🔒</span>}
+          </div>
         </div>
-        <div
+        {/* Content */}
+        <div 
           style={{
             position: 'absolute',
             top: CC_BASE_STYLE_CONSTANTS.HEADER.height,
@@ -106,52 +135,4 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
       </HTMLContainer>
     )
   }
-
-  // Get the shape's bounds
-  getBounds(shape: T): Box {
-    return new Box(0, 0, shape.props.w, shape.props.h)
-  }
-
-  // Get the shape's outlines for selection
-  getOutlineSegments(shape: T): Vec[][] {
-    const {
-      props: { w, h },
-    } = shape
-
-    return [
-      [Vec.From({ x: 0, y: 0 }), Vec.From({ x: w, y: 0 })],
-      [Vec.From({ x: w, y: 0 }), Vec.From({ x: w, y: h })],
-      [Vec.From({ x: w, y: h }), Vec.From({ x: 0, y: h })],
-      [Vec.From({ x: 0, y: h }), Vec.From({ x: 0, y: 0 })],
-    ]
-  }
-
-  // Override to provide shape-specific handles
-  getHandles(shape: T): TLHandle[] {
-    const handles: TLHandle[] = []
-    
-    // Add default binding handles on each side
-    const sides = [
-      { x: 0.5, y: 0 },    // top
-      { x: 1, y: 0.5 },    // right
-      { x: 0.5, y: 1 },    // bottom
-      { x: 0, y: 0.5 },    // left
-    ]
-
-    sides.forEach(({ x, y }, i) => {
-      handles.push({
-        id: `${i}`,
-        type: 'binding' as TLHandleType,
-        x: x * shape.props.w,
-        y: y * shape.props.h,
-        index: 'start' as IndexKey,
-      })
-    })
-
-    return handles
-  }
-
-  // Abstract method that each shape must implement to render its content
-  abstract renderContent(shape: T): React.ReactNode
-
 } 
