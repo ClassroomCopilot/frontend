@@ -15,6 +15,17 @@ export class PresentationService {
     constructor(editor: Editor) {
         this.editor = editor
         logger.debug('system', '🎥 PresentationService initialized')
+        
+        // Add style to hide camera proxy frame
+        const style = document.createElement('style')
+        style.setAttribute('data-camera-proxy', this.cameraProxyId)
+        style.textContent = `
+            [data-shape-id="${this.cameraProxyId}"] {
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+        `
+        document.head.appendChild(style)
     }
 
     private getShapeDimensionKey(width: number, height: number): string {
@@ -47,9 +58,7 @@ export class PresentationService {
                 props: {
                     w: bounds.width,
                     h: bounds.height,
-                    name: 'camera-proxy',
-                    fill: 'none',
-                    stroke: 'none'
+                    name: 'camera-proxy'
                 }
             })
 
@@ -126,9 +135,7 @@ export class PresentationService {
                 props: {
                     w: 1,
                     h: 1,
-                    name: 'camera-proxy',
-                    fill: 'none',
-                    stroke: 'none'
+                    name: 'camera-proxy'
                 }
             })
         }
@@ -201,6 +208,11 @@ export class PresentationService {
         this.isMoving = false
         if (this.editor.getShape(this.cameraProxyId)) {
             this.editor.deleteShape(this.cameraProxyId)
+        }
+        // Remove the style element
+        const style = document.querySelector(`style[data-camera-proxy="${this.cameraProxyId}"]`)
+        if (style) {
+            style.remove()
         }
     }
 
