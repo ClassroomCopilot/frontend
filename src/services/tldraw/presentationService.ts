@@ -56,7 +56,6 @@ export class PresentationService {
                     w: 1,
                     h: 1,
                     name: 'camera-proxy',
-                    opacity: 0 // Make it invisible
                 }
             })
         }
@@ -175,7 +174,6 @@ export class PresentationService {
                                             w: bounds.width,
                                             h: bounds.height,
                                             name: 'camera-proxy',
-                                            opacity: 0
                                         }
                                     },
                                     {
