@@ -48,7 +48,6 @@ export class PresentationService {
                     w: bounds.width,
                     h: bounds.height,
                     name: 'camera-proxy',
-                    opacity: 0
                 }
             })
 
