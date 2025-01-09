@@ -7,6 +7,7 @@ export class PresentationService {
     private editor: Editor
     private initialSlideshow: CCSlideShowShape | null = null
     private cameraProxyId = createShapeId('camera-proxy')
+    private lastZoomLevel: number | null = null
 
     constructor(editor: Editor) {
         this.editor = editor
@@ -56,7 +57,6 @@ export class PresentationService {
                     w: 1,
                     h: 1,
                     name: 'camera-proxy',
-                    opacity: 0 // Make it invisible
                 }
             })
         }
@@ -175,7 +175,6 @@ export class PresentationService {
                                             w: bounds.width,
                                             h: bounds.height,
                                             name: 'camera-proxy',
-                                            opacity: 0
                                         }
                                     },
                                     {
@@ -190,26 +189,30 @@ export class PresentationService {
                                     }
                                 )
 
-                                // Calculate viewport dimensions
+                                // Get the viewport dimensions
                                 const viewport = this.editor.getViewportPageBounds()
-                                const viewportAspectRatio = viewport.width / viewport.height
-                                const shapeAspectRatio = bounds.width / bounds.height
 
-                                // Calculate zoom level to fit shape in viewport with padding
-                                const padding = 32 // Padding in pixels
-                                let targetZoom
-                                if (viewportAspectRatio > shapeAspectRatio) {
-                                    // Viewport is wider than shape - fit to height
-                                    targetZoom = (viewport.height - padding * 2) / bounds.height
-                                } else {
-                                    // Viewport is taller than shape - fit to width
-                                    targetZoom = (viewport.width - padding * 2) / bounds.width
+                                // Calculate the zoom level that will make the shape fill the viewport
+                                const padding = 32
+                                const targetZoom = Math.min(
+                                    (viewport.width - padding * 2) / bounds.width,
+                                    (viewport.height - padding * 2) / bounds.height
+                                )
+
+                                // Store this zoom level for consistent zooming
+                                if (!this.lastZoomLevel) {
+                                    this.lastZoomLevel = targetZoom
                                 }
 
-                                // Then move the camera
-                                logger.debug('camera', '🎥 Attempting camera movement', {
+                                // Use the stored zoom level if it exists and is sufficient to show the shape
+                                const finalZoom = this.lastZoomLevel && this.lastZoomLevel <= targetZoom 
+                                    ? this.lastZoomLevel 
+                                    : targetZoom
+
+                                // Move the camera
+                                logger.debug('camera', '🎥 Moving camera', {
                                     targetBounds: bounds,
-                                    targetZoom,
+                                    targetZoom: finalZoom,
                                     viewportDimensions: {
                                         width: viewport.width,
                                         height: viewport.height
@@ -217,11 +220,16 @@ export class PresentationService {
                                 })
 
                                 this.editor.zoomToBounds(bounds, {
-                                    animation: { duration: 500 },
-                                    targetZoom,
-                                    inset: padding,
-                                    force: true
+                                    animation: {
+                                        duration: 500,
+                                        easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+                                    },
+                                    targetZoom: finalZoom,
+                                    inset: padding
                                 })
+
+                                // Update the stored zoom level
+                                this.lastZoomLevel = finalZoom
 
                                 logger.info('camera', '✅ Camera movement completed')
 
