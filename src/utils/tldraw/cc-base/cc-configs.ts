@@ -72,16 +72,16 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   },
   'cc-youtube-embed': {
     width: 800,
-    height: 450,
+    height: 450 + CC_BASE_STYLE_CONSTANTS.HEADER.height + (CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2),
     xOffset: 400,
-    yOffset: 225,
+    yOffset: (450 + CC_BASE_STYLE_CONSTANTS.HEADER.height + (CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2)) / 2,
     defaultProps: {
       title: 'YouTube Video',
       headerColor: '#ff0000',
       isLocked: false,
       video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       transcript: [],
-      transcriptVisible: true,
+      transcriptVisible: false,
     }
   }
 }

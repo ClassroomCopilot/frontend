@@ -1,4 +1,5 @@
 import { T } from '@tldraw/tldraw'
+import { CC_BASE_STYLE_CONSTANTS } from './cc-styles'
 
 // Define the base props interface
 export interface CCBaseProps {
@@ -159,15 +160,18 @@ export function getDefaultCCSlideLayoutBindingProps() {
 }
 
 export function getDefaultCCYoutubeEmbedProps() {
+  const videoHeight = 450
+  const totalHeight = videoHeight + CC_BASE_STYLE_CONSTANTS.HEADER.height + (CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2)
+  
   return {
     ...getDefaultCCBaseProps(),
     title: 'YouTube Video',
     w: 800,
-    h: 450,
+    h: totalHeight,
     headerColor: '#ff0000',
     isLocked: false,
     video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     transcript: [],
-    transcriptVisible: true,
+    transcriptVisible: false,
   }
 }

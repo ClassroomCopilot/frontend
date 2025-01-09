@@ -203,6 +203,10 @@ export class CCYoutubeEmbedShapeUtil extends CCBaseShapeUtil<CCYoutubeEmbedShape
     return getDefaultCCYoutubeEmbedProps()
   }
 
+  override isAspectRatioLocked(shape: CCYoutubeEmbedShape) {
+    return true
+  }
+
   override getToolbarItems(shape: CCYoutubeEmbedShape) {
     return [
       {
