@@ -7,7 +7,6 @@ export class PresentationService {
     private editor: Editor
     private initialSlideshow: CCSlideShowShape | null = null
     private cameraProxyId = createShapeId('camera-proxy')
-    private lastZoomLevel: number | null = null
 
     constructor(editor: Editor) {
         this.editor = editor
@@ -199,20 +198,10 @@ export class PresentationService {
                                     (viewport.height - padding * 2) / bounds.height
                                 )
 
-                                // Store this zoom level for consistent zooming
-                                if (!this.lastZoomLevel) {
-                                    this.lastZoomLevel = targetZoom
-                                }
-
-                                // Use the stored zoom level if it exists and is sufficient to show the shape
-                                const finalZoom = this.lastZoomLevel && this.lastZoomLevel <= targetZoom 
-                                    ? this.lastZoomLevel 
-                                    : targetZoom
-
                                 // Move the camera
                                 logger.debug('camera', '🎥 Moving camera', {
                                     targetBounds: bounds,
-                                    targetZoom: finalZoom,
+                                    targetZoom,
                                     viewportDimensions: {
                                         width: viewport.width,
                                         height: viewport.height
@@ -224,12 +213,9 @@ export class PresentationService {
                                         duration: 500,
                                         easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
                                     },
-                                    targetZoom: finalZoom,
+                                    targetZoom,
                                     inset: padding
                                 })
-
-                                // Update the stored zoom level
-                                this.lastZoomLevel = finalZoom
 
                                 logger.info('camera', '✅ Camera movement completed')
 
