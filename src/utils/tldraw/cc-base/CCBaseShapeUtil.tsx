@@ -34,7 +34,7 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
     )
   }
 
-  getToolbarItems(shape: T): ToolbarItem[] {
+  getToolbarItems(): ToolbarItem[] {
     return []
   }
 
@@ -56,7 +56,7 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
     const {
       props: { w, h, isLocked },
     } = shape
-    const toolbarItems = this.getToolbarItems(shape)
+    const toolbarItems = this.getToolbarItems()
     
     return (
       <HTMLContainer

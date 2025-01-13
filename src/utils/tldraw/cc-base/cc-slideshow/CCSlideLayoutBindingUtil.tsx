@@ -3,8 +3,7 @@ import { logger } from '../../../../debugConfig'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { SlideValidationUtil } from './utils/SlideValidationUtil'
-import { SlidePositionUtil } from './utils/SlidePositionUtil'
-import { SlideReorderUtil } from './utils/SlideReorderUtil'
+import { CCSlideShape } from './CCSlideShapeUtil'
 
 export interface CCSlideLayoutBinding extends TLBaseBinding<'cc-slide-layout', {
   placeholder: boolean
@@ -55,13 +54,15 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     if (!validated) return
 
     const { slide, slideshow } = validated
-    const currentIndex = slideshow.props.slides.indexOf(slide.id)
+    const currentSlot = slideshow.props.slots.find(slot => slot.occupiedBy === slide.id)
+    const currentIndex = currentSlot?.index ?? slideshow.props.slides.indexOf(slide.id)
 
     logger.debug('system', '🔄 Starting slide layout translation', {
       binding,
       fromId: binding.fromId,
       toId: binding.toId,
-      currentIndex
+      currentIndex,
+      currentSlot
     })
 
     if (!binding.props.placeholder) {
@@ -84,47 +85,77 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     if (!validated) return
 
     const { slide, slideshow } = validated
-    const { slotWidth } = SlidePositionUtil.getSlotDimensions(slideshow)
-    const currentPosition = slide.x - slideshow.x
-    const nearestSlot = SlidePositionUtil.getNearestSlot(
-      slide.x,
-      slideshow.x,
-      slotWidth,
-      slideshow.props.slides.length
-    )
-    const currentIndex = slideshow.props.slides.indexOf(slide.id)
+    const slots = slideshow.props.slots
+    
+    // Find nearest slot based on current position
+    const nearestSlot = slots.reduce((nearest, slot) => {
+      const distance = Math.abs(slide.x - slot.x)
+      if (distance < Math.abs(slide.x - nearest.x)) {
+        return slot
+      }
+      return nearest
+    }, slots[0])
 
     // Log translation metrics and slot state
     logger.debug('system', '📏 Translation state', {
       slideId: slide.id,
-      currentPosition,
+      currentPosition: { x: slide.x, y: slide.y },
       nearestSlot,
       lastKnownSlot: binding.props.lastKnownSlot,
-      currentIndex,
-      slotWidth
+      allSlots: slots
     })
 
     // Check if we've moved to a new slot
-    if (nearestSlot !== binding.props.lastKnownSlot && 
-        nearestSlot >= 0 && 
-        nearestSlot < slideshow.props.slides.length) {
-      
+    if (nearestSlot.index !== binding.props.lastKnownSlot) {
       logger.info('system', '🔄 Slot change detected during translation', {
         slideId: slide.id,
         from: binding.props.lastKnownSlot,
-        to: nearestSlot,
-        currentPosition,
-        slotWidth
+        to: nearestSlot.index,
+        slot: nearestSlot
       })
 
-      // Apply the reorder
-      SlideReorderUtil.applyReorder(
-        this.editor,
-        slideshow,
-        currentIndex,
-        nearestSlot,
-        slide
-      )
+      // Move displaced slide to current position
+      const currentSlot = slots.find(s => s.index === binding.props.lastKnownSlot)
+      if (currentSlot && nearestSlot.occupiedBy) {
+        const displacedSlide = this.editor.getShape(nearestSlot.occupiedBy) as CCSlideShape
+        if (displacedSlide) {
+          this.editor.updateShape({
+            id: displacedSlide.id,
+            type: 'cc-slide',
+            x: currentSlot.x,
+            y: currentSlot.y
+          })
+        }
+      }
+
+      // Update slide position
+      this.editor.updateShape({
+        id: slide.id,
+        type: 'cc-slide',
+        x: nearestSlot.x,
+        y: nearestSlot.y
+      })
+
+      // Update slideshow slots and order
+      const newSlides = [...slideshow.props.slides]
+      const fromIndex = binding.props.lastKnownSlot ?? 0
+      const [movedSlide] = newSlides.splice(fromIndex, 1)
+      newSlides.splice(nearestSlot.index, 0, movedSlide)
+
+      this.editor.updateShape({
+        id: slideshow.id,
+        type: slideshow.type,
+        props: {
+          ...slideshow.props,
+          slides: newSlides,
+          slots: slots.map(slot => ({
+            ...slot,
+            occupiedBy: slot.index === nearestSlot.index ? slide.id :
+                       slot.index === binding.props.lastKnownSlot ? nearestSlot.occupiedBy :
+                       slot.occupiedBy
+          }))
+        }
+      })
 
       // Update binding to track the new slot
       this.editor.updateBinding({
@@ -134,7 +165,7 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         toId: binding.toId,
         props: { 
           ...binding.props, 
-          lastKnownSlot: nearestSlot 
+          lastKnownSlot: nearestSlot.index 
         }
       })
     }
@@ -145,32 +176,29 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     if (!validated) return
 
     const { slide, slideshow } = validated
+    const slots = slideshow.props.slots
 
     logger.debug('system', '🎯 Slide translation ended', {
-      slideId: slide.id
+      slideId: slide.id,
+      finalPosition: { x: slide.x, y: slide.y },
+      slots
     })
 
-    // Ensure final position matches the last known slot
-    if (binding.props.lastKnownSlot !== undefined) {
-      const finalPosition = SlidePositionUtil.getSlotPosition(
-        slideshow.props.slidePattern,
-        binding.props.lastKnownSlot,
-        slideshow,
-        slide
-      )
+    // Ensure final position matches nearest slot
+    const nearestSlot = slots.reduce((nearest, slot) => {
+      const distance = Math.abs(slide.x - slot.x)
+      if (distance < Math.abs(slide.x - nearest.x)) {
+        return slot
+      }
+      return nearest
+    }, slots[0])
 
-      this.editor.updateShape({
-        id: slide.id,
-        type: slide.type,
-        x: finalPosition.x,
-        y: finalPosition.y
-      })
-
-      logger.debug('system', '✅ Slide reorder complete', {
-        slideId: slide.id,
-        newOrder: slideshow.props.slides
-      })
-    }
+    this.editor.updateShape({
+      id: slide.id,
+      type: slide.type,
+      x: nearestSlot.x,
+      y: nearestSlot.y
+    })
 
     if (!binding.props.placeholder && binding.props.isMovingWithParent) {
       this.editor.updateBinding({

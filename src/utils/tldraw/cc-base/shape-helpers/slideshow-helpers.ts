@@ -1,212 +1,99 @@
 import { Editor, TLShapeId, createShapeId } from '@tldraw/tldraw'
-import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
+import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
-import { CCSlideContentFrameShape } from '../cc-slideshow/CCSlideContentFrameUtil'
 
-interface SlideshowDimensions {
-  width: number
-  height: number
-}
-
-export const calculateSlideshowDimensions = (
-  numSlides: number,
-  slidePattern: string,
-  slideWidth: number = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
-  slideHeight: number = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
-): SlideshowDimensions => {
-  const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
-  const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING
-  const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING
-
-  switch (slidePattern) {
-    case 'vertical':
-      return {
-        width: slideWidth + spacing * 2,
-        height: headerHeight + (slideHeight * numSlides + spacing * (numSlides + 1)) + contentPadding * 2
-      }
-    case 'radial':
-      return {
-        width: slideWidth + spacing * 2,
-        height: headerHeight + (slideHeight * numSlides + spacing * (numSlides + 1)) + contentPadding * 2
-      }
-    case 'grid': {
-      const cols = Math.ceil(Math.sqrt(numSlides))
-      const rows = Math.ceil(numSlides / cols)
-      return {
-        width: slideWidth * cols + spacing * (cols + 1),
-        height: headerHeight + (slideHeight * rows + spacing * (rows + 1)) + contentPadding * 2
-      }
-    }
-    case 'horizontal':
-    default:
-      return {
-        width: slideWidth * numSlides + spacing * (numSlides + 1),
-        height: headerHeight + (slideHeight + spacing * 2) + contentPadding * 2
-      }
-  }
-}
-
-interface SlidePosition {
+interface SlideshowBaseProps {
   x: number
   y: number
+  props: {
+    w: number
+    h: number
+  }
 }
 
-export const calculateSlidePosition = (
-  index: number,
-  numSlides: number,
-  slidePattern: string,
-  slideWidth: number,
-  slideHeight: number,
-  slideshowWidth: number,
-  slideshowHeight: number
-): SlidePosition => {
+export function createSlideshow(
+  editor: Editor,
+  baseProps: SlideshowBaseProps,
+  slidePattern: string = 'horizontal',
+  numSlides: number = 4
+) {
   const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING
   const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
   const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING
-  const cols = Math.ceil(Math.sqrt(numSlides))
-  const contentHeight = slideshowHeight - headerHeight - contentPadding * 2
-  const radius = Math.min(slideshowWidth, contentHeight) / 3
+  const verticalOffset = headerHeight + contentPadding
 
-  switch (slidePattern) {
-    case 'vertical':
-      return {
-        x: (slideshowWidth - slideWidth) / 2,
-        y: headerHeight + contentPadding + spacing + index * (slideHeight + spacing)
-      }
-    case 'grid':
-      return {
-        x: spacing + (index % cols) * (slideWidth + spacing),
-        y: headerHeight + contentPadding + spacing + Math.floor(index / cols) * (slideHeight + spacing)
-      }
-    case 'radial': {
-      const angle = (2 * Math.PI * index) / numSlides
-      return {
-        x: slideshowWidth / 2 + radius * Math.cos(angle) - slideWidth / 2,
-        y: headerHeight + contentPadding + contentHeight / 2 + radius * Math.sin(angle) - slideHeight / 2
-      }
-    }
-    case 'horizontal':
-    default:
-      return {
-        x: spacing + index * (slideWidth + spacing),
-        y: headerHeight + contentPadding + spacing
-      }
-  }
-}
+  // Create slide IDs
+  const slideIds: TLShapeId[] = Array(numSlides)
+    .fill(0)
+    .map(() => createShapeId())
 
-export const createSlideshow = (
-  editor: Editor,
-  baseProps: {
-    id: TLShapeId
-    x: number
-    y: number
-    rotation: number
-    isLocked: boolean
-  },
-  slidePattern: string = 'horizontal',
-  numSlides: number = 3
-) => {
-  const slideWidth = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH
-  const slideHeight = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
-  const slideIds: TLShapeId[] = []
-  const contentFrameIds: TLShapeId[] = []
+  // Calculate slots based on pattern
+  const slots = slideIds.map((id, index) => {
+    const slotWidth = baseProps.props.w / numSlides
+    const x = baseProps.x + spacing + (index * slotWidth)
+    const y = baseProps.y + verticalOffset
 
-  // Create slide IDs and content frame IDs first
-  for (let i = 0; i < numSlides; i++) {
-    slideIds.push(createShapeId())
-    contentFrameIds.push(createShapeId())
-  }
-
-  // Calculate dimensions
-  const { width: slideshowWidth, height: slideshowHeight } = calculateSlideshowDimensions(
-    numSlides,
-    slidePattern,
-    slideWidth,
-    slideHeight
-  )
-
-  // Create the slideshow
-  editor.createShape<CCSlideShowShape>({
-    ...baseProps,
-    id: baseProps.id,
-    type: 'cc-slideshow',
-    props: {
-      title: `Slideshow (${slidePattern}: ${baseProps.id})`,
-      w: slideshowWidth,
-      h: slideshowHeight,
-      headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
-      isLocked: false,
-      slides: slideIds,
-      currentSlideIndex: 0,
-      slidePattern
+    return {
+      x,
+      y,
+      index,
+      occupiedBy: id
     }
   })
 
-  // Create slides, content frames, and bindings
-  for (let i = 0; i < numSlides; i++) {
-    const { x: slideX, y: slideY } = calculateSlidePosition(
-      i,
-      numSlides,
+  // Create slideshow
+  const slideshowId = createShapeId()
+  const slideshowShape = editor.createShape<CCSlideShowShape>({
+    id: slideshowId,
+    ...baseProps,
+    type: 'cc-slideshow',
+    props: {
+      title: 'Slideshow',
+      w: baseProps.props.w,
+      h: baseProps.props.h,
+      headerColor: '#718096',
+      isLocked: false,
+      slides: slideIds,
+      currentSlideIndex: 0,
       slidePattern,
-      slideWidth,
-      slideHeight,
-      slideshowWidth,
-      slideshowHeight
-    )
+      slots
+    }
+  })
 
-    // Create slide
+  // Create slides and their bindings
+  slideIds.forEach((id, index) => {
+    const slot = slots[index]
     editor.createShape<CCSlideShape>({
-      id: slideIds[i],
+      id,
       type: 'cc-slide',
-      x: slideX,
-      y: slideY,
-      parentId: baseProps.id,
+      x: slot.x,
+      y: slot.y,
+      rotation: 0,
+      isLocked: false,
       props: {
-        title: `Slide ${i + 1} (${slideIds[i]})`,
-        w: slideWidth,
-        h: slideHeight,
-        headerColor: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_COLORS.secondary,
+        title: `Slide ${index + 1} (${id})`,
+        w: baseProps.props.w / numSlides - (2 * spacing),
+        h: baseProps.props.h - headerHeight - (2 * contentPadding),
+        headerColor: '#718096',
         isLocked: false
       }
     })
 
-    // Create content frame - position relative to parent slide
-    const contentFrameHeight = slideHeight - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
-    editor.createShape<CCSlideContentFrameShape>({
-      id: contentFrameIds[i],
-      type: 'cc-slide-content',
-      x: 0, // Relative to parent slide
-      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT, // Relative to parent slide
-      parentId: slideIds[i],
-      props: {
-        title: `Content ${i + 1} (${contentFrameIds[i]})`,
-        w: slideWidth,
-        h: contentFrameHeight,
-        headerColor: 'transparent',
-        isLocked: false,
-        parentSlideId: slideIds[i]
-      }
+    // Create binding
+    editor.batch(() => {
+      editor.createBinding({
+        type: 'cc-slide-layout',
+        fromId: slideshowId,
+        toId: id,
+        props: {
+          placeholder: false,
+          isMovingWithParent: false,
+          lastKnownSlot: index
+        }
+      })
     })
+  })
 
-    // Create slide layout binding
-    editor.createBinding({
-      type: 'cc-slide-layout',
-      fromId: baseProps.id,
-      toId: slideIds[i],
-      props: {
-        placeholder: false
-      }
-    })
-
-    // Create content frame binding
-    editor.createBinding({
-      type: 'cc-slide-content-binding',
-      fromId: slideIds[i],
-      toId: contentFrameIds[i],
-      props: {
-        placeholder: false
-      }
-    })
-  }
+  return slideshowShape
 } 
