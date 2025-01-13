@@ -120,15 +120,51 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         slidePattern: parentSlideshow.props.slidePattern
       })
 
-      // Update slide positions
-      const targetX = parentSlideshow.x + (nearestSlot * slotWidth)
-      this.editor.updateShape({
-        id: slide.id,
-        type: slide.type,
-        parentId: parentSlideshow.id,
-        x: targetX,
-        y: slide.y
-      })
+      // Get the slide at the target slot
+      const targetSlide = slides[nearestSlot]
+      if (targetSlide) {
+        // Update positions of both slides
+        const currentX = parentSlideshow.x + (currentIndex * slotWidth)
+        const targetX = parentSlideshow.x + (nearestSlot * slotWidth)
+
+        // Move target slide to current position
+        this.editor.updateShape({
+          id: targetSlide.id,
+          type: targetSlide.type,
+          parentId: parentSlideshow.id,
+          x: currentX,
+          y: targetSlide.y
+        })
+
+        // Move current slide to target position
+        this.editor.updateShape({
+          id: slide.id,
+          type: slide.type,
+          parentId: parentSlideshow.id,
+          x: targetX,
+          y: slide.y
+        })
+
+        // Update slideshow's slide order
+        const newSlides = [...parentSlideshow.props.slides]
+        const [removed] = newSlides.splice(currentIndex, 1)
+        newSlides.splice(nearestSlot, 0, removed)
+
+        this.editor.updateShape({
+          id: parentSlideshow.id,
+          type: parentSlideshow.type,
+          props: {
+            ...parentSlideshow.props,
+            slides: newSlides
+          }
+        })
+
+        logger.debug('system', '✅ Slide positions swapped', {
+          currentSlide: slide.id,
+          targetSlide: targetSlide.id,
+          newOrder: newSlides
+        })
+      }
     }
 
     logger.debug('system', '📏 Updated slide position', {
