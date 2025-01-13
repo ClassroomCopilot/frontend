@@ -1,7 +1,6 @@
 import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
 import { logger } from '../../../../debugConfig'
 import { CCSlideShape } from './CCSlideShapeUtil'
-import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
 export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content-binding', {
   placeholder: boolean
@@ -41,7 +40,8 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     if (!parentSlide || !contentFrame) {
       logger.warn('system', '⚠️ Missing parent slide or content frame at translation start', {
         parentSlide,
-        contentFrame
+        contentFrame,
+        binding
       })
       return
     }
@@ -50,7 +50,11 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     if (!binding.props.placeholder) {
       logger.debug('system', '🔄 Marking content binding as moving', {
         slideId: parentSlide.id,
-        frameId: contentFrame.id
+        frameId: contentFrame.id,
+        initialPositions: {
+          slide: { x: parentSlide.x, y: parentSlide.y },
+          frame: { x: contentFrame.x, y: contentFrame.y }
+        }
       })
 
       this.editor.updateBinding({
@@ -94,20 +98,17 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
       return
     }
 
-    // Update content frame position relative to parent slide
-    // Content frame should maintain a fixed offset from the parent slide's top
+    // Only update the parent relationship during translation
+    // Let the TLDraw engine handle the relative positioning
     this.editor.updateShape({
       id: contentFrame.id,
       type: contentFrame.type,
-      parentId: parentSlide.id,
-      x: 0, // Always at x=0 relative to parent
-      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT // Fixed offset from parent's top
+      parentId: parentSlide.id
     })
 
-    logger.debug('system', '📏 Updated content frame position', {
+    logger.debug('system', '📏 Updated content frame parent relationship', {
       slideId: parentSlide.id,
-      frameId: contentFrame.id,
-      position: { x: 0, y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT }
+      frameId: contentFrame.id
     })
   }
 
@@ -136,15 +137,6 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     })
 
     if (!binding.props.placeholder && binding.props.isMovingWithParent) {
-      // Ensure final position is correct
-      this.editor.updateShape({
-        id: contentFrame.id,
-        type: contentFrame.type,
-        parentId: parentSlide.id,
-        x: 0,
-        y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
-      })
-
       // Reset moving state
       this.editor.updateBinding({
         id: binding.id,
@@ -154,10 +146,9 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
         props: { ...binding.props, isMovingWithParent: false }
       })
 
-      logger.debug('system', '✅ Content frame position finalized', {
+      logger.debug('system', '✅ Content frame binding state reset', {
         slideId: parentSlide.id,
-        frameId: contentFrame.id,
-        position: { x: 0, y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT }
+        frameId: contentFrame.id
       })
     }
   }
