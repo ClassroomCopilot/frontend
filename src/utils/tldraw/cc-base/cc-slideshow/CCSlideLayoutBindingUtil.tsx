@@ -1,8 +1,10 @@
 import { BindingUtil, TLBaseBinding, BindingOnCreateOptions, Vec } from '@tldraw/tldraw'
 import { logger } from '../../../../debugConfig'
-import { CCSlideShape } from './CCSlideShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
+import { SlideValidationUtil } from './utils/SlideValidationUtil'
+import { SlidePositionUtil } from './utils/SlidePositionUtil'
+import { SlideReorderUtil } from './utils/SlideReorderUtil'
 
 export interface CCSlideLayoutBinding extends TLBaseBinding<'cc-slide-layout', {
   placeholder: boolean
@@ -49,12 +51,11 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
   }
 
   onTranslateStart = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
-    const slide = this.editor.getShape(binding.toId) as CCSlideShape
+    const validated = SlideValidationUtil.validateBinding(this.editor, binding)
+    if (!validated) return
 
-    if (!parentSlideshow || !slide) return
-
-    const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
+    const { slide, slideshow } = validated
+    const currentIndex = slideshow.props.slides.indexOf(slide.id)
 
     logger.debug('system', '🔄 Starting slide layout translation', {
       binding,
@@ -79,17 +80,19 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
   }
 
   onTranslate = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
-    const slide = this.editor.getShape(binding.toId) as CCSlideShape
+    const validated = SlideValidationUtil.validateBinding(this.editor, binding)
+    if (!validated) return
 
-    if (!parentSlideshow || !slide || binding.props.placeholder || !binding.props.isMovingWithParent) {
-      return
-    }
-
-    const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
-    const currentPosition = slide.x - parentSlideshow.x
-    const nearestSlot = Math.round(currentPosition / slotWidth)
-    const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
+    const { slide, slideshow } = validated
+    const { slotWidth } = SlidePositionUtil.getSlotDimensions(slideshow)
+    const currentPosition = slide.x - slideshow.x
+    const nearestSlot = SlidePositionUtil.getNearestSlot(
+      slide.x,
+      slideshow.x,
+      slotWidth,
+      slideshow.props.slides.length
+    )
+    const currentIndex = slideshow.props.slides.indexOf(slide.id)
 
     // Log translation metrics and slot state
     logger.debug('system', '📏 Translation state', {
@@ -104,7 +107,7 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     // Check if we've moved to a new slot
     if (nearestSlot !== binding.props.lastKnownSlot && 
         nearestSlot >= 0 && 
-        nearestSlot < parentSlideshow.props.slides.length) {
+        nearestSlot < slideshow.props.slides.length) {
       
       logger.info('system', '🔄 Slot change detected during translation', {
         slideId: slide.id,
@@ -114,75 +117,34 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         slotWidth
       })
 
-      const newSlides = [...parentSlideshow.props.slides]
-      const displacedSlideId = newSlides[nearestSlot]
-      
-      // Update slide order
-      newSlides.splice(currentIndex, 1)
-      newSlides.splice(nearestSlot, 0, slide.id)
+      // Apply the reorder
+      SlideReorderUtil.applyReorder(
+        this.editor,
+        slideshow,
+        currentIndex,
+        nearestSlot,
+        slide
+      )
 
-      this.editor.batch(() => {
-        // Move displaced slide to current slide's position
-        if (displacedSlideId !== slide.id) {
-          this.editor.updateShape({
-            id: displacedSlideId,
-            type: 'cc-slide',
-            x: parentSlideshow.x + (currentIndex * slotWidth),
-            y: slide.y
-          })
+      // Update binding to track the new slot
+      this.editor.updateBinding({
+        id: binding.id,
+        type: binding.type,
+        fromId: binding.fromId,
+        toId: binding.toId,
+        props: { 
+          ...binding.props, 
+          lastKnownSlot: nearestSlot 
         }
-
-        // Update slide position
-        this.editor.updateShape({
-          id: slide.id,
-          type: slide.type,
-          x: parentSlideshow.x + (nearestSlot * slotWidth),
-          y: slide.y
-        })
-
-        // Update slideshow order
-        this.editor.updateShape({
-          id: parentSlideshow.id,
-          type: parentSlideshow.type,
-          props: {
-            ...parentSlideshow.props,
-            slides: newSlides
-          }
-        })
-
-        // Update binding to track the new slot
-        this.editor.updateBinding({
-          id: binding.id,
-          type: binding.type,
-          fromId: binding.fromId,
-          toId: binding.toId,
-          props: { 
-            ...binding.props, 
-            lastKnownSlot: nearestSlot 
-          }
-        })
-
-        logger.info('system', '✅ Slot change applied during translation', {
-          slideId: slide.id,
-          newSlot: nearestSlot,
-          newOrder: newSlides
-        })
       })
     }
   }
 
   onTranslateEnd = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
-    const slide = this.editor.getShape(binding.toId) as CCSlideShape
+    const validated = SlideValidationUtil.validateBinding(this.editor, binding)
+    if (!validated) return
 
-    if (!parentSlideshow || !slide) {
-      logger.warn('system', '⚠️ Missing parent slideshow or slide at translation end', {
-        parentSlideshow,
-        slide,
-        binding
-      })
-      return
-    }
+    const { slide, slideshow } = validated
 
     logger.debug('system', '🎯 Slide translation ended', {
       slideId: slide.id
@@ -190,20 +152,23 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
 
     // Ensure final position matches the last known slot
     if (binding.props.lastKnownSlot !== undefined) {
-      const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
-      const finalX = parentSlideshow.x + (binding.props.lastKnownSlot * slotWidth)
+      const finalPosition = SlidePositionUtil.getSlotPosition(
+        slideshow.props.slidePattern,
+        binding.props.lastKnownSlot,
+        slideshow,
+        slide
+      )
 
       this.editor.updateShape({
         id: slide.id,
         type: slide.type,
-        x: finalX,
-        y: slide.y
+        x: finalPosition.x,
+        y: finalPosition.y
       })
 
       logger.debug('system', '✅ Slide reorder complete', {
         slideId: slide.id,
-        newOrder: parentSlideshow.props.slides,
-        contentFramesUpdated: parentSlideshow.props.slides.length
+        newOrder: slideshow.props.slides
       })
     }
 

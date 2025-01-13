@@ -8,8 +8,8 @@ import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
 import { CCSlideContentFrameShape } from './CCSlideContentFrameUtil'
 import { logger } from '../../../../debugConfig'
-
-type CCSlideShowShapeProps = CCSlideShowShape['props']
+import { SlideValidationUtil } from './utils/SlideValidationUtil'
+import { SlidePositionUtil } from './utils/SlidePositionUtil'
 
 export interface CCSlideShape extends CCBaseShape {
   type: 'cc-slide'
@@ -79,19 +79,10 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
   }
 
   onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
-    const bindings = this.editor.getBindingsToShape(current.id, 'cc-slide-layout')
-    const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
+    const validated = SlideValidationUtil.validateSlideMovement(this.editor, current)
+    if (!validated) return current
 
-    if (!slideBinding) {
-      logger.warn('system', '⚠️ No slide layout binding found during translation', { slideId: current.id })
-      return current
-    }
-
-    const slideshow = this.editor.getShape(slideBinding.fromId) as CCSlideShowShape
-    if (!slideshow) {
-      logger.warn('system', '⚠️ No slideshow found during translation', { slideId: current.id })
-      return current
-    }
+    const { slideshow } = validated
 
     logger.debug('system', '🔄 Translating slide', {
       slideId: current.id,
@@ -100,56 +91,18 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
       pattern: slideshow.props.slidePattern
     })
 
-    // Get constants
-    const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING;
-    const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT;
-    const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING;
-    const verticalOffset = headerHeight + contentPadding;
-
     // Apply pattern-specific constraints
-    if (slideshow.props.slidePattern === 'vertical') {
-      const slideshowProps = slideshow.props as CCSlideShowShapeProps;
-      const constrainedX = (slideshowProps.w - current.props.w) / 2;
-      const constrainedY = Math.max(
-        verticalOffset + spacing,
-        Math.min(slideshowProps.h - current.props.h - spacing, current.y)
-      );
+    const constrainedPosition = SlidePositionUtil.getConstrainedPosition(
+      slideshow.props.slidePattern,
+      current,
+      initial,
+      slideshow
+    )
 
-      return {
-        ...current,
-        x: constrainedX,
-        y: constrainedY
-      };
-    } else if (slideshow.props.slidePattern === 'horizontal') {
-      const slideshowProps = slideshow.props as CCSlideShowShapeProps;
-      const constrainedX = Math.max(
-        spacing,
-        Math.min(slideshowProps.w - current.props.w - spacing, current.x)
-      );
-      const constrainedY = initial.y;
-
-      return {
-        ...current,
-        x: constrainedX,
-        y: constrainedY
-      };
-    } else {
-      // Grid pattern
-      const slideshowProps = slideshow.props as CCSlideShowShapeProps;
-      const constrainedX = Math.max(
-        spacing,
-        Math.min(slideshowProps.w - current.props.w - spacing, current.x)
-      );
-      const constrainedY = Math.max(
-        verticalOffset + spacing,
-        Math.min(slideshowProps.h - current.props.h - spacing, current.y)
-      );
-
-      return {
-        ...current,
-        x: constrainedX,
-        y: constrainedY
-      };
+    return {
+      ...current,
+      x: constrainedPosition.x,
+      y: constrainedPosition.y
     }
   }
 
