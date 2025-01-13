@@ -89,14 +89,29 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
     const currentPosition = slide.x - parentSlideshow.x
     const nearestSlot = Math.round(currentPosition / slotWidth)
-    const snapX = parentSlideshow.x + (nearestSlot * slotWidth)
     const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
 
-    // Only update if we're moving to a new slot
+    // Log translation metrics
+    logger.debug('system', '📏 Horizontal translation metrics', {
+      slideId: slide.id,
+      currentPosition,
+      nearestSlot,
+      previousSlot: binding.props.lastKnownSlot,
+      movingRight: currentPosition > (binding.props.lastKnownSlot ?? 0) * slotWidth
+    })
+
+    // Check if we've moved to a new slot
     if (nearestSlot !== binding.props.lastKnownSlot && 
         nearestSlot >= 0 && 
         nearestSlot < parentSlideshow.props.slides.length) {
       
+      logger.info('system', '🔄 Slide position swap detected', {
+        slideId: slide.id,
+        from: binding.props.lastKnownSlot,
+        to: nearestSlot,
+        pattern: parentSlideshow.props.slidePattern
+      })
+
       const newSlides = [...parentSlideshow.props.slides]
       newSlides.splice(currentIndex, 1)
       newSlides.splice(nearestSlot, 0, slide.id)
@@ -106,7 +121,7 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         this.editor.updateShape({
           id: slide.id,
           type: slide.type,
-          x: snapX,
+          x: parentSlideshow.x + (nearestSlot * slotWidth),
           y: slide.y
         })
 
@@ -132,15 +147,6 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
           }
         })
       })
-
-      logger.debug('system', '📏 Snapping slide during translation', {
-        slideId: slide.id,
-        currentPosition,
-        nearestSlot,
-        snapX,
-        previousSlot: binding.props.lastKnownSlot,
-        newOrder: newSlides
-      })
     }
   }
 
@@ -157,6 +163,10 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       return
     }
 
+    logger.debug('system', '🎯 Slide translation ended', {
+      slideId: slide.id
+    })
+
     // Ensure final position matches the last known slot
     if (binding.props.lastKnownSlot !== undefined) {
       const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
@@ -169,10 +179,10 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         y: slide.y
       })
 
-      logger.debug('system', '✅ Final slide position set', {
+      logger.debug('system', '✅ Slide reorder complete', {
         slideId: slide.id,
-        finalSlot: binding.props.lastKnownSlot,
-        finalX
+        newOrder: parentSlideshow.props.slides,
+        contentFramesUpdated: parentSlideshow.props.slides.length
       })
     }
 
