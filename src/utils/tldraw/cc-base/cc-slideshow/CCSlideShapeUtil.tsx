@@ -7,6 +7,7 @@ import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
 import { CCSlideContentFrameShape } from './CCSlideContentFrameUtil'
+import { logger } from '../../../../debugConfig'
 
 type CCSlideShowShapeProps = CCSlideShowShape['props']
 
@@ -42,8 +43,30 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
   override hideRotateHandle = () => true
   override canEdit = () => false
 
-  override canBind(args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean {
+  canBind(args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean {
     return args.fromShapeType === 'cc-slideshow' && args.toShapeType === 'cc-slide' && args.bindingType === 'cc-slide-layout'
+  }
+
+  isLocked = (shape: CCSlideShape) => {
+    logger.debug('system', '🔒 Checking if slide is locked', { 
+      slideId: shape.id,
+      isLocked: shape.props.isLocked
+    })
+    return shape.props.isLocked
+  }
+
+  isDraggable = (shape: CCSlideShape) => {
+    const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
+    const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
+    const canDrag = !!slideBinding && !shape.props.isLocked
+
+    logger.debug('system', '🖱️ Checking if slide is draggable', { 
+      slideId: shape.id,
+      hasBinding: !!slideBinding,
+      isLocked: shape.props.isLocked,
+      canDrag
+    })
+    return canDrag
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -60,13 +83,22 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
 
     if (!slideBinding) {
+      logger.warn('system', '⚠️ No slide layout binding found during translation', { slideId: current.id })
       return current
     }
 
     const slideshow = this.editor.getShape(slideBinding.fromId) as CCSlideShowShape
     if (!slideshow) {
+      logger.warn('system', '⚠️ No slideshow found during translation', { slideId: current.id })
       return current
     }
+
+    logger.debug('system', '🔄 Translating slide', {
+      slideId: current.id,
+      from: { x: initial.x, y: initial.y },
+      to: { x: current.x, y: current.y },
+      pattern: slideshow.props.slidePattern
+    })
 
     // Get constants
     const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING;
@@ -134,6 +166,13 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         }
       }
 
+      logger.debug('system', '📏 Vertical translation metrics', {
+        slideId: current.id,
+        currentPosition: constrainedY,
+        nearestSlot,
+        movingDown
+      })
+
       return {
         ...current,
         x: constrainedX,
@@ -181,6 +220,13 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
           });
         }
       }
+
+      logger.debug('system', '📏 Horizontal translation metrics', {
+        slideId: current.id,
+        currentPosition: constrainedX,
+        nearestSlot,
+        movingRight
+      })
 
       return {
         ...current,
@@ -250,8 +296,22 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         }
       }
 
-    return {
-      ...current,
+      logger.debug('system', '📏 Grid translation metrics', {
+        slideId: current.id,
+        position: { x: constrainedX, y: constrainedY },
+        nearestSlot,
+        gridMetrics: {
+          currentRow,
+          currentCol,
+          movedRight,
+          movedLeft,
+          movedDown,
+          movedUp
+        }
+      })
+
+      return {
+        ...current,
         x: constrainedX,
         y: constrainedY
       };
@@ -259,15 +319,19 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
   }
 
   onTranslateEnd = (shape: CCSlideShape) => {
+    logger.debug('system', '🎯 Slide translation ended', { slideId: shape.id })
+
     const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
     const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
 
     if (!slideBinding) {
+      logger.warn('system', '⚠️ No slide layout binding found at translation end', { slideId: shape.id })
       return
     }
 
     const slideshow = this.editor.getShape(slideBinding.fromId) as CCSlideShowShape
     if (!slideshow) {
+      logger.warn('system', '⚠️ No slideshow found at translation end', { slideId: shape.id })
       return
     }
 
@@ -405,6 +469,13 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
     
     if (clampedSlot !== currentIndex) {
+      logger.info('system', '🔄 Slide position swap detected', {
+        slideId: shape.id,
+        from: currentIndex,
+        to: clampedSlot,
+        pattern: slideshow.props.slidePattern
+      })
+
       this.editor.batch(() => {
         // Update slide order
         const newSlides = [...slideshow.props.slides];
@@ -450,6 +521,12 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
             }
           }
         });
+
+        logger.debug('system', '✅ Slide reorder complete', {
+          slideId: shape.id,
+          newOrder: newSlides,
+          contentFramesUpdated: slideContentMap.size
+        })
       });
     }
   }
