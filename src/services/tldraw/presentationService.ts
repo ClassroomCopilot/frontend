@@ -49,7 +49,7 @@ export class PresentationService {
             if (shape.type === 'cc-slide') {
                 const contentFrame = this.editor.getSortedChildIdsForParent(shape.id)
                     .map(id => this.editor.getShape(id))
-                    .find((s): s is CCSlideContentFrameShape => s?.type === 'cc-slide-content')
+                    .find((s): s is CCSlideContentFrameShape => s?.type === 'frame')
 
                 if (contentFrame) {
                     const contentBounds = this.editor.getShapePageBounds(contentFrame.id)

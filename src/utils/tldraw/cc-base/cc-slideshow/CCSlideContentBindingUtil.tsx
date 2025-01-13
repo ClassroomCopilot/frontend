@@ -28,7 +28,7 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     }
 
     const contentFrame = this.editor.getShape(binding.toId) as CCSlideContentFrameShape
-    if (!contentFrame || contentFrame.type !== 'cc-slide-content') {
+    if (!contentFrame || contentFrame.type !== 'frame') {
       return
     }
 
@@ -48,7 +48,7 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     }
 
     const contentFrame = this.editor.getShape(binding.toId) as CCSlideContentFrameShape
-    if (!contentFrame || contentFrame.type !== 'cc-slide-content') {
+    if (!contentFrame || contentFrame.type !== 'frame') {
       return
     }
 
