@@ -37,6 +37,7 @@ export const ccBindingMigrations = {
             ...record,
             props: {
               placeholder: false,
+              isMovingWithParent: false,
               ...record.props,
             },
           }

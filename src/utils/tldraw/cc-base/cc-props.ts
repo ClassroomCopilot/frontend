@@ -105,6 +105,7 @@ export const ccBindingProps = {
   },
   'cc-slide-content-binding': {
     placeholder: T.boolean,
+    isMovingWithParent: T.boolean.optional(),
   },
 }
 

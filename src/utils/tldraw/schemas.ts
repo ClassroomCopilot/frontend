@@ -14,7 +14,7 @@ export const customSchema = createTLSchema({
                 props: util.props,
                 migrations: util.migrations,
             }
-        }), {})
+        }), {}),
     },
     bindings: {
         ...defaultBindingSchemas,
@@ -25,7 +25,7 @@ export const customSchema = createTLSchema({
                 props: util.props,
                 migrations: util.migrations,
             }
-        }), {})
+        }), {}),
     },
 });
 
