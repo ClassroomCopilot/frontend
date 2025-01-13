@@ -1,4 +1,4 @@
-import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle } from '@tldraw/tldraw'
+import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, TLParentId } from '@tldraw/tldraw'
 import { getDefaultCCSlideProps } from '../cc-props'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { ccShapeProps } from '../cc-props'
@@ -6,6 +6,7 @@ import { ccShapeMigrations } from '../cc-migrations'
 import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
+import { CCSlideContentFrameShape } from './CCSlideContentFrameUtil'
 
 type CCSlideShowShapeProps = CCSlideShowShape['props']
 
@@ -274,7 +275,6 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING;
     const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT;
     const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING;
-    const verticalOffset = headerHeight + contentPadding;
 
     // Get all slides in their current order
     const slides = slideshow.props.slides
@@ -289,117 +289,168 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     const slotWidth = shape.props.w + spacing;
     const slotHeight = shape.props.h + spacing;
 
-    if (slideshow.props.slidePattern === 'vertical') {
-      // Calculate positions
-      const getSlotPosition = (index: number) => verticalOffset + spacing + (index * slotHeight);
-      
-      // Find nearest slot based on current position
-      const currentPosition = shape.y;
-      let nearestSlot = currentIndex;
-      
-      // Find which slot we're closest to
-      const movingDown = currentPosition > getSlotPosition(currentIndex);
-
-      if (movingDown && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (currentPosition > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingDown && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (currentPosition < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
+    // Store content frames and their parent slides before reordering
+    const slideContentMap = new Map<string, string>(); // slideId -> contentFrameId
+    slides.forEach(({ slide }) => {
+      const contentFrame = this.editor.getSortedChildIdsForParent(slide.id)
+        .map(id => this.editor.getShape(id))
+        .find((s): s is CCSlideContentFrameShape => s?.type === 'cc-slide-content');
+      if (contentFrame) {
+        slideContentMap.set(slide.id, contentFrame.id);
       }
+    });
 
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        this.editor.batch(() => {
-          // Update slide order first
-          const newSlides = [...slideshow.props.slides];
-          const [movedSlide] = newSlides.splice(currentIndex, 1);
-          newSlides.splice(clampedSlot, 0, movedSlide);
-          
-          this.editor.updateShape<CCSlideShowShape>({
-            id: slideshow.id,
-            type: 'cc-slideshow',
-            props: {
-              ...slideshow.props,
-              slides: newSlides
-            }
-          });
+    let nearestSlot = currentIndex;
+    let getSlotPosition: (index: number) => { x: number; y: number };
 
-          // Then update positions based on new order
-          newSlides.forEach((id, index) => {
-            const slide = this.editor.getShape(id) as CCSlideShape | undefined;
-            if (slide?.type === 'cc-slide') {
-              const slideshowProps = slideshow.props as CCSlideShowShape['props'];
-              this.editor.updateShape<CCSlideShape>({
-                id: slide.id,
-                type: 'cc-slide',
-                x: (slideshowProps.w - slide.props.w) / 2,
-                y: getSlotPosition(index)
-              });
-            }
-          });
+    switch (slideshow.props.slidePattern) {
+      case 'vertical': {
+        getSlotPosition = (index) => ({
+          x: (slideshow.props.w - shape.props.w) / 2,
+          y: headerHeight + contentPadding + spacing + (index * slotHeight)
         });
-      }
-    } else {
-      // Horizontal pattern
-      const getSlotPosition = (index: number) => spacing + (index * slotWidth);
-      
-      // Find nearest slot based on current position
-      const currentPosition = shape.x;
-      let nearestSlot = currentIndex;
-      
-      // Find which slot we're closest to
-      const movingRight = currentPosition > getSlotPosition(currentIndex);
 
-      if (movingRight && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (currentPosition > nextSlotMidpoint) {
+        const currentPosition = shape.y;
+        const movingDown = currentPosition > getSlotPosition(currentIndex).y;
+
+        if (movingDown && currentIndex < slides.length - 1) {
+          const nextSlotMidpoint = (getSlotPosition(currentIndex).y + getSlotPosition(currentIndex + 1).y) / 2;
+          if (currentPosition > nextSlotMidpoint) {
+            nearestSlot = currentIndex + 1;
+          }
+        } else if (!movingDown && currentIndex > 0) {
+          const prevSlotMidpoint = (getSlotPosition(currentIndex).y + getSlotPosition(currentIndex - 1).y) / 2;
+          if (currentPosition < prevSlotMidpoint) {
+            nearestSlot = currentIndex - 1;
+          }
+        }
+        break;
+      }
+
+      case 'grid': {
+        const gridColumns = Math.floor((slideshow.props.w - spacing) / slotWidth);
+        getSlotPosition = (index) => {
+          const row = Math.floor(index / gridColumns);
+          const col = index % gridColumns;
+          return {
+            x: spacing + (col * slotWidth),
+            y: headerHeight + contentPadding + spacing + (row * slotHeight)
+          };
+        };
+
+        const currentPos = getSlotPosition(currentIndex);
+        const movedRight = shape.x > currentPos.x + slotWidth / 2;
+        const movedLeft = shape.x < currentPos.x - slotWidth / 2;
+        const movedDown = shape.y > currentPos.y + slotHeight / 2;
+        const movedUp = shape.y < currentPos.y - slotHeight / 2;
+
+        const currentRow = Math.floor(currentIndex / gridColumns);
+        const currentCol = currentIndex % gridColumns;
+
+        if (movedRight && currentCol < gridColumns - 1) {
           nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingRight && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (currentPosition < prevSlotMidpoint) {
+        } else if (movedLeft && currentCol > 0) {
           nearestSlot = currentIndex - 1;
+        } else if (movedDown && currentRow < Math.floor((slides.length - 1) / gridColumns)) {
+          nearestSlot = currentIndex + gridColumns;
+        } else if (movedUp && currentRow > 0) {
+          nearestSlot = currentIndex - gridColumns;
+        }
+        break;
+      }
+
+      case 'radial': {
+        const radius = Math.min(slideshow.props.w, slideshow.props.h - headerHeight - contentPadding * 2) / 3;
+        getSlotPosition = (index) => {
+          const angle = (2 * Math.PI * index) / slides.length;
+          return {
+            x: slideshow.props.w / 2 + radius * Math.cos(angle) - shape.props.w / 2,
+            y: headerHeight + contentPadding + (slideshow.props.h - headerHeight - contentPadding * 2) / 2 + radius * Math.sin(angle) - shape.props.h / 2
+          };
+        };
+
+        // Find nearest angle based on current position
+        const centerX = slideshow.props.w / 2;
+        const centerY = headerHeight + contentPadding + (slideshow.props.h - headerHeight - contentPadding * 2) / 2;
+        const currentAngle = Math.atan2(shape.y + shape.props.h / 2 - centerY, shape.x + shape.props.w / 2 - centerX);
+        const normalizedAngle = currentAngle < 0 ? currentAngle + 2 * Math.PI : currentAngle;
+        nearestSlot = Math.round((normalizedAngle * slides.length) / (2 * Math.PI)) % slides.length;
+        break;
+      }
+
+      case 'horizontal':
+      default: {
+        getSlotPosition = (index) => ({
+          x: spacing + (index * slotWidth),
+          y: headerHeight + contentPadding + spacing
+        });
+
+        const currentPosition = shape.x;
+        const movingRight = currentPosition > getSlotPosition(currentIndex).x;
+
+        if (movingRight && currentIndex < slides.length - 1) {
+          const nextSlotMidpoint = (getSlotPosition(currentIndex).x + getSlotPosition(currentIndex + 1).x) / 2;
+          if (currentPosition > nextSlotMidpoint) {
+            nearestSlot = currentIndex + 1;
+          }
+        } else if (!movingRight && currentIndex > 0) {
+          const prevSlotMidpoint = (getSlotPosition(currentIndex).x + getSlotPosition(currentIndex - 1).x) / 2;
+          if (currentPosition < prevSlotMidpoint) {
+            nearestSlot = currentIndex - 1;
+          }
         }
       }
+    }
 
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        this.editor.batch(() => {
-          // Update slide order first
-          const newSlides = [...slideshow.props.slides];
-          const [movedSlide] = newSlides.splice(currentIndex, 1);
-          newSlides.splice(clampedSlot, 0, movedSlide);
-          
-          this.editor.updateShape<CCSlideShowShape>({
-            id: slideshow.id,
-            type: 'cc-slideshow',
-            props: {
-              ...slideshow.props,
-              slides: newSlides
-            }
-          });
-
-          // Then update positions based on new order
-          newSlides.forEach((id, index) => {
-            const slide = this.editor.getShape(id) as CCSlideShape | undefined;
-            if (slide?.type === 'cc-slide') {
-              this.editor.updateShape<CCSlideShape>({
-                id: slide.id,
-                type: 'cc-slide',
-                x: getSlotPosition(index),
-                y: shape.y
-              });
-            }
-          });
+    const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
+    
+    if (clampedSlot !== currentIndex) {
+      this.editor.batch(() => {
+        // Update slide order
+        const newSlides = [...slideshow.props.slides];
+        const [movedSlide] = newSlides.splice(currentIndex, 1);
+        newSlides.splice(clampedSlot, 0, movedSlide);
+        
+        this.editor.updateShape<CCSlideShowShape>({
+          id: slideshow.id,
+          type: 'cc-slideshow',
+          props: {
+            ...slideshow.props,
+            slides: newSlides
+          }
         });
-      }
+
+        // Update positions based on new order
+        newSlides.forEach((slideId, index) => {
+          const slide = this.editor.getShape(slideId) as CCSlideShape;
+          if (slide?.type === 'cc-slide') {
+            const position = getSlotPosition(index);
+            
+            // Update slide position
+            this.editor.updateShape<CCSlideShape>({
+              id: slide.id,
+              type: 'cc-slide',
+              x: position.x,
+              y: position.y
+            });
+
+            // Update content frame position
+            const contentFrameId = slideContentMap.get(slide.id);
+            if (contentFrameId) {
+              const contentFrame = this.editor.getShape(contentFrameId as TLParentId);
+              if (contentFrame) {
+                this.editor.updateShape({
+                  id: contentFrame.id,
+                  type: contentFrame.type,
+                  parentId: slide.id as TLParentId,
+                  x: 0,
+                  y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
+                });
+              }
+            }
+          }
+        });
+      });
     }
   }
 
