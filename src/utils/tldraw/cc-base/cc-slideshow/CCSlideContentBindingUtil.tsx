@@ -1,6 +1,7 @@
 import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
 import { logger } from '../../../../debugConfig'
 import { CCSlideShape } from './CCSlideShapeUtil'
+import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
 export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content', {
   placeholder: boolean
@@ -72,11 +73,18 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     }
 
     // Update content frame position relative to parent slide
+    // Content frame should maintain a fixed offset from the parent slide's top
     this.editor.updateShape({
       id: contentFrame.id,
       type: contentFrame.type,
-      x: parentSlide.x,
-      y: parentSlide.y + 40 // Header height offset
+      x: 0, // Always at x=0 relative to parent
+      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT // Fixed offset from parent's top
+    })
+
+    logger.debug('system', '📏 Updated content frame position', {
+      slideId: parentSlide.id,
+      frameId: contentFrame.id,
+      position: { x: 0, y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT }
     })
   }
 
