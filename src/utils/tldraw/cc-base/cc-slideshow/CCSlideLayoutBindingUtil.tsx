@@ -95,16 +95,47 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       return
     }
 
-    // Ensure slide maintains its parent relationship during translation
-    this.editor.updateShape({
-      id: slide.id,
-      type: slide.type,
-      parentId: parentSlideshow.id
-    })
+    // Get all slides in the slideshow
+    const slides = this.editor.getSortedChildIdsForParent(parentSlideshow.id)
+      .map(id => this.editor.getShape(id))
+      .filter((shape): shape is CCSlideShape => {
+        if (!shape) return false
+        return shape.type === 'cc-slide'
+      })
 
-    logger.debug('system', '📏 Updated slide parent relationship', {
+    // Calculate current slide position and nearest slot
+    const currentPosition = slide.x - parentSlideshow.x
+    const slotWidth = parentSlideshow.props.w / slides.length
+    const nearestSlot = Math.round(currentPosition / slotWidth)
+
+    // Get current slide index
+    const currentIndex = slides.findIndex(s => s.id === slide.id)
+
+    // If nearest slot is different from current index, trigger swap
+    if (nearestSlot !== currentIndex && nearestSlot >= 0 && nearestSlot < slides.length) {
+      logger.debug('system', '🔄 Slide position swap triggered during translation', {
+        slideId: slide.id,
+        from: currentIndex,
+        to: nearestSlot,
+        slidePattern: parentSlideshow.props.slidePattern
+      })
+
+      // Update slide positions
+      const targetX = parentSlideshow.x + (nearestSlot * slotWidth)
+      this.editor.updateShape({
+        id: slide.id,
+        type: slide.type,
+        parentId: parentSlideshow.id,
+        x: targetX,
+        y: slide.y
+      })
+    }
+
+    logger.debug('system', '📏 Updated slide position', {
       slideshowId: parentSlideshow.id,
-      slideId: slide.id
+      slideId: slide.id,
+      currentPosition,
+      nearestSlot
     })
   }
 
