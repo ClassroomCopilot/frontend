@@ -83,7 +83,7 @@ export default defineConfig(async ({ mode }) => {
     },
     envPrefix: ['VITE_', 'HOST_', 'PORT_'],
     server: {
-      host: true,
+      host: '0.0.0.0',
       port: parseInt(env.VITE_PORT_FRONTEND),
       watch: {
         usePolling: true,
