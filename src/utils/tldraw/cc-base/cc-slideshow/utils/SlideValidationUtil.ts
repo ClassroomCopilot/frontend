@@ -27,11 +27,10 @@ export class SlideValidationUtil {
       return null
     }
 
-    if (binding.props.placeholder || !binding.props.isMovingWithParent) {
-      logger.debug('system', '🚫 Binding not active for movement', {
+    if (binding.props.placeholder) {
+      logger.debug('system', '🚫 Binding is a placeholder', {
         slideId: slide.id,
-        isPlaceholder: binding.props.placeholder,
-        isMoving: binding.props.isMovingWithParent
+        isPlaceholder: binding.props.placeholder
       })
       return null
     }

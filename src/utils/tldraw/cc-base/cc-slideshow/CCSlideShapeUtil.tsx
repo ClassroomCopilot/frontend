@@ -113,6 +113,21 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         isLocked: s.shape?.props.isLocked
       }))
     })
+
+    // Mark the binding as moving
+    if (slideBinding && !slideBinding.props.placeholder) {
+      this.editor.updateBinding({
+        id: slideBinding.id,
+        type: slideBinding.type,
+        fromId: slideBinding.fromId,
+        toId: slideBinding.toId,
+        props: {
+          ...slideBinding.props,
+          isMovingWithParent: true,
+          lastKnownSlot: slideshow?.props.slides.indexOf(shape.id) ?? 0
+        }
+      })
+    }
   }
 
   onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
