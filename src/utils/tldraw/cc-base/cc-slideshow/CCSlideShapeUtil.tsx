@@ -84,13 +84,6 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
 
     const { slideshow } = validated
 
-    logger.debug('system', '🔄 Translating slide', {
-      slideId: current.id,
-      from: { x: initial.x, y: initial.y },
-      to: { x: current.x, y: current.y },
-      pattern: slideshow.props.slidePattern
-    })
-
     // Apply pattern-specific constraints
     const constrainedPosition = SlidePositionUtil.getConstrainedPosition(
       slideshow.props.slidePattern,
