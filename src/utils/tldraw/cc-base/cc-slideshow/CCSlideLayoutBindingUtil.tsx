@@ -1,7 +1,8 @@
-import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
+import { BindingUtil, TLBaseBinding, BindingOnCreateOptions, Vec } from '@tldraw/tldraw'
 import { logger } from '../../../../debugConfig'
 import { CCSlideShape } from './CCSlideShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
+import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
 export interface CCSlideLayoutBinding extends TLBaseBinding<'cc-slide-layout', {
   placeholder: boolean
@@ -27,6 +28,24 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     return
   }
 
+  getSnapPoints(binding: CCSlideLayoutBinding) {
+    const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
+    if (!parentSlideshow) return []
+
+    const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
+    const snapPoints: Vec[] = []
+
+    // Create snap points for each slot position
+    for (let i = 0; i < parentSlideshow.props.slides.length; i++) {
+      snapPoints.push(new Vec(
+        parentSlideshow.x + (i * slotWidth),
+        parentSlideshow.y + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
+      ))
+    }
+
+    return snapPoints
+  }
+
   onTranslateStart = ({ binding }: { binding: CCSlideLayoutBinding }) => {
     logger.debug('system', '🔄 Starting slide layout translation', {
       binding,
@@ -34,26 +53,7 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       toId: binding.toId
     })
 
-    // Get the parent slideshow and slide
-    const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
-    const slide = this.editor.getShape(binding.toId) as CCSlideShape
-
-    if (!parentSlideshow || !slide) {
-      logger.warn('system', '⚠️ Missing parent slideshow or slide at translation start', {
-        parentSlideshow,
-        slide,
-        binding
-      })
-      return
-    }
-
     if (!binding.props.placeholder) {
-      logger.debug('system', '🔄 Marking layout binding as moving', {
-        slideshowId: parentSlideshow.id,
-        slideId: slide.id
-      })
-
-      // Mark binding as in motion
       this.editor.updateBinding({
         id: binding.id,
         type: binding.type,
@@ -65,118 +65,35 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
   }
 
   onTranslate = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    // Get the parent slideshow and slide
     const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
     const slide = this.editor.getShape(binding.toId) as CCSlideShape
 
-    if (!parentSlideshow || !slide) {
-      logger.warn('system', '⚠️ Missing parent slideshow or slide during translation', {
-        parentSlideshow,
-        slide,
-        binding
-      })
+    if (!parentSlideshow || !slide || binding.props.placeholder || !binding.props.isMovingWithParent) {
       return
     }
 
-    logger.debug('system', '🔄 Slide layout translation in progress', {
-      binding,
-      fromId: binding.fromId,
-      toId: binding.toId,
-      isMovingWithParent: binding.props.isMovingWithParent,
-      slideshowPosition: { x: parentSlideshow.x, y: parentSlideshow.y },
-      slidePosition: { x: slide.x, y: slide.y }
+    const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
+    const currentPosition = slide.x - parentSlideshow.x
+    const nearestSlot = Math.round(currentPosition / slotWidth)
+    const snapX = parentSlideshow.x + (nearestSlot * slotWidth)
+
+    // Update slide position to snap to nearest slot
+    this.editor.updateShape({
+      id: slide.id,
+      type: slide.type,
+      x: snapX,
+      y: slide.y
     })
 
-    if (binding.props.placeholder || !binding.props.isMovingWithParent) {
-      logger.debug('system', '⏭️ Skipping slide update - not moving', {
-        placeholder: binding.props.placeholder,
-        isMoving: binding.props.isMovingWithParent
-      })
-      return
-    }
-
-    // Get all slides in the slideshow
-    const slides = this.editor.getSortedChildIdsForParent(parentSlideshow.id)
-      .map(id => this.editor.getShape(id))
-      .filter((shape): shape is CCSlideShape => {
-        if (!shape) return false
-        return shape.type === 'cc-slide'
-      })
-
-    // Calculate current slide position and nearest slot
-    const currentPosition = slide.x - parentSlideshow.x
-    const slotWidth = parentSlideshow.props.w / slides.length
-    const nearestSlot = Math.round(currentPosition / slotWidth)
-
-    // Get current slide index
-    const currentIndex = slides.findIndex(s => s.id === slide.id)
-
-    // If nearest slot is different from current index, trigger swap
-    if (nearestSlot !== currentIndex && nearestSlot >= 0 && nearestSlot < slides.length) {
-      logger.debug('system', '🔄 Slide position swap triggered during translation', {
-        slideId: slide.id,
-        from: currentIndex,
-        to: nearestSlot,
-        slidePattern: parentSlideshow.props.slidePattern
-      })
-
-      // Get the slide at the target slot
-      const targetSlide = slides[nearestSlot]
-      if (targetSlide) {
-        // Update positions of both slides
-        const currentX = parentSlideshow.x + (currentIndex * slotWidth)
-        const targetX = parentSlideshow.x + (nearestSlot * slotWidth)
-
-        // Move target slide to current position
-        this.editor.updateShape({
-          id: targetSlide.id,
-          type: targetSlide.type,
-          parentId: parentSlideshow.id,
-          x: currentX,
-          y: targetSlide.y
-        })
-
-        // Move current slide to target position
-        this.editor.updateShape({
-          id: slide.id,
-          type: slide.type,
-          parentId: parentSlideshow.id,
-          x: targetX,
-          y: slide.y
-        })
-
-        // Update slideshow's slide order
-        const newSlides = [...parentSlideshow.props.slides]
-        const [removed] = newSlides.splice(currentIndex, 1)
-        newSlides.splice(nearestSlot, 0, removed)
-
-        this.editor.updateShape({
-          id: parentSlideshow.id,
-          type: parentSlideshow.type,
-          props: {
-            ...parentSlideshow.props,
-            slides: newSlides
-          }
-        })
-
-        logger.debug('system', '✅ Slide positions swapped', {
-          currentSlide: slide.id,
-          targetSlide: targetSlide.id,
-          newOrder: newSlides
-        })
-      }
-    }
-
-    logger.debug('system', '📏 Updated slide position', {
-      slideshowId: parentSlideshow.id,
+    logger.debug('system', '📏 Snapping slide during translation', {
       slideId: slide.id,
       currentPosition,
-      nearestSlot
+      nearestSlot,
+      snapX
     })
   }
 
   onTranslateEnd = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    // Get the parent slideshow and slide
     const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
     const slide = this.editor.getShape(binding.toId) as CCSlideShape
 
@@ -189,80 +106,35 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       return
     }
 
-    // Calculate final position and nearest slot
     const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
     const currentPosition = slide.x - parentSlideshow.x
     const nearestSlot = Math.round(currentPosition / slotWidth)
     const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
 
-    // Calculate final snap position
-    const finalX = parentSlideshow.x + (nearestSlot * slotWidth)
-
-    logger.debug('system', '🎯 Calculating final slide position', {
-      slideId: slide.id,
-      currentPosition,
-      nearestSlot,
-      finalX,
-      currentIndex
-    })
-
-    // If nearest slot is different from current index, finalize the swap
+    // Only update the slide order if the position has changed
     if (nearestSlot !== currentIndex && nearestSlot >= 0 && nearestSlot < parentSlideshow.props.slides.length) {
-      logger.info('system', '🔄 Slide position swap detected', {
-        slideId: slide.id,
-        from: currentIndex,
-        to: nearestSlot,
-        pattern: parentSlideshow.props.slidePattern
-      })
-
-      // Update slideshow's slide order
       const newSlides = [...parentSlideshow.props.slides]
       newSlides.splice(currentIndex, 1)
       newSlides.splice(nearestSlot, 0, slide.id)
 
-      this.editor.batch(() => {
-        // Update slide position
-        this.editor.updateShape({
-          id: slide.id,
-          type: slide.type,
-          parentId: parentSlideshow.id,
-          x: finalX,
-          y: slide.y
-        })
-
-        // Update slideshow order
-        this.editor.updateShape({
-          id: parentSlideshow.id,
-          type: parentSlideshow.type,
-          props: {
-            ...parentSlideshow.props,
-            slides: newSlides
-          }
-        })
-      })
-
-      logger.debug('system', '✅ Slide reorder complete', {
-        slideId: slide.id,
-        newOrder: newSlides
-      })
-    } else {
-      // Even if we're not swapping, ensure the slide snaps to its slot
       this.editor.updateShape({
-        id: slide.id,
-        type: slide.type,
-        parentId: parentSlideshow.id,
-        x: finalX,
-        y: slide.y
+        id: parentSlideshow.id,
+        type: parentSlideshow.type,
+        props: {
+          ...parentSlideshow.props,
+          slides: newSlides
+        }
       })
 
-      logger.debug('system', '✅ Slide snapped to position', {
+      logger.debug('system', '✅ Updated slide order', {
         slideId: slide.id,
-        finalX
+        from: currentIndex,
+        to: nearestSlot,
+        newOrder: newSlides
       })
     }
 
     if (!binding.props.placeholder && binding.props.isMovingWithParent) {
-      // Reset moving state
       this.editor.updateBinding({
         id: binding.id,
         type: binding.type,
