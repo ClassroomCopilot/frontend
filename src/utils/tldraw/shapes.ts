@@ -1,32 +1,19 @@
 // Custom tldraw utils
-import { MicrophoneShapeUtil } from './transcription/MicrophoneShapeUtil';
-import { TranscriptionTextShapeUtil } from './transcription/TranscriptionTextShapeUtil';
-import { SlideShapeUtil, SlideShowShapeUtil } from './slides/SlideShapeUtil';
-import { GraphShapeUtils } from './graph/graphShapeUtil';
-import { CalendarShapeUtil } from './calendar/CalendarShapeUtil';
-import { YoutubeEmbedShapeUtil } from './embeds/embedShapes';
+import { CCSlideShowShapeUtil } from './cc-base/cc-slideshow/CCSlideShowShapeUtil'
+import { CCSlideShapeUtil } from './cc-base/cc-slideshow/CCSlideShapeUtil'
+import { CCCalendarShapeUtil } from './cc-base/cc-calendar/CCCalendarShapeUtil'
+import { CCSettingsShapeUtil } from './cc-base/cc-settings/CCSettingsShapeUtil'
+import { CCLiveTranscriptionShapeUtil } from './cc-base/cc-transcription/CCLiveTranscriptionShapeUtil'
+import { CCYoutubeEmbedShapeUtil } from './cc-base/cc-youtube-embed/CCYoutubeEmbedShapeUtil'
 
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
-    // Development shapes
-    YoutubeEmbed: YoutubeEmbedShapeUtil,
-    
-    // Calendar shapes
-    Calendar: CalendarShapeUtil,
-    
-    // Transcription shapes
-    Microphone: MicrophoneShapeUtil,
-    TranscriptionText: TranscriptionTextShapeUtil,
-    
-    // Slide shapes
-    Slide: SlideShapeUtil,
-    SlideShow: SlideShowShapeUtil,
-    
-    // Graph shapes
-    ...GraphShapeUtils
-};
+  CCSlideShow: CCSlideShowShapeUtil,
+  CCSlide: CCSlideShapeUtil,
+  CCCalendar: CCCalendarShapeUtil,
+  CCSettings: CCSettingsShapeUtil,
+  CCLiveTranscription: CCLiveTranscriptionShapeUtil,
+  CCYoutubeEmbed: CCYoutubeEmbedShapeUtil,
+}
 
-// Export arrays for different use cases
-export const devShapeUtils = [ShapeUtils.YoutubeEmbed];
-
-export const allShapeUtils = Object.values(ShapeUtils);
+export const allShapeUtils = Object.values(ShapeUtils)

@@ -1,9 +1,10 @@
 import React, { ReactNode, createContext, useContext, useState, useCallback } from 'react';
-import { TLUserPreferences, TLEditorSnapshot, TLStore, getSnapshot, loadSnapshot } from '@tldraw/tldraw';
+import { TLUserPreferences, TLEditorSnapshot, TLStore, getSnapshot, loadSnapshot, Editor } from '@tldraw/tldraw';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { LoadingState } from '../services/tldraw/snapshotService';
 import { SharedStoreService } from '../services/tldraw/sharedStoreService';
 import { logger } from '../debugConfig';
+import { PresentationService } from '../services/tldraw/presentationService';
 
 interface TLDrawContextType {
   tldrawPreferences: TLUserPreferences | null;
@@ -12,6 +13,7 @@ interface TLDrawContextType {
   presentationMode: boolean;
   sharedStore: SharedStoreService | null;
   connectionStatus: 'online' | 'offline' | 'error';
+  presentationService: PresentationService | null;
   setTldrawPreferences: (preferences: TLUserPreferences | null) => void;
   setTldrawUserFilePath: (path: string | null) => void;
   handleLocalSnapshot: (
@@ -19,7 +21,7 @@ interface TLDrawContextType {
     store: TLStore,
     setLoadingState: (state: LoadingState) => void
   ) => Promise<void>;
-  togglePresentationMode: () => void;
+  togglePresentationMode: (editor?: Editor) => void;
   initializePreferences: (userId: string) => void;
   setSharedStore: (store: SharedStoreService | null) => void;
   setConnectionStatus: (status: 'online' | 'offline' | 'error') => void;
@@ -32,6 +34,7 @@ const TLDrawContext = createContext<TLDrawContextType>({
   presentationMode: false,
   sharedStore: null,
   connectionStatus: 'online',
+  presentationService: null,
   setTldrawPreferences: () => {},
   setTldrawUserFilePath: () => {},
   handleLocalSnapshot: async () => {},
@@ -56,6 +59,7 @@ export const TLDrawProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   );
   const [sharedStore, setSharedStore] = useState<SharedStoreService | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline' | 'error'>('online');
+  const [presentationService, setPresentationService] = useState<PresentationService | null>(null);
 
   const initializePreferences = useCallback((userId: string) => {
     logger.debug('tldraw-context', '🔄 Initializing TLDraw preferences');
@@ -166,14 +170,29 @@ export const TLDrawProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [sharedStore]);
 
-  const togglePresentationMode = useCallback(() => {
+  const togglePresentationMode = useCallback((editor?: Editor) => {
     logger.debug('tldraw-context', '🔄 Toggling presentation mode');
+    
     setPresentationMode(prev => {
       const newValue = !prev;
       storageService.set(StorageKeys.PRESENTATION_MODE, newValue);
+
+      if (newValue && editor) {
+        // Starting presentation mode
+        logger.info('presentation', '🎥 Initializing presentation service');
+        const service = new PresentationService(editor);
+        setPresentationService(service);
+        service.startPresentationMode();
+      } else if (!newValue && presentationService) {
+        // Stopping presentation mode
+        logger.info('presentation', '🛑 Stopping presentation service');
+        presentationService.stopPresentationMode();
+        setPresentationService(null);
+      }
+
       return newValue;
     });
-  }, []);
+  }, [presentationService]);
 
   return (
     <TLDrawContext.Provider
@@ -184,6 +203,7 @@ export const TLDrawProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         presentationMode,
         sharedStore,
         connectionStatus,
+        presentationService,
         setTldrawPreferences,
         setTldrawUserFilePath,
         handleLocalSnapshot,

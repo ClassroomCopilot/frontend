@@ -3,13 +3,13 @@ import {
     DefaultHelperButtonsContent,
     TLUiHelperButtonsProps,
 } from '@tldraw/tldraw';
-import { SlidesPanel } from './../../../slides/SlidesPanel';
+import { CCShapesPanel } from '../shared/CCShapesPanel';
 
 export const PresentationHelperButtons = (props: TLUiHelperButtonsProps) => {
     return (
         <div>
+            <CCShapesPanel />
             <DefaultHelperButtons {...props}>
-                <SlidesPanel />
                 <DefaultHelperButtonsContent />
             </DefaultHelperButtons>
         </div>

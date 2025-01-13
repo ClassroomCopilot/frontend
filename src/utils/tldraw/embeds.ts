@@ -8,7 +8,6 @@ import {
 // Define which default embeds we want to keep
 const defaultEmbedTypesToKeep: DefaultEmbedDefinitionType[] = [
     'tldraw',
-    'youtube',
     'google_slides',
 ];
 
@@ -54,8 +53,29 @@ export const pptEmbed = createCustomEmbed(
     'https://c1-odc-15.cdn.office.net/start/resources/images/favicon_powerpointcom.ico'
 );
 
+export const ccYoutubeEmbed: CustomEmbedDefinition = {
+    type: 'cc-youtube-embed',
+    title: 'YouTube Video',
+    hostnames: ['youtube.com', 'youtu.be'],
+    width: 800,
+    height: 450,
+    doesResize: true,
+    minWidth: 200,
+    minHeight: 113,
+    toEmbedUrl: (url) => {
+        const videoId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
+        return `https://www.youtube.com/embed/${videoId}`;
+    },
+    fromEmbedUrl: (url) => {
+        const videoId = url.split('/').pop();
+        return `https://www.youtube.com/watch?v=${videoId}`;
+    },
+    icon: 'https://www.youtube.com/favicon.ico',
+};
+
 export const customEmbeds: TLEmbedDefinition[] = [
-    pptEmbed
+    pptEmbed,
+    ccYoutubeEmbed,
 ];
 
 // Export specific embed sets for different modes

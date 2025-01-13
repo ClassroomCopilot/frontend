@@ -3,7 +3,6 @@ import {
     TLUiOverrides,
     TldrawUiToastsProvider,
     TLUiToast,
-    Editor,
     TLUiToastsContextType,
     Atom,
     atom
@@ -16,7 +15,7 @@ import { presentationUiOverridesIndex, regularUiOverridesIndex } from './ui-over
 // Toast Wrapper Component
 const ToastWrapper = ({ children }: { children: ReactNode }) => {
     // Create custom toast overrides
-    const toastOverrides = (editor: Editor): TLUiToastsContextType => {
+    const toastOverrides = (): TLUiToastsContextType => {
         const toasts: Atom<TLUiToast[]> = atom('toasts', []);
 
         return {
@@ -57,6 +56,7 @@ export const getUiComponents = (presentationMode: boolean): TLComponents => {
 // Regular components configuration
 const regularComponents: TLComponents = {
     Toolbar: regularComponentsIndex.Toolbar,
+    InFrontOfTheCanvas: regularComponentsIndex.InFrontOfTheCanvas,
     KeyboardShortcutsDialog: regularComponentsIndex.KeyboardShortcutsDialog,
     HelperButtons: regularComponentsIndex.HelperButtons,
     ActionsMenu: regularComponentsIndex.ActionsMenu,
@@ -74,6 +74,7 @@ const regularComponents: TLComponents = {
 // Presentation components configuration
 const presentationComponents: TLComponents = {
     Toolbar: presentationComponentsIndex.Toolbar,
+    InFrontOfTheCanvas: presentationComponentsIndex.InFrontOfTheCanvas,
     KeyboardShortcutsDialog: presentationComponentsIndex.KeyboardShortcutsDialog,
     HelperButtons: presentationComponentsIndex.HelperButtons,
     ActionsMenu: presentationComponentsIndex.ActionsMenu,

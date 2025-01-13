@@ -27,7 +27,6 @@ import { multiplayerEmbeds } from '../../utils/tldraw/embeds';
 import { HEADER_HEIGHT } from '../../pages/Layout';
 // Styles
 import '../../utils/tldraw/tldraw.css';
-import '../../utils/tldraw/slides/slides.css';
 // App debug
 import { logger } from '../../debugConfig';
 

@@ -203,7 +203,7 @@ class AuthService {
   async logout(): Promise<void> {
     try {
       logger.debug('auth-service', '🔄 Attempting logout');
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) {
         logger.error('auth-service', '❌ Logout failed:', error);
         throw error;

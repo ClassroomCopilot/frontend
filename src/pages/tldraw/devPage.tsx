@@ -22,7 +22,6 @@ import { customSchema } from '../../utils/tldraw/schemas';
 import { HEADER_HEIGHT } from '../Layout';
 // Styles
 import '../../utils/tldraw/tldraw.css';
-import '../../utils/tldraw/slides/slides.css';
 // App debug
 import { logger } from '../../debugConfig';
 
@@ -42,7 +41,8 @@ interface EventFilters {
 const EventMonitoringControls: React.FC<{
   filters: EventFilters;
   setFilters: (filters: EventFilters) => void;
-}> = ({ filters, setFilters }) => {
+  onClear: () => void;
+}> = ({ filters, setFilters, onClear }) => {
   const handleModeChange = (mode: 'all' | 'specific') => {
     setFilters({ ...filters, mode });
   };
@@ -59,23 +59,38 @@ const EventMonitoringControls: React.FC<{
 
   return (
     <div className="event-monitor-controls">
-      <div className="mode-selector">
-        <label>
-          <input
-            type="radio"
-            checked={filters.mode === 'all'}
-            onChange={() => handleModeChange('all')}
-          />
-          Monitor All Events
-        </label>
-        <label>
-          <input
-            type="radio"
-            checked={filters.mode === 'specific'}
-            onChange={() => handleModeChange('specific')}
-          />
-          Monitor Specific Events
-        </label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="mode-selector">
+          <label>
+            <input
+              type="radio"
+              checked={filters.mode === 'all'}
+              onChange={() => handleModeChange('all')}
+            />
+            Monitor All Events
+          </label>
+          <label>
+            <input
+              type="radio"
+              checked={filters.mode === 'specific'}
+              onChange={() => handleModeChange('specific')}
+            />
+            Monitor Specific Events
+          </label>
+        </div>
+        <button 
+          onClick={onClear}
+          style={{
+            padding: '4px 8px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Clear Logs
+        </button>
       </div>
       
       {filters.mode === 'specific' && (
@@ -361,6 +376,10 @@ export default function DevPage() {
         }
     }, [events]);
 
+    const clearEvents = useCallback(() => {
+        setEvents([]);
+    }, []);
+
     if (!user) {
         logger.info('dev-page', '🚫 Rendering null - no user');
         return null;
@@ -438,7 +457,11 @@ export default function DevPage() {
                     overflow: 'hidden'
                 }}
             >
-                <EventMonitoringControls filters={eventFilters} setFilters={setEventFilters} />
+                <EventMonitoringControls 
+                    filters={eventFilters} 
+                    setFilters={setEventFilters}
+                    onClear={clearEvents}
+                />
                 <EventDisplay events={events} />
             </div>
         </div>

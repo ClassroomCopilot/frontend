@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
     Tldraw,
     Editor,
@@ -25,7 +25,6 @@ import { customSchema } from '../../utils/tldraw/schemas';
 import { HEADER_HEIGHT } from '../../pages/Layout';
 // Styles
 import '../../utils/tldraw/tldraw.css';
-import '../../utils/tldraw/slides/slides.css';
 // App debug
 import { logger } from '../../debugConfig';
 
@@ -39,6 +38,7 @@ export default function SinglePlayerPage() {
         setTldrawPreferences
     } = useTLDraw();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // 2. All refs
     const editorRef = useRef<Editor | null>(null);
@@ -70,6 +70,86 @@ export default function SinglePlayerPage() {
             initializePreferences(user.id);
         }
     }, [user?.id, tldrawPreferences, initializePreferences]);
+
+    // Handle shared content
+    useEffect(() => {
+        const handleSharedContent = async () => {
+            if (!editorRef.current || !location.state) {
+              return;
+            }
+
+            const editor = editorRef.current;
+            const { sharedFile, sharedContent } = location.state as {
+                sharedFile?: File;
+                sharedContent?: {
+                    title?: string;
+                    text?: string;
+                    url?: string;
+                };
+            };
+
+            if (sharedFile) {
+                logger.info('single-player-page', '📤 Processing shared file', { 
+                    name: sharedFile.name,
+                    type: sharedFile.type
+                });
+
+                try {
+                    // Handle different file types
+                    if (sharedFile.type.startsWith('image/')) {
+                        const imageUrl = URL.createObjectURL(sharedFile);
+                        await editor.createShape({
+                            type: 'image',
+                            props: {
+                                url: imageUrl,
+                                w: 320,
+                                h: 240,
+                                name: sharedFile.name
+                            }
+                        });
+                        URL.revokeObjectURL(imageUrl);
+                    } else if (sharedFile.type === 'application/pdf') {
+                        // Handle PDF (you might want to implement PDF handling)
+                        logger.info('single-player-page', '📄 PDF handling not implemented yet');
+                    } else if (sharedFile.type === 'text/plain') {
+                        const text = await sharedFile.text();
+                        editor.createShape({
+                            type: 'text',
+                            props: { text }
+                        });
+                    }
+                } catch (error) {
+                    logger.error('single-player-page', '❌ Error processing shared file', { error });
+                }
+            }
+
+            if (sharedContent) {
+                logger.info('single-player-page', '📤 Processing shared content', { sharedContent });
+                
+                const { title, text, url } = sharedContent;
+                let contentText = '';
+                
+                if (title) {
+                  contentText += `${title}\n`;
+                }
+                if (text) {
+                  contentText += `${text}\n`;
+                }
+                if (url) {
+                  contentText += url;
+                }
+
+                if (contentText) {
+                    editor.createShape({
+                        type: 'text',
+                        props: { text: contentText }
+                    });
+                }
+            }
+        };
+
+        handleSharedContent();
+    }, [location.state]);
 
     // Redirect if no user
     useEffect(() => {

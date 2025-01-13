@@ -12,7 +12,7 @@ export const PresentationKeyboardShortcutsDialog = () => {
         <DefaultKeyboardShortcutsDialog onClose={() => {}}>
             <div style={{ backgroundColor: 'white' }}>
                 <TldrawUiMenuItem {...tools['microphone']} />
-                <TldrawUiMenuItem {...tools['slide']} />
+                <TldrawUiMenuItem {...tools['cc-slide']} />
                 <TldrawUiMenuItem {...tools['sticker']} />
             </div>
             <DefaultKeyboardShortcutsDialogContent />
