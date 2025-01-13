@@ -1,6 +1,7 @@
-import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
+import { BindingUtil, TLBaseBinding, BindingOnCreateOptions, TLParentId, TLShape } from '@tldraw/tldraw'
 import { logger } from '../../../../debugConfig'
 import { CCSlideShape } from './CCSlideShapeUtil'
+import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
 export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content-binding', {
   placeholder: boolean
@@ -98,17 +99,49 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
       return
     }
 
-    // Only update the parent relationship during translation
-    // Let the TLDraw engine handle the relative positioning
+    // Update the content frame's parent relationship and position
     this.editor.updateShape({
       id: contentFrame.id,
       type: contentFrame.type,
-      parentId: parentSlide.id
+      parentId: parentSlide.id as TLParentId,
+      x: 0,
+      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
     })
 
-    logger.debug('system', '📏 Updated content frame parent relationship', {
+    // Get all shapes bound to the content frame
+    const boundShapes = this.editor.getSortedChildIdsForParent(contentFrame.id)
+      .map(id => this.editor.getShape(id))
+      .filter((shape): shape is TLShape => shape !== null)
+
+    // Update each bound shape's parent relationship
+    boundShapes.forEach(shape => {
+      const shapeBounds = this.editor.getShapePageBounds(shape.id)
+      const frameBounds = this.editor.getShapePageBounds(contentFrame.id)
+
+      if (shapeBounds && frameBounds) {
+        // Calculate relative position within the content frame
+        const relativeX = shapeBounds.minX - frameBounds.minX
+        const relativeY = shapeBounds.minY - frameBounds.minY
+
+        this.editor.updateShape({
+          id: shape.id,
+          type: shape.type,
+          parentId: contentFrame.id as TLParentId,
+          x: relativeX,
+          y: relativeY
+        })
+
+        logger.debug('system', '📏 Updated bound shape position', {
+          shapeId: shape.id,
+          position: { x: relativeX, y: relativeY }
+        })
+      }
+    })
+
+    logger.debug('system', '📏 Updated content frame and bound shapes', {
       slideId: parentSlide.id,
-      frameId: contentFrame.id
+      frameId: contentFrame.id,
+      boundShapesCount: boundShapes.length
     })
   }
 
