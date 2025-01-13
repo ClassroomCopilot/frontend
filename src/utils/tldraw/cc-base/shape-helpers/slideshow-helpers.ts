@@ -171,13 +171,13 @@ export const createSlideshow = (
       }
     })
 
-    // Create content frame
+    // Create content frame - position relative to parent slide
     const contentFrameHeight = slideHeight - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
     editor.createShape<CCSlideContentFrameShape>({
       id: contentFrameIds[i],
       type: 'cc-slide-content',
-      x: slideX,
-      y: slideY + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
+      x: 0, // Relative to parent slide
+      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT, // Relative to parent slide
       parentId: slideIds[i],
       props: {
         title: `Content ${i + 1} (${contentFrameIds[i]})`,
