@@ -75,6 +75,12 @@ export const ccShapeProps = {
     slides: T.arrayOf(T.string),
     currentSlideIndex: T.number,
     slidePattern: T.string,
+    slots: T.arrayOf(T.object({
+      x: T.number,
+      y: T.number,
+      index: T.number,
+      occupiedBy: T.string.optional()
+    }))
   },
 
   slide: {
@@ -150,6 +156,7 @@ export function getDefaultCCSlideShowProps() {
     slides: [],
     currentSlideIndex: 0,
     slidePattern: 'horizontal',
+    slots: []
   }
 }
 
