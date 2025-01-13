@@ -106,25 +106,8 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING;
     const verticalOffset = headerHeight + contentPadding;
 
-    // Get all slides in their current order
-    const slides = slideshow.props.slides
-      .map(id => this.editor.getShape(id))
-      .filter((s): s is CCSlideShape => s?.type === 'cc-slide')
-      .map((slide, index) => ({ slide, index }));
-
-    const currentIndex = slides.findIndex(s => s.slide.id === current.id);
-    if (currentIndex === -1) return current;
-
-    // Calculate slot dimensions
-    const slotWidth = current.props.w + spacing;
-    const slotHeight = current.props.h + spacing;
-
-    // Note: We remove the content frame update here since it's handled by the binding
-    // The binding system will automatically update child positions
-
-    // Apply pattern-specific logic
+    // Apply pattern-specific constraints
     if (slideshow.props.slidePattern === 'vertical') {
-      // Constrain movement to vertical only and centered horizontally
       const slideshowProps = slideshow.props as CCSlideShowShapeProps;
       const constrainedX = (slideshowProps.w - current.props.w) / 2;
       const constrainedY = Math.max(
@@ -132,101 +115,18 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         Math.min(slideshowProps.h - current.props.h - spacing, current.y)
       );
 
-      // Calculate positions
-      const getSlotPosition = (index: number) => verticalOffset + spacing + (index * slotHeight);
-      
-      // Find which slot we're closest to
-      let nearestSlot = currentIndex;
-      const movingDown = constrainedY > getSlotPosition(currentIndex);
-
-      if (movingDown && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (constrainedY > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingDown && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (constrainedY < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        // Move the displaced slide to the current slide's original position
-        const displacedSlide = slides.find(({ index }) => index === clampedSlot);
-        if (displacedSlide) {
-          this.editor.updateShape<CCSlideShape>({
-            id: displacedSlide.slide.id,
-            type: 'cc-slide',
-            x: constrainedX,
-            y: getSlotPosition(currentIndex)
-          });
-        }
-      }
-
-      logger.debug('system', '📏 Vertical translation metrics', {
-        slideId: current.id,
-        currentPosition: constrainedY,
-        nearestSlot,
-        movingDown
-      })
-
       return {
         ...current,
         x: constrainedX,
         y: constrainedY
       };
     } else if (slideshow.props.slidePattern === 'horizontal') {
-      // Horizontal pattern
       const slideshowProps = slideshow.props as CCSlideShowShapeProps;
       const constrainedX = Math.max(
         spacing,
         Math.min(slideshowProps.w - current.props.w - spacing, current.x)
       );
       const constrainedY = initial.y;
-
-      // Calculate positions
-      const getSlotPosition = (index: number) => spacing + (index * slotWidth);
-      
-      // Find which slot we're closest to
-      let nearestSlot = currentIndex;
-      const movingRight = constrainedX > getSlotPosition(currentIndex);
-
-      if (movingRight && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (constrainedX > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingRight && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (constrainedX < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        // Move the displaced slide to the current slide's original position
-        const displacedSlide = slides.find(({ index }) => index === clampedSlot);
-        if (displacedSlide) {
-          this.editor.updateShape<CCSlideShape>({
-            id: displacedSlide.slide.id,
-            type: 'cc-slide',
-            x: getSlotPosition(currentIndex),
-            y: constrainedY
-          });
-        }
-      }
-
-      logger.debug('system', '📏 Horizontal translation metrics', {
-        slideId: current.id,
-        currentPosition: constrainedX,
-        nearestSlot,
-        movingRight
-      })
 
       return {
         ...current,
@@ -244,71 +144,6 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         verticalOffset + spacing,
         Math.min(slideshowProps.h - current.props.h - spacing, current.y)
       );
-
-      // Calculate grid dimensions
-      const gridColumns = Math.floor(((slideshow.props as CCSlideShowShape['props']).w - spacing) / slotWidth);
-      const currentRow = Math.floor(currentIndex / gridColumns);
-      const currentCol = currentIndex % gridColumns;
-
-      // Calculate positions
-      const getSlotPosition = (index: number) => {
-        const row = Math.floor(index / gridColumns);
-        const col = index % gridColumns;
-        return {
-          x: spacing + (col * slotWidth),
-          y: verticalOffset + spacing + (row * slotHeight)
-        };
-      };
-
-      // Find nearest grid position
-      const currentPos = getSlotPosition(currentIndex);
-      let nearestSlot = currentIndex;
-
-      // Check if we've moved significantly in either direction
-      const movedRight = constrainedX > currentPos.x + slotWidth / 2;
-      const movedLeft = constrainedX < currentPos.x - slotWidth / 2;
-      const movedDown = constrainedY > currentPos.y + slotHeight / 2;
-      const movedUp = constrainedY < currentPos.y - slotHeight / 2;
-
-      if (movedRight && currentCol < gridColumns - 1) {
-        nearestSlot = currentIndex + 1;
-      } else if (movedLeft && currentCol > 0) {
-        nearestSlot = currentIndex - 1;
-      } else if (movedDown && currentRow < Math.floor((slides.length - 1) / gridColumns)) {
-        nearestSlot = currentIndex + gridColumns;
-      } else if (movedUp && currentRow > 0) {
-        nearestSlot = currentIndex - gridColumns;
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        // Move the displaced slide to the current slide's original position
-        const displacedSlide = slides.find(({ index }) => index === clampedSlot);
-        if (displacedSlide) {
-          const originalPos = getSlotPosition(currentIndex);
-          this.editor.updateShape<CCSlideShape>({
-            id: displacedSlide.slide.id,
-            type: 'cc-slide',
-            x: originalPos.x,
-            y: originalPos.y
-          });
-        }
-      }
-
-      logger.debug('system', '📏 Grid translation metrics', {
-        slideId: current.id,
-        position: { x: constrainedX, y: constrainedY },
-        nearestSlot,
-        gridMetrics: {
-          currentRow,
-          currentCol,
-          movedRight,
-          movedLeft,
-          movedDown,
-          movedUp
-        }
-      })
 
       return {
         ...current,

@@ -97,7 +97,6 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       currentPosition,
       nearestSlot,
       lastKnownSlot: binding.props.lastKnownSlot,
-      bindingProps: binding.props,
       currentIndex,
       slotWidth
     })
@@ -116,10 +115,23 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       })
 
       const newSlides = [...parentSlideshow.props.slides]
+      const displacedSlideId = newSlides[nearestSlot]
+      
+      // Update slide order
       newSlides.splice(currentIndex, 1)
       newSlides.splice(nearestSlot, 0, slide.id)
 
       this.editor.batch(() => {
+        // Move displaced slide to current slide's position
+        if (displacedSlideId !== slide.id) {
+          this.editor.updateShape({
+            id: displacedSlideId,
+            type: 'cc-slide',
+            x: parentSlideshow.x + (currentIndex * slotWidth),
+            y: slide.y
+          })
+        }
+
         // Update slide position
         this.editor.updateShape({
           id: slide.id,
