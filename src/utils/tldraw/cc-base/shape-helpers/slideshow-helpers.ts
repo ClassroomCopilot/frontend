@@ -159,8 +159,8 @@ export const createSlideshow = (
     editor.createShape<CCSlideShape>({
       id: slideIds[i],
       type: 'cc-slide',
-      x: slideX,
-      y: slideY,
+      x: baseProps.x + slideX,
+      y: baseProps.y + slideY,
       parentId: baseProps.id,
       props: {
         title: `Slide ${i + 1} (${slideIds[i]})`,
@@ -172,16 +172,17 @@ export const createSlideshow = (
     })
 
     // Create content frame
+    const contentFrameHeight = slideHeight - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
     editor.createShape<CCSlideContentFrameShape>({
       id: contentFrameIds[i],
       type: 'cc-slide-content',
-      x: slideX,
-      y: slideY + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
+      x: baseProps.x + slideX,
+      y: baseProps.y + slideY + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
       parentId: slideIds[i],
       props: {
         title: `Content ${i + 1} (${contentFrameIds[i]})`,
         w: slideWidth,
-        h: slideHeight - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
+        h: contentFrameHeight,
         headerColor: 'transparent',
         isLocked: false,
         parentSlideId: slideIds[i]
