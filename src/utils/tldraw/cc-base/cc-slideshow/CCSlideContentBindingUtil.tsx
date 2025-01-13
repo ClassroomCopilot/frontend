@@ -1,24 +1,24 @@
-import { BindingUtil, TLBaseBinding, BindingOnCreateOptions, TLShape } from '@tldraw/tldraw'
-import { CCSlideContentFrameShape } from './CCSlideContentFrameUtil'
-import { CCSlideShape } from './CCSlideShapeUtil'
+import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
 import { logger } from '../../../../debugConfig'
-import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
+import { CCSlideShape } from './CCSlideShapeUtil'
 
-export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content-binding', {
+export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content', {
   placeholder: boolean
+  isMovingWithParent?: boolean
 }> {}
 
 export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding> {
-  static type = 'cc-slide-content-binding' as const
+  static type = 'cc-slide-content' as const
 
   getDefaultProps() {
     return {
-      placeholder: false
+      placeholder: false,
+      isMovingWithParent: false
     }
   }
 
   onBeforeCreate = ({ binding }: BindingOnCreateOptions<CCSlideContentBinding>) => {
-    logger.debug('binding', '🔗 Creating slide content binding', { binding })
+    logger.debug('system', '🔗 Creating slide content binding', { binding })
     return binding
   }
 
@@ -27,93 +27,75 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
   }
 
   onTranslateStart = ({ binding }: { binding: CCSlideContentBinding }) => {
+    logger.debug('system', '🔄 Starting slide content translation', {
+      binding,
+      fromId: binding.fromId,
+      toId: binding.toId
+    })
+
     if (binding.props.placeholder) {
       return
     }
 
-    const contentFrame = this.editor.getShape(binding.toId) as CCSlideContentFrameShape
-    const parentSlide = this.editor.getShape(binding.fromId) as CCSlideShape
-
-    if (!contentFrame || contentFrame.type !== 'cc-slide-content' || !parentSlide || parentSlide.type !== 'cc-slide') {
-      return
-    }
-
-    logger.debug('binding', '🔄 Starting content frame translation', {
-      frameId: contentFrame.id,
-      slideId: parentSlide.id
+    // Mark binding as in motion
+    this.editor.updateBinding({
+      id: binding.id,
+      type: binding.type,
+      fromId: binding.fromId,
+      toId: binding.toId,
+      props: { ...binding.props, isMovingWithParent: true }
     })
   }
 
   onTranslate = ({ binding }: { binding: CCSlideContentBinding }) => {
-    if (binding.props.placeholder) {
+    logger.debug('system', '🔄 Slide content translation in progress', {
+      binding,
+      fromId: binding.fromId,
+      toId: binding.toId,
+      isMovingWithParent: binding.props.isMovingWithParent
+    })
+
+    if (binding.props.placeholder || !binding.props.isMovingWithParent) {
       return
     }
 
-    const contentFrame = this.editor.getShape(binding.toId) as CCSlideContentFrameShape
+    // Get the parent slide and content frame
     const parentSlide = this.editor.getShape(binding.fromId) as CCSlideShape
+    const contentFrame = this.editor.getShape(binding.toId)
 
-    if (!contentFrame || contentFrame.type !== 'cc-slide-content' || !parentSlide || parentSlide.type !== 'cc-slide') {
+    if (!parentSlide || !contentFrame) {
+      logger.warn('system', '⚠️ Missing parent slide or content frame during translation', {
+        parentSlide,
+        contentFrame
+      })
       return
     }
 
-    // Get all shapes within the content frame
-    const contentShapes = this.editor.getSortedChildIdsForParent(contentFrame.id)
-      .map(id => this.editor.getShape(id))
-      .filter((shape): shape is TLShape => shape !== null)
-
-    // Update content frame position to maintain fixed offset from parent slide
+    // Update content frame position relative to parent slide
     this.editor.updateShape({
       id: contentFrame.id,
       type: contentFrame.type,
-      x: 0,
-      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
-      props: contentFrame.props
-    })
-
-    // Update positions of all shapes within the content frame
-    contentShapes.forEach(shape => {
-      // Keep relative positions within the content frame
-      this.editor.updateShape({
-        id: shape.id,
-        type: shape.type,
-        parentId: contentFrame.id,
-        x: shape.x,
-        y: shape.y,
-        props: shape.props
-      })
-    })
-
-    logger.debug('binding', '🔄 Updated content frame and children positions', {
-      frameId: contentFrame.id,
-      slideId: parentSlide.id,
-      childCount: contentShapes.length
+      x: parentSlide.x,
+      y: parentSlide.y + 40 // Header height offset
     })
   }
 
   onTranslateEnd = ({ binding }: { binding: CCSlideContentBinding }) => {
-    if (binding.props.placeholder) {
-      return
-    }
-
-    const contentFrame = this.editor.getShape(binding.toId) as CCSlideContentFrameShape
-    const parentSlide = this.editor.getShape(binding.fromId) as CCSlideShape
-
-    if (!contentFrame || contentFrame.type !== 'cc-slide-content' || !parentSlide || parentSlide.type !== 'cc-slide') {
-      return
-    }
-
-    // Ensure final positions are correct
-    this.editor.updateShape({
-      id: contentFrame.id,
-      type: contentFrame.type,
-      x: 0,
-      y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
-      props: contentFrame.props
+    logger.debug('system', '✅ Slide content translation complete', {
+      binding,
+      fromId: binding.fromId,
+      toId: binding.toId
     })
 
-    logger.debug('binding', '✅ Completed content frame translation', {
-      frameId: contentFrame.id,
-      slideId: parentSlide.id
-    })
+    if (!binding.props.placeholder && binding.props.isMovingWithParent) {
+      // Reset moving state
+      this.editor.updateBinding({
+        id: binding.id,
+        type: binding.type,
+        fromId: binding.fromId,
+        toId: binding.toId,
+        props: { ...binding.props, isMovingWithParent: false }
+      })
+    }
   }
 } 

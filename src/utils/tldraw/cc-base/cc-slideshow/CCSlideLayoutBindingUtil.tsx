@@ -1,7 +1,9 @@
 import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
+import { logger } from '../../../../debugConfig'
 
 export interface CCSlideLayoutBinding extends TLBaseBinding<'cc-slide-layout', {
   placeholder: boolean
+  isMovingWithParent?: boolean
 }> {}
 
 export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> {
@@ -9,11 +11,13 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
 
   getDefaultProps() {
     return {
-      placeholder: false
+      placeholder: false,
+      isMovingWithParent: false
     }
   }
 
   onBeforeCreate = ({ binding }: BindingOnCreateOptions<CCSlideLayoutBinding>) => {
+    logger.debug('system', '🔗 Creating slide layout binding', { binding })
     return binding
   }
 
@@ -22,42 +26,55 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
   }
 
   onTranslateStart = ({ binding }: { binding: CCSlideLayoutBinding }) => {
+    logger.debug('system', '🔄 Starting slide layout translation', {
+      binding,
+      fromId: binding.fromId,
+      toId: binding.toId
+    })
+
     if (binding.props.placeholder) {
       return
     }
 
-    const maybeSlideshow = this.editor.getShape(binding.fromId)
-    if (!maybeSlideshow || maybeSlideshow.type !== 'cc-slideshow') {
-      return
-    }
-
-    // Mark binding as placeholder during translation
+    // Mark binding as in motion
     this.editor.updateBinding({
       id: binding.id,
       type: binding.type,
       fromId: binding.fromId,
       toId: binding.toId,
-      props: { placeholder: true }
+      props: { ...binding.props, isMovingWithParent: true }
     })
   }
 
-  onTranslateEnd = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    if (!binding.props.placeholder) {
-      return
-    }
-
-    const maybeSlideshow = this.editor.getShape(binding.fromId)
-    if (!maybeSlideshow || maybeSlideshow.type !== 'cc-slideshow') {
-      return
-    }
-
-    // Reset placeholder status
-    this.editor.updateBinding({
-      id: binding.id,
-      type: binding.type,
+  onTranslate = ({ binding }: { binding: CCSlideLayoutBinding }) => {
+    logger.debug('system', '🔄 Slide layout translation in progress', {
+      binding,
       fromId: binding.fromId,
       toId: binding.toId,
-      props: { placeholder: false }
+      isMovingWithParent: binding.props.isMovingWithParent
     })
+
+    if (binding.props.placeholder || !binding.props.isMovingWithParent) {
+      return
+    }
+  }
+
+  onTranslateEnd = ({ binding }: { binding: CCSlideLayoutBinding }) => {
+    logger.debug('system', '✅ Slide layout translation complete', {
+      binding,
+      fromId: binding.fromId,
+      toId: binding.toId
+    })
+
+    if (!binding.props.placeholder && binding.props.isMovingWithParent) {
+      // Reset moving state
+      this.editor.updateBinding({
+        id: binding.id,
+        type: binding.type,
+        fromId: binding.fromId,
+        toId: binding.toId,
+        props: { ...binding.props, isMovingWithParent: false }
+      })
+    }
   }
 } 
