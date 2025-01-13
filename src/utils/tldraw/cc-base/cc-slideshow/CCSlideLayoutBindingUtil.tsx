@@ -190,10 +190,21 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     }
 
     // Calculate final position and nearest slot
-    const currentPosition = slide.x - parentSlideshow.x
     const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
+    const currentPosition = slide.x - parentSlideshow.x
     const nearestSlot = Math.round(currentPosition / slotWidth)
     const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
+
+    // Calculate final snap position
+    const finalX = parentSlideshow.x + (nearestSlot * slotWidth)
+
+    logger.debug('system', '🎯 Calculating final slide position', {
+      slideId: slide.id,
+      currentPosition,
+      nearestSlot,
+      finalX,
+      currentIndex
+    })
 
     // If nearest slot is different from current index, finalize the swap
     if (nearestSlot !== currentIndex && nearestSlot >= 0 && nearestSlot < parentSlideshow.props.slides.length) {
@@ -204,18 +215,38 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         pattern: parentSlideshow.props.slidePattern
       })
 
-      // Get all slides
-      const slides = this.editor.getSortedChildIdsForParent(parentSlideshow.id)
-        .map(id => this.editor.getShape(id))
-        .filter((shape): shape is CCSlideShape => {
-          if (!shape) return false
-          return shape.type === 'cc-slide'
+      // Update slideshow's slide order
+      const newSlides = [...parentSlideshow.props.slides]
+      newSlides.splice(currentIndex, 1)
+      newSlides.splice(nearestSlot, 0, slide.id)
+
+      this.editor.batch(() => {
+        // Update slide position
+        this.editor.updateShape({
+          id: slide.id,
+          type: slide.type,
+          parentId: parentSlideshow.id,
+          x: finalX,
+          y: slide.y
         })
 
-      // Calculate final positions
-      const finalX = parentSlideshow.x + (nearestSlot * slotWidth)
+        // Update slideshow order
+        this.editor.updateShape({
+          id: parentSlideshow.id,
+          type: parentSlideshow.type,
+          props: {
+            ...parentSlideshow.props,
+            slides: newSlides
+          }
+        })
+      })
 
-      // Move current slide to final position
+      logger.debug('system', '✅ Slide reorder complete', {
+        slideId: slide.id,
+        newOrder: newSlides
+      })
+    } else {
+      // Even if we're not swapping, ensure the slide snaps to its slot
       this.editor.updateShape({
         id: slide.id,
         type: slide.type,
@@ -224,24 +255,9 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         y: slide.y
       })
 
-      // Update slideshow's slide order
-      const newSlides = [...parentSlideshow.props.slides]
-      newSlides.splice(currentIndex, 1)
-      newSlides.splice(nearestSlot, 0, slide.id)
-
-      this.editor.updateShape({
-        id: parentSlideshow.id,
-        type: parentSlideshow.type,
-        props: {
-          ...parentSlideshow.props,
-          slides: newSlides
-        }
-      })
-
-      logger.debug('system', '✅ Slide reorder complete', {
+      logger.debug('system', '✅ Slide snapped to position', {
         slideId: slide.id,
-        newOrder: newSlides,
-        contentFramesUpdated: slides.length
+        finalX
       })
     }
 
