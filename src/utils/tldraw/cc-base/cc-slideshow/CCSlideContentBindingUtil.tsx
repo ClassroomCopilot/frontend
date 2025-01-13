@@ -3,13 +3,13 @@ import { logger } from '../../../../debugConfig'
 import { CCSlideShape } from './CCSlideShapeUtil'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
-export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content', {
+export interface CCSlideContentBinding extends TLBaseBinding<'cc-slide-content-binding', {
   placeholder: boolean
   isMovingWithParent?: boolean
 }> {}
 
 export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding> {
-  static type = 'cc-slide-content' as const
+  static type = 'cc-slide-content-binding' as const
 
   getDefaultProps() {
     return {
@@ -71,7 +71,8 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     if (!parentSlide || !contentFrame) {
       logger.warn('system', '⚠️ Missing parent slide or content frame during translation', {
         parentSlide,
-        contentFrame
+        contentFrame,
+        binding
       })
       return
     }
@@ -118,7 +119,8 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
     if (!parentSlide || !contentFrame) {
       logger.warn('system', '⚠️ Missing parent slide or content frame at translation end', {
         parentSlide,
-        contentFrame
+        contentFrame,
+        binding
       })
       return
     }
@@ -154,7 +156,8 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
 
       logger.debug('system', '✅ Content frame position finalized', {
         slideId: parentSlide.id,
-        frameId: contentFrame.id
+        frameId: contentFrame.id,
+        position: { x: 0, y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT }
       })
     }
   }
