@@ -4,8 +4,11 @@ import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
 
 interface SlideshowBaseProps {
+  type: string
   x: number
   y: number
+  rotation: number
+  isLocked: boolean
   props: {
     w: number
     h: number

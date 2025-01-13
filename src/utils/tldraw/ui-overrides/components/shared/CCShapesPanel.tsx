@@ -64,6 +64,10 @@ export const CCShapesPanel: React.FC = () => {
       y: y - config.yOffset,
       rotation: 0,
       isLocked: false,
+      props: {
+        w: config.width,
+        h: config.height
+      }
     };
 
     switch (shapeType) {
