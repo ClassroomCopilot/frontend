@@ -42,20 +42,29 @@ export class PresentationService {
         }
 
         this.isMoving = true
+        let shapesTransferred = 0
         
         try {
             // Get bounds based on content frame if it's a slide
             let bounds = this.editor.getShapePageBounds(shape.id)
+            let targetContentFrame: CCSlideContentFrameShape | undefined
+
             if (shape.type === 'cc-slide') {
-                const contentFrame = this.editor.getSortedChildIdsForParent(shape.id)
+                targetContentFrame = this.editor.getSortedChildIdsForParent(shape.id)
                     .map(id => this.editor.getShape(id))
                     .find((s): s is CCSlideContentFrameShape => s?.type === 'cc-slide-content')
 
-                if (contentFrame) {
-                    const contentBounds = this.editor.getShapePageBounds(contentFrame.id)
+                if (targetContentFrame) {
+                    logger.debug('presentation', '🎯 Found target content frame', { 
+                        frameId: targetContentFrame.id,
+                        slideId: shape.id 
+                    })
+                    const contentBounds = this.editor.getShapePageBounds(targetContentFrame.id)
                     if (contentBounds) {
                         bounds = contentBounds
                     }
+                } else {
+                    logger.warn('presentation', '⚠️ No content frame found for slide', { slideId: shape.id })
                 }
             }
 
@@ -63,6 +72,73 @@ export class PresentationService {
                 logger.warn('presentation', '⚠️ Could not get bounds for shape')
                 this.isMoving = false
                 return
+            }
+
+            // Check for shapes in the camera proxy before moving
+            const cameraProxy = this.editor.getShape(this.cameraProxyId)
+            if (cameraProxy) {
+                const shapesInProxy = this.editor.getSortedChildIdsForParent(this.cameraProxyId)
+                if (shapesInProxy.length > 0) {
+                    logger.info('presentation', '📦 Found shapes in camera proxy', { 
+                        count: shapesInProxy.length,
+                        shapes: shapesInProxy 
+                    })
+                    
+                    // Only transfer if we have a target content frame
+                    if (targetContentFrame) {
+                        logger.info('presentation', '🔄 Starting shape transfer to slide content', {
+                            fromProxy: this.cameraProxyId,
+                            toContent: targetContentFrame.id,
+                            shapeCount: shapesInProxy.length
+                        })
+
+                        // Transfer each shape to the content frame
+                        for (const shapeId of shapesInProxy) {
+                            try {
+                                const shape = this.editor.getShape(shapeId)
+                                if (shape) {
+                                    // Calculate relative position within the content frame
+                                    const shapePageBounds = this.editor.getShapePageBounds(shape.id)
+                                    const contentPageBounds = this.editor.getShapePageBounds(targetContentFrame.id)
+                                    
+                                    if (shapePageBounds && contentPageBounds) {
+                                        const relativeX = shapePageBounds.minX - contentPageBounds.minX
+                                        const relativeY = shapePageBounds.minY - contentPageBounds.minY
+
+                                        // Update the shape's parent to the content frame
+                                        this.editor.updateShape({
+                                            id: shape.id,
+                                            type: shape.type,
+                                            parentId: targetContentFrame.id,
+                                            x: relativeX,
+                                            y: relativeY,
+                                            props: shape.props
+                                        })
+                                        shapesTransferred++
+                                        
+                                        logger.debug('presentation', '✅ Transferred shape', { 
+                                            shapeId,
+                                            type: shape.type,
+                                            position: { x: relativeX, y: relativeY }
+                                        })
+                                    }
+                                }
+                            } catch (error) {
+                                logger.error('presentation', '❌ Error transferring shape', { 
+                                    shapeId, 
+                                    error 
+                                })
+                            }
+                        }
+
+                        logger.info('presentation', '🎉 Shape transfer complete', {
+                            transferred: shapesTransferred,
+                            total: shapesInProxy.length
+                        })
+                    }
+                } else {
+                    logger.debug('presentation', '📭 No shapes found in camera proxy')
+                }
             }
 
             // Phase 1: Update proxy shape instantly
