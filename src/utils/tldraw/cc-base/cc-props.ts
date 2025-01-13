@@ -102,6 +102,7 @@ export const ccBindingProps = {
   'cc-slide-layout': {
     placeholder: T.boolean,
     isMovingWithParent: T.boolean.optional(),
+    lastKnownSlot: T.number.optional(),
   },
   'cc-slide-content-binding': {
     placeholder: T.boolean,
@@ -166,6 +167,7 @@ export function getDefaultCCSlideLayoutBindingProps() {
   return {
     placeholder: false,
     isMovingWithParent: false,
+    lastKnownSlot: undefined,
   }
 }
 

@@ -7,6 +7,7 @@ import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 export interface CCSlideLayoutBinding extends TLBaseBinding<'cc-slide-layout', {
   placeholder: boolean
   isMovingWithParent?: boolean
+  lastKnownSlot?: number
 }> {}
 
 export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> {
@@ -15,7 +16,8 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
   getDefaultProps() {
     return {
       placeholder: false,
-      isMovingWithParent: false
+      isMovingWithParent: false,
+      lastKnownSlot: undefined
     }
   }
 
@@ -47,10 +49,18 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
   }
 
   onTranslateStart = ({ binding }: { binding: CCSlideLayoutBinding }) => {
+    const parentSlideshow = this.editor.getShape(binding.fromId) as CCSlideShowShape
+    const slide = this.editor.getShape(binding.toId) as CCSlideShape
+
+    if (!parentSlideshow || !slide) return
+
+    const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
+
     logger.debug('system', '🔄 Starting slide layout translation', {
       binding,
       fromId: binding.fromId,
-      toId: binding.toId
+      toId: binding.toId,
+      currentIndex
     })
 
     if (!binding.props.placeholder) {
@@ -59,7 +69,11 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         type: binding.type,
         fromId: binding.fromId,
         toId: binding.toId,
-        props: { ...binding.props, isMovingWithParent: true }
+        props: { 
+          ...binding.props, 
+          isMovingWithParent: true,
+          lastKnownSlot: currentIndex
+        }
       })
     }
   }
@@ -76,21 +90,58 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     const currentPosition = slide.x - parentSlideshow.x
     const nearestSlot = Math.round(currentPosition / slotWidth)
     const snapX = parentSlideshow.x + (nearestSlot * slotWidth)
+    const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
 
-    // Update slide position to snap to nearest slot
-    this.editor.updateShape({
-      id: slide.id,
-      type: slide.type,
-      x: snapX,
-      y: slide.y
-    })
+    // Only update if we're moving to a new slot
+    if (nearestSlot !== binding.props.lastKnownSlot && 
+        nearestSlot >= 0 && 
+        nearestSlot < parentSlideshow.props.slides.length) {
+      
+      const newSlides = [...parentSlideshow.props.slides]
+      newSlides.splice(currentIndex, 1)
+      newSlides.splice(nearestSlot, 0, slide.id)
 
-    logger.debug('system', '📏 Snapping slide during translation', {
-      slideId: slide.id,
-      currentPosition,
-      nearestSlot,
-      snapX
-    })
+      this.editor.batch(() => {
+        // Update slide position
+        this.editor.updateShape({
+          id: slide.id,
+          type: slide.type,
+          x: snapX,
+          y: slide.y
+        })
+
+        // Update slideshow order
+        this.editor.updateShape({
+          id: parentSlideshow.id,
+          type: parentSlideshow.type,
+          props: {
+            ...parentSlideshow.props,
+            slides: newSlides
+          }
+        })
+
+        // Update binding to track the new slot
+        this.editor.updateBinding({
+          id: binding.id,
+          type: binding.type,
+          fromId: binding.fromId,
+          toId: binding.toId,
+          props: { 
+            ...binding.props, 
+            lastKnownSlot: nearestSlot 
+          }
+        })
+      })
+
+      logger.debug('system', '📏 Snapping slide during translation', {
+        slideId: slide.id,
+        currentPosition,
+        nearestSlot,
+        snapX,
+        previousSlot: binding.props.lastKnownSlot,
+        newOrder: newSlides
+      })
+    }
   }
 
   onTranslateEnd = ({ binding }: { binding: CCSlideLayoutBinding }) => {
@@ -106,31 +157,22 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       return
     }
 
-    const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
-    const currentPosition = slide.x - parentSlideshow.x
-    const nearestSlot = Math.round(currentPosition / slotWidth)
-    const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
-
-    // Only update the slide order if the position has changed
-    if (nearestSlot !== currentIndex && nearestSlot >= 0 && nearestSlot < parentSlideshow.props.slides.length) {
-      const newSlides = [...parentSlideshow.props.slides]
-      newSlides.splice(currentIndex, 1)
-      newSlides.splice(nearestSlot, 0, slide.id)
+    // Ensure final position matches the last known slot
+    if (binding.props.lastKnownSlot !== undefined) {
+      const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
+      const finalX = parentSlideshow.x + (binding.props.lastKnownSlot * slotWidth)
 
       this.editor.updateShape({
-        id: parentSlideshow.id,
-        type: parentSlideshow.type,
-        props: {
-          ...parentSlideshow.props,
-          slides: newSlides
-        }
+        id: slide.id,
+        type: slide.type,
+        x: finalX,
+        y: slide.y
       })
 
-      logger.debug('system', '✅ Updated slide order', {
+      logger.debug('system', '✅ Final slide position set', {
         slideId: slide.id,
-        from: currentIndex,
-        to: nearestSlot,
-        newOrder: newSlides
+        finalSlot: binding.props.lastKnownSlot,
+        finalX
       })
     }
 
@@ -140,7 +182,11 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         type: binding.type,
         fromId: binding.fromId,
         toId: binding.toId,
-        props: { ...binding.props, isMovingWithParent: false }
+        props: { 
+          ...binding.props, 
+          isMovingWithParent: false,
+          lastKnownSlot: undefined
+        }
       })
     }
   }
