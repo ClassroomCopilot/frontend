@@ -91,13 +91,15 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
     const nearestSlot = Math.round(currentPosition / slotWidth)
     const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
 
-    // Log translation metrics
-    logger.debug('system', '📏 Horizontal translation metrics', {
+    // Log translation metrics and slot state
+    logger.debug('system', '📏 Translation state', {
       slideId: slide.id,
       currentPosition,
       nearestSlot,
-      previousSlot: binding.props.lastKnownSlot,
-      movingRight: currentPosition > (binding.props.lastKnownSlot ?? 0) * slotWidth
+      lastKnownSlot: binding.props.lastKnownSlot,
+      bindingProps: binding.props,
+      currentIndex,
+      slotWidth
     })
 
     // Check if we've moved to a new slot
@@ -105,11 +107,12 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         nearestSlot >= 0 && 
         nearestSlot < parentSlideshow.props.slides.length) {
       
-      logger.info('system', '🔄 Slide position swap detected', {
+      logger.info('system', '🔄 Slot change detected during translation', {
         slideId: slide.id,
         from: binding.props.lastKnownSlot,
         to: nearestSlot,
-        pattern: parentSlideshow.props.slidePattern
+        currentPosition,
+        slotWidth
       })
 
       const newSlides = [...parentSlideshow.props.slides]
@@ -145,6 +148,12 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
             ...binding.props, 
             lastKnownSlot: nearestSlot 
           }
+        })
+
+        logger.info('system', '✅ Slot change applied during translation', {
+          slideId: slide.id,
+          newSlot: nearestSlot,
+          newOrder: newSlides
         })
       })
     }
