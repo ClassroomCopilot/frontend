@@ -34,32 +34,36 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
       toId: binding.toId
     })
 
-    if (binding.props.placeholder) {
+    // Get the parent slide and content frame
+    const parentSlide = this.editor.getShape(binding.fromId) as CCSlideShape
+    const contentFrame = this.editor.getShape(binding.toId)
+
+    if (!parentSlide || !contentFrame) {
+      logger.warn('system', '⚠️ Missing parent slide or content frame at translation start', {
+        parentSlide,
+        contentFrame
+      })
       return
     }
 
-    // Mark binding as in motion
-    this.editor.updateBinding({
-      id: binding.id,
-      type: binding.type,
-      fromId: binding.fromId,
-      toId: binding.toId,
-      props: { ...binding.props, isMovingWithParent: true }
-    })
+    // Mark binding as in motion and ensure it's not a placeholder
+    if (!binding.props.placeholder) {
+      logger.debug('system', '🔄 Marking content binding as moving', {
+        slideId: parentSlide.id,
+        frameId: contentFrame.id
+      })
+
+      this.editor.updateBinding({
+        id: binding.id,
+        type: binding.type,
+        fromId: binding.fromId,
+        toId: binding.toId,
+        props: { ...binding.props, isMovingWithParent: true }
+      })
+    }
   }
 
   onTranslate = ({ binding }: { binding: CCSlideContentBinding }) => {
-    logger.debug('system', '🔄 Slide content translation in progress', {
-      binding,
-      fromId: binding.fromId,
-      toId: binding.toId,
-      isMovingWithParent: binding.props.isMovingWithParent
-    })
-
-    if (binding.props.placeholder || !binding.props.isMovingWithParent) {
-      return
-    }
-
     // Get the parent slide and content frame
     const parentSlide = this.editor.getShape(binding.fromId) as CCSlideShape
     const contentFrame = this.editor.getShape(binding.toId)
@@ -72,11 +76,29 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
       return
     }
 
+    logger.debug('system', '🔄 Slide content translation in progress', {
+      binding,
+      fromId: binding.fromId,
+      toId: binding.toId,
+      isMovingWithParent: binding.props.isMovingWithParent,
+      slidePosition: { x: parentSlide.x, y: parentSlide.y },
+      framePosition: { x: contentFrame.x, y: contentFrame.y }
+    })
+
+    if (binding.props.placeholder || !binding.props.isMovingWithParent) {
+      logger.debug('system', '⏭️ Skipping content frame update - not moving', {
+        placeholder: binding.props.placeholder,
+        isMoving: binding.props.isMovingWithParent
+      })
+      return
+    }
+
     // Update content frame position relative to parent slide
     // Content frame should maintain a fixed offset from the parent slide's top
     this.editor.updateShape({
       id: contentFrame.id,
       type: contentFrame.type,
+      parentId: parentSlide.id,
       x: 0, // Always at x=0 relative to parent
       y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT // Fixed offset from parent's top
     })
@@ -89,13 +111,38 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
   }
 
   onTranslateEnd = ({ binding }: { binding: CCSlideContentBinding }) => {
+    // Get the parent slide and content frame
+    const parentSlide = this.editor.getShape(binding.fromId) as CCSlideShape
+    const contentFrame = this.editor.getShape(binding.toId)
+
+    if (!parentSlide || !contentFrame) {
+      logger.warn('system', '⚠️ Missing parent slide or content frame at translation end', {
+        parentSlide,
+        contentFrame
+      })
+      return
+    }
+
     logger.debug('system', '✅ Slide content translation complete', {
       binding,
       fromId: binding.fromId,
-      toId: binding.toId
+      toId: binding.toId,
+      finalPositions: {
+        slide: { x: parentSlide.x, y: parentSlide.y },
+        frame: { x: contentFrame.x, y: contentFrame.y }
+      }
     })
 
     if (!binding.props.placeholder && binding.props.isMovingWithParent) {
+      // Ensure final position is correct
+      this.editor.updateShape({
+        id: contentFrame.id,
+        type: contentFrame.type,
+        parentId: parentSlide.id,
+        x: 0,
+        y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
+      })
+
       // Reset moving state
       this.editor.updateBinding({
         id: binding.id,
@@ -103,6 +150,11 @@ export class CCSlideContentBindingUtil extends BindingUtil<CCSlideContentBinding
         fromId: binding.fromId,
         toId: binding.toId,
         props: { ...binding.props, isMovingWithParent: false }
+      })
+
+      logger.debug('system', '✅ Content frame position finalized', {
+        slideId: parentSlide.id,
+        frameId: contentFrame.id
       })
     }
   }
