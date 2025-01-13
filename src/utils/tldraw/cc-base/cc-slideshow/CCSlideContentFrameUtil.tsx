@@ -1,32 +1,25 @@
-import { BaseBoxShapeUtil, DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, T, TLBaseShape, TLFrameShapeProps, TLShapeId } from '@tldraw/tldraw'
+import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, TLShapeId } from '@tldraw/tldraw'
+import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { ccShapeProps } from '../cc-props'
+import { ccShapeMigrations } from '../cc-migrations'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
-export interface CCSlideContentFrameShape extends TLBaseShape<'cc-slide-content-frame', TLFrameShapeProps & {
-  name: string
-  headerColor: string
-  isLocked: boolean
-  parentSlideId: TLShapeId
-}> {}
-
-export class CCSlideContentFrameUtil extends BaseBoxShapeUtil<CCSlideContentFrameShape> {
-  static type = 'cc-slide-content-frame' as const
-  
-  // Define props with proper validators
-  static props = {
-    name: T.string,
-    w: T.number,
-    h: T.number,
-    headerColor: T.string,
-    isLocked: T.boolean,
-    parentSlideId: T.string // TLShapeId is a string at runtime
+export interface CCSlideContentFrameShape extends CCBaseShape {
+  type: 'cc-slide-content'
+  props: {
+    title: string
+    w: number
+    h: number
+    headerColor: string
+    isLocked: boolean
+    parentSlideId: TLShapeId
   }
+}
 
-  static migrations = {
-    currentVersion: 1,
-    firstVersion: 1,
-    migrators: {},
-    sequence: []
-  }
+export class CCSlideContentFrameUtil extends CCBaseShapeUtil<CCSlideContentFrameShape> {
+  static override type = 'cc-slide-content' as const
+  static override props = ccShapeProps.slideContent
+  static override migrations = ccShapeMigrations.slideContent
 
   static styles = {
     color: DefaultColorStyle,
@@ -34,14 +27,9 @@ export class CCSlideContentFrameUtil extends BaseBoxShapeUtil<CCSlideContentFram
     size: DefaultSizeStyle,
   }
 
-  getDefaultProps(): TLFrameShapeProps & {
-    name: string
-    headerColor: string
-    isLocked: boolean
-    parentSlideId: TLShapeId
-  } {
+  getDefaultProps(): CCSlideContentFrameShape['props'] {
     return {
-      name: 'Slide Content Frame',
+      title: 'Slide Content',
       w: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
       h: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
       headerColor: 'transparent',
@@ -50,27 +38,18 @@ export class CCSlideContentFrameUtil extends BaseBoxShapeUtil<CCSlideContentFram
     }
   }
 
-  // Prevent resizing
-  canResize = () => false
-  isAspectRatioLocked = () => true
-  hideResizeHandles = () => true
-  hideRotateHandle = () => true
-  canEdit = () => false
+  override canResize = () => false
+  override isAspectRatioLocked = () => true
+  override hideResizeHandles = () => true
+  override hideRotateHandle = () => true
+  override canEdit = () => false
 
-  // Prevent selection and movement
-  canSelect = () => false
-  canUnmount = () => false
-  canBind = (args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean => {
+  override canBind(args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean {
     // Allow binding from any shape to the content frame
-    return args.toShapeType === 'cc-slide-content-frame' && args.bindingType === 'cc-slide-content-binding'
+    return args.toShapeType === 'cc-slide-content' && args.bindingType === 'cc-slide-content-binding'
   }
 
-  // Prevent translation/movement
-  onTranslate = () => {
-    return
-  }
-
-  onBeforeCreate = (shape: CCSlideContentFrameShape) => {
+  onBeforeCreate(shape: CCSlideContentFrameShape): CCSlideContentFrameShape {
     return shape
   }
 
@@ -79,36 +58,12 @@ export class CCSlideContentFrameUtil extends BaseBoxShapeUtil<CCSlideContentFram
     return []
   }
 
-  indicator(shape: CCSlideContentFrameShape) {
-    const { w, h } = shape.props
-    return (
-      <rect
-        width={w}
-        height={h}
-        fill="none"
-      />
-    )
-  }
-
-  component(shape: CCSlideContentFrameShape) {
-    const { w, h } = shape.props
-    return (
-      <div style={{ 
-        width: w,
-        height: h,
-        backgroundColor: 'transparent',
-        position: 'relative',
-        pointerEvents: 'none' // Prevent interaction with the frame itself
-      }}>
-        <div style={{
-          width: '100%',
-          height: '100%',
-          position: 'relative',
-          pointerEvents: 'all' // Allow interaction with frame contents
-        }}>
-          {/* Frame contents will be rendered by TLDraw */}
-        </div>
-      </div>
-    )
+  override renderContent = () => {
+    return <div style={{ 
+      width: '100%', 
+      height: '100%',
+      backgroundColor: 'transparent',
+      position: 'relative'
+    }} />
   }
 } 

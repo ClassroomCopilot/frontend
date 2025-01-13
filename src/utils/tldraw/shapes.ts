@@ -11,11 +11,11 @@ import { CCYoutubeEmbedShapeUtil } from './cc-base/cc-youtube-embed/CCYoutubeEmb
 export const ShapeUtils = {
   CCSlideShow: CCSlideShowShapeUtil,
   CCSlide: CCSlideShapeUtil,
-  CCSlideContentFrame: CCSlideContentFrameUtil,
+  CCSlideContent: CCSlideContentFrameUtil,
   CCCalendar: CCCalendarShapeUtil,
   CCSettings: CCSettingsShapeUtil,
   CCLiveTranscription: CCLiveTranscriptionShapeUtil,
   CCYoutubeEmbed: CCYoutubeEmbedShapeUtil,
-} as const
+}
 
 export const allShapeUtils = Object.values(ShapeUtils)

@@ -1,9 +1,8 @@
 import { Editor, TLShapeId, createShapeId } from '@tldraw/tldraw'
+import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
 import { CCSlideContentFrameShape } from '../cc-slideshow/CCSlideContentFrameUtil'
-import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
-import { CC_BASE_STYLE_CONSTANTS } from '../cc-styles'
 
 interface SlideshowDimensions {
   width: number
@@ -176,12 +175,12 @@ export const createSlideshow = (
     const contentFrameHeight = slideHeight - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
     editor.createShape<CCSlideContentFrameShape>({
       id: contentFrameIds[i],
-      type: 'cc-slide-content-frame',
+      type: 'cc-slide-content',
       x: 0, // Relative to parent slide
       y: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT, // Relative to parent slide
       parentId: slideIds[i],
       props: {
-        name: `Content ${i + 1} (${contentFrameIds[i]})`,
+        title: `Content ${i + 1} (${contentFrameIds[i]})`,
         w: slideWidth,
         h: contentFrameHeight,
         headerColor: 'transparent',
