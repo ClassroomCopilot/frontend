@@ -38,15 +38,24 @@ export class CCSlideContentFrameUtil extends CCBaseShapeUtil<CCSlideContentFrame
     }
   }
 
+  // Prevent resizing
   override canResize = () => false
   override isAspectRatioLocked = () => true
   override hideResizeHandles = () => true
   override hideRotateHandle = () => true
   override canEdit = () => false
 
-  override canBind(args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean {
+  // Prevent selection and movement
+  canSelect = () => false
+  canUnmount = () => false
+  override canBind = (args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean => {
     // Allow binding from any shape to the content frame
     return args.toShapeType === 'cc-slide-content' && args.bindingType === 'cc-slide-content-binding'
+  }
+
+  // Prevent translation/movement
+  override onTranslate = () => {
+    return
   }
 
   onBeforeCreate(shape: CCSlideContentFrameShape): CCSlideContentFrameShape {
@@ -63,7 +72,8 @@ export class CCSlideContentFrameUtil extends CCBaseShapeUtil<CCSlideContentFrame
       width: '100%', 
       height: '100%',
       backgroundColor: 'transparent',
-      position: 'relative'
+      position: 'relative',
+      pointerEvents: 'none' // Prevent interaction with the content frame itself
     }} />
   }
 } 
