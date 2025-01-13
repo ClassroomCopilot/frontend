@@ -2,6 +2,7 @@ import { Editor, TLShapeId, createShapeId } from '@tldraw/tldraw'
 import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
+import { CCSlideContentFrameShape } from '../cc-slideshow/CCSlideContentFrameUtil'
 
 interface SlideshowDimensions {
   width: number
@@ -109,10 +110,12 @@ export const createSlideshow = (
   const slideWidth = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH
   const slideHeight = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
   const slideIds: TLShapeId[] = []
+  const contentFrameIds: TLShapeId[] = []
 
-  // Create slide IDs first
+  // Create slide IDs and content frame IDs first
   for (let i = 0; i < numSlides; i++) {
     slideIds.push(createShapeId())
+    contentFrameIds.push(createShapeId())
   }
 
   // Calculate dimensions
@@ -140,7 +143,7 @@ export const createSlideshow = (
     }
   })
 
-  // Create slides and bindings
+  // Create slides, content frames, and bindings
   for (let i = 0; i < numSlides; i++) {
     const { x: slideX, y: slideY } = calculateSlidePosition(
       i,
@@ -168,11 +171,38 @@ export const createSlideshow = (
       }
     })
 
-    // Create binding
+    // Create content frame
+    editor.createShape<CCSlideContentFrameShape>({
+      id: contentFrameIds[i],
+      type: 'cc-slide-content',
+      x: slideX,
+      y: slideY + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
+      parentId: slideIds[i],
+      props: {
+        title: `Content ${i + 1} (${contentFrameIds[i]})`,
+        w: slideWidth,
+        h: slideHeight - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
+        headerColor: 'transparent',
+        isLocked: false,
+        parentSlideId: slideIds[i]
+      }
+    })
+
+    // Create slide layout binding
     editor.createBinding({
       type: 'cc-slide-layout',
       fromId: baseProps.id,
       toId: slideIds[i],
+      props: {
+        placeholder: false
+      }
+    })
+
+    // Create content frame binding
+    editor.createBinding({
+      type: 'cc-slide-content-binding',
+      fromId: slideIds[i],
+      toId: contentFrameIds[i],
       props: {
         placeholder: false
       }

@@ -238,6 +238,12 @@ export class CCYoutubeEmbedShapeUtil extends CCBaseShapeUtil<CCYoutubeEmbedShape
     ]
   }
 
+  // Override slide content binding behavior
+  override getSlideContentBindingBehavior(): 'flatten' | 'bind' | 'none' {
+    // YouTube embeds should be bound but not flattened to maintain interactivity
+    return 'bind'
+  }
+
   override renderContent = (shape: CCYoutubeEmbedShape) => {
     return <YoutubeEmbed shape={shape} />
   }

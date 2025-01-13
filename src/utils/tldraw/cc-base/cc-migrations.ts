@@ -1,5 +1,5 @@
 import { TLRecord, TLShape } from '@tldraw/tldraw'
-import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps, getDefaultCCYoutubeEmbedProps } from './cc-props'
+import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps, getDefaultCCYoutubeEmbedProps, getDefaultCCSlideContentProps } from './cc-props'
 
 // Export both shape and binding migrations
 export const ccBindingMigrations = {
@@ -15,6 +15,28 @@ export const ccBindingMigrations = {
             ...record,
             props: {
               ...getDefaultCCSlideLayoutBindingProps(),
+              ...record.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+  'cc-slide-content-binding': {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'binding') return record
+          if (record.type !== 'cc-slide-content-binding') return record
+          return {
+            ...record,
+            props: {
+              placeholder: false,
               ...record.props,
             },
           }
@@ -161,6 +183,30 @@ export const ccShapeMigrations = {
             ...shape,
             props: {
               ...getDefaultCCSlideProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  slideContent: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-slide-content') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCSlideContentProps(),
               ...shape.props,
             },
           }

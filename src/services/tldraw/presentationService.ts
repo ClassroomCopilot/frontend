@@ -2,6 +2,7 @@ import { Editor, TLStoreEventInfo, createShapeId, TLShape } from '@tldraw/tldraw
 import { logger } from '../../debugConfig'
 import { CCSlideShowShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShapeUtil'
+import { CCSlideContentFrameShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideContentFrameUtil'
 
 export class PresentationService {
     private editor: Editor
@@ -41,14 +42,29 @@ export class PresentationService {
         }
 
         this.isMoving = true
-        const bounds = this.editor.getShapePageBounds(shape.id)
-        if (!bounds) {
-            logger.warn('presentation', '⚠️ Could not get bounds for shape')
-            this.isMoving = false
-            return
-        }
-
+        
         try {
+            // Get bounds based on content frame if it's a slide
+            let bounds = this.editor.getShapePageBounds(shape.id)
+            if (shape.type === 'cc-slide') {
+                const contentFrame = this.editor.getSortedChildIdsForParent(shape.id)
+                    .map(id => this.editor.getShape(id))
+                    .find((s): s is CCSlideContentFrameShape => s?.type === 'cc-slide-content')
+
+                if (contentFrame) {
+                    const contentBounds = this.editor.getShapePageBounds(contentFrame.id)
+                    if (contentBounds) {
+                        bounds = contentBounds
+                    }
+                }
+            }
+
+            if (!bounds) {
+                logger.warn('presentation', '⚠️ Could not get bounds for shape')
+                this.isMoving = false
+                return
+            }
+
             // Phase 1: Update proxy shape instantly
             this.editor.updateShape({
                 id: this.cameraProxyId,

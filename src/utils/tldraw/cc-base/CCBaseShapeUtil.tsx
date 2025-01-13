@@ -38,6 +38,20 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
     return []
   }
 
+  // Method to determine if a shape should bind to slide content
+  canBindToSlideContent(): boolean {
+    // By default, most shapes should bind to slide content
+    // Override this in specific shape utils that shouldn't bind
+    return true
+  }
+
+  // Method to determine how a shape should bind to slide content
+  getSlideContentBindingBehavior(): 'flatten' | 'bind' | 'none' {
+    // By default, most shapes should be flattened
+    // Override this in specific shape utils that need different behavior
+    return 'flatten'
+  }
+
   component(shape: T) {
     const {
       props: { w, h, isLocked },

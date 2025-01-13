@@ -1,5 +1,6 @@
 import { T } from '@tldraw/tldraw'
 import { CC_BASE_STYLE_CONSTANTS } from './cc-styles'
+import { CC_SLIDESHOW_STYLE_CONSTANTS } from './cc-styles'
 
 // Define the base props interface
 export interface CCBaseProps {
@@ -80,6 +81,11 @@ export const ccShapeProps = {
     ...baseShapeProps,
   },
 
+  slideContent: {
+    ...baseShapeProps,
+    parentSlideId: T.string,
+  },
+
   'cc-youtube-embed': {
     ...baseShapeProps,
     video_url: T.string,
@@ -96,6 +102,9 @@ export const ccBindingProps = {
   'cc-slide-layout': {
     placeholder: T.boolean,
     isMovingWithParent: T.boolean.optional(),
+  },
+  'cc-slide-content-binding': {
+    placeholder: T.boolean,
   },
 }
 
@@ -173,5 +182,16 @@ export function getDefaultCCYoutubeEmbedProps() {
     video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     transcript: [],
     transcriptVisible: false,
+  }
+}
+
+export function getDefaultCCSlideContentProps() {
+  return {
+    title: 'Slide Content',
+    w: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
+    h: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
+    headerColor: 'transparent',
+    isLocked: false,
+    parentSlideId: '',
   }
 }
