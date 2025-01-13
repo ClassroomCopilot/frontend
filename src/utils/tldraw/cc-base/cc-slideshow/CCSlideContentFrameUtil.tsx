@@ -1,18 +1,15 @@
-import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, FrameShapeUtil, T, TLFrameShape, TLFrameShapeProps, TLShapeId } from '@tldraw/tldraw'
+import { BaseBoxShapeUtil, DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, T, TLBaseShape, TLFrameShapeProps, TLShapeId } from '@tldraw/tldraw'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 
-export interface CCSlideContentFrameShape extends TLFrameShape {
-  type: 'frame'
-  props: TLFrameShapeProps & {
-    name: string
-    headerColor: string
-    isLocked: boolean
-    parentSlideId: TLShapeId
-  }
-}
+export interface CCSlideContentFrameShape extends TLBaseShape<'cc-slide-content-frame', TLFrameShapeProps & {
+  name: string
+  headerColor: string
+  isLocked: boolean
+  parentSlideId: TLShapeId
+}> {}
 
-export class CCSlideContentFrameUtil extends FrameShapeUtil {
-  static type = 'frame' as const
+export class CCSlideContentFrameUtil extends BaseBoxShapeUtil<CCSlideContentFrameShape> {
+  static type = 'cc-slide-content-frame' as const
   
   // Define props with proper validators
   static props = {
@@ -44,7 +41,6 @@ export class CCSlideContentFrameUtil extends FrameShapeUtil {
     parentSlideId: TLShapeId
   } {
     return {
-      ...super.getDefaultProps(),
       name: 'Slide Content Frame',
       w: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
       h: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT - CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT,
@@ -66,7 +62,7 @@ export class CCSlideContentFrameUtil extends FrameShapeUtil {
   canUnmount = () => false
   canBind = (args: { fromShapeType: string; toShapeType: string; bindingType: string }): boolean => {
     // Allow binding from any shape to the content frame
-    return args.toShapeType === 'frame' && args.bindingType === 'cc-slide-content-binding'
+    return args.toShapeType === 'cc-slide-content-frame' && args.bindingType === 'cc-slide-content-binding'
   }
 
   // Prevent translation/movement
@@ -74,7 +70,7 @@ export class CCSlideContentFrameUtil extends FrameShapeUtil {
     return
   }
 
-  onBeforeCreate = (shape: TLFrameShape) => {
+  onBeforeCreate = (shape: CCSlideContentFrameShape) => {
     return shape
   }
 
@@ -83,7 +79,7 @@ export class CCSlideContentFrameUtil extends FrameShapeUtil {
     return []
   }
 
-  indicator(shape: TLFrameShape) {
+  indicator(shape: CCSlideContentFrameShape) {
     const { w, h } = shape.props
     return (
       <rect
@@ -94,7 +90,7 @@ export class CCSlideContentFrameUtil extends FrameShapeUtil {
     )
   }
 
-  component(shape: TLFrameShape) {
+  component(shape: CCSlideContentFrameShape) {
     const { w, h } = shape.props
     return (
       <div style={{ 
