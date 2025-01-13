@@ -58,29 +58,6 @@ export class CCSlideContentFrameUtil extends CCBaseShapeUtil<CCSlideContentFrame
     return []
   }
 
-  override onTranslate = (initial: CCSlideContentFrameShape, current: CCSlideContentFrameShape) => {
-    // Calculate translation delta
-    const dx = current.x - initial.x
-    const dy = current.y - initial.y
-
-    // Move all child shapes with the content frame
-    const childShapes = this.editor.getSortedChildIdsForParent(current.id)
-    childShapes.forEach(childId => {
-      const shape = this.editor.getShape(childId)
-      if (shape) {
-        this.editor.updateShape({
-          id: shape.id,
-          type: shape.type,
-          x: shape.x + dx,
-          y: shape.y + dy,
-          props: shape.props
-        })
-      }
-    })
-
-    return current
-  }
-
   override renderContent = () => {
     return <div style={{ 
       width: '100%', 

@@ -87,16 +87,16 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     const slotWidth = current.props.w + spacing;
     const slotHeight = current.props.h + spacing;
 
-    // Get the content frame for the current slide
+    // Get the content frame for this slide
     const contentFrame = this.editor.getSortedChildIdsForParent(current.id)
       .map(id => this.editor.getShape(id))
-      .find((s): s is CCSlideContentFrameShape => s?.type === 'cc-slide-content');
+      .find((s): s is CCSlideContentFrameShape => s?.type === 'cc-slide-content')
 
-    // Calculate the translation delta from initial position
-    const dx = current.x - initial.x;
-    const dy = current.y - initial.y;
+    // Calculate translation delta from initial position
+    const dx = current.x - initial.x
+    const dy = current.y - initial.y
 
-    // If we have a content frame, move it with the slide
+    // If we have a content frame, update its position relative to the slide
     if (contentFrame) {
       this.editor.updateShape({
         id: contentFrame.id,
@@ -104,7 +104,7 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         x: contentFrame.x + dx,
         y: contentFrame.y + dy,
         props: contentFrame.props
-      });
+      })
     }
 
     // Apply pattern-specific logic
@@ -267,8 +267,8 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
         }
       }
 
-      return {
-        ...current,
+    return {
+      ...current,
         x: constrainedX,
         y: constrainedY
       };
