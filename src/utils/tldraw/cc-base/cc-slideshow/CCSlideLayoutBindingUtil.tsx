@@ -189,24 +189,63 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
       return
     }
 
-    logger.debug('system', '✅ Slide layout translation complete', {
-      binding,
-      fromId: binding.fromId,
-      toId: binding.toId,
-      finalPositions: {
-        slideshow: { x: parentSlideshow.x, y: parentSlideshow.y },
-        slide: { x: slide.x, y: slide.y }
-      }
-    })
+    // Calculate final position and nearest slot
+    const currentPosition = slide.x - parentSlideshow.x
+    const slotWidth = parentSlideshow.props.w / parentSlideshow.props.slides.length
+    const nearestSlot = Math.round(currentPosition / slotWidth)
+    const currentIndex = parentSlideshow.props.slides.indexOf(slide.id)
 
-    if (!binding.props.placeholder && binding.props.isMovingWithParent) {
-      // Ensure final parent relationship is correct
+    // If nearest slot is different from current index, finalize the swap
+    if (nearestSlot !== currentIndex && nearestSlot >= 0 && nearestSlot < parentSlideshow.props.slides.length) {
+      logger.info('system', '🔄 Slide position swap detected', {
+        slideId: slide.id,
+        from: currentIndex,
+        to: nearestSlot,
+        pattern: parentSlideshow.props.slidePattern
+      })
+
+      // Get all slides
+      const slides = this.editor.getSortedChildIdsForParent(parentSlideshow.id)
+        .map(id => this.editor.getShape(id))
+        .filter((shape): shape is CCSlideShape => {
+          if (!shape) return false
+          return shape.type === 'cc-slide'
+        })
+
+      // Calculate final positions
+      const finalX = parentSlideshow.x + (nearestSlot * slotWidth)
+
+      // Move current slide to final position
       this.editor.updateShape({
         id: slide.id,
         type: slide.type,
-        parentId: parentSlideshow.id
+        parentId: parentSlideshow.id,
+        x: finalX,
+        y: slide.y
       })
 
+      // Update slideshow's slide order
+      const newSlides = [...parentSlideshow.props.slides]
+      newSlides.splice(currentIndex, 1)
+      newSlides.splice(nearestSlot, 0, slide.id)
+
+      this.editor.updateShape({
+        id: parentSlideshow.id,
+        type: parentSlideshow.type,
+        props: {
+          ...parentSlideshow.props,
+          slides: newSlides
+        }
+      })
+
+      logger.debug('system', '✅ Slide reorder complete', {
+        slideId: slide.id,
+        newOrder: newSlides,
+        contentFramesUpdated: slides.length
+      })
+    }
+
+    if (!binding.props.placeholder && binding.props.isMovingWithParent) {
       // Reset moving state
       this.editor.updateBinding({
         id: binding.id,
@@ -214,11 +253,6 @@ export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> 
         fromId: binding.fromId,
         toId: binding.toId,
         props: { ...binding.props, isMovingWithParent: false }
-      })
-
-      logger.debug('system', '✅ Slide parent relationship finalized', {
-        slideshowId: parentSlideshow.id,
-        slideId: slide.id
       })
     }
   }
