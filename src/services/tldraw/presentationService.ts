@@ -1,4 +1,4 @@
-import { Editor, TLStoreEventInfo, createShapeId, TLShape } from '@tldraw/tldraw'
+import { Editor, TLStoreEventInfo, createShapeId, TLShape, createBindingId } from '@tldraw/tldraw'
 import { logger } from '../../debugConfig'
 import { CCSlideShowShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShapeUtil'
@@ -114,6 +114,20 @@ export class PresentationService {
                                             y: relativeY,
                                             props: shape.props
                                         })
+
+                                        // Create a binding between the shape and the content frame
+                                        const bindingId = createBindingId()
+                                        this.editor.createBinding({
+                                            id: bindingId,
+                                            type: 'cc-slide-content-binding',
+                                            fromId: shape.id,
+                                            toId: targetContentFrame.id,
+                                            props: {
+                                                placeholder: false,
+                                                isMovingWithParent: true
+                                            }
+                                        })
+
                                         shapesTransferred++
                                         
                                         logger.debug('presentation', '✅ Transferred shape', { 
