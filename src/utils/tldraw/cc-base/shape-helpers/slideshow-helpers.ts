@@ -2,6 +2,7 @@ import { Editor, TLShapeId, createShapeId } from '@tldraw/tldraw'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
+import { logger } from '../../../../debugConfig'
 
 interface SlideshowBaseProps {
   type: string
@@ -85,7 +86,7 @@ export function createSlideshow(
 
     // Create binding
     editor.batch(() => {
-      editor.createBinding({
+      const binding = editor.createBinding({
         type: 'cc-slide-layout',
         fromId: slideshowId,
         toId: id,
@@ -95,6 +96,20 @@ export function createSlideshow(
           lastKnownSlot: index
         }
       })
+
+      if (!binding) {
+        logger.error('system', '❌ Failed to create slide layout binding', {
+          slideshowId,
+          slideId: id,
+          index
+        })
+      } else {
+        logger.info('system', '✅ Created slide layout binding', {
+          slideshowId,
+          slideId: id,
+          index
+        })
+      }
     })
   })
 
