@@ -106,76 +106,79 @@ export const createSlideshow = (
   slidePattern: string = 'horizontal',
   numSlides: number = 3
 ) => {
-  const slideWidth = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH
-  const slideHeight = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
-  const slideIds: TLShapeId[] = []
+  // Start batch operation
+  editor.batch(() => {
+    const slideWidth = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH
+    const slideHeight = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
+    const slideIds: TLShapeId[] = []
 
-  // Create slide IDs first
-  for (let i = 0; i < numSlides; i++) {
-    slideIds.push(createShapeId())
-  }
-
-  // Calculate dimensions
-  const { width: slideshowWidth, height: slideshowHeight } = calculateSlideshowDimensions(
-    numSlides,
-    slidePattern,
-    slideWidth,
-    slideHeight
-  )
-
-  // Create the slideshow
-  editor.createShape<CCSlideShowShape>({
-    ...baseProps,
-    id: baseProps.id,
-    type: 'cc-slideshow',
-    props: {
-      title: `Slideshow (${slidePattern}: ${baseProps.id})`,
-      w: slideshowWidth,
-      h: slideshowHeight,
-      headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
-      isLocked: false,
-      slides: slideIds,
-      currentSlideIndex: 0,
-      slidePattern
+    // Create slide IDs first
+    for (let i = 0; i < numSlides; i++) {
+      slideIds.push(createShapeId())
     }
-  })
 
-  // Create slides and bindings
-  for (let i = 0; i < numSlides; i++) {
-    const { x: slideX, y: slideY } = calculateSlidePosition(
-      i,
+    // Calculate dimensions
+    const { width: slideshowWidth, height: slideshowHeight } = calculateSlideshowDimensions(
       numSlides,
       slidePattern,
       slideWidth,
-      slideHeight,
-      slideshowWidth,
-      slideshowHeight
+      slideHeight
     )
 
-    // Create slide
-    editor.createShape<CCSlideShape>({
-      id: slideIds[i],
-      type: 'cc-slide',
-      x: slideX,
-      y: slideY,
-      parentId: baseProps.id,
+    // Create the slideshow
+    editor.createShape<CCSlideShowShape>({
+      ...baseProps,
+      id: baseProps.id,
+      type: 'cc-slideshow',
       props: {
-        title: `Slide ${i + 1} (${slideIds[i]})`,
-        w: slideWidth,
-        h: slideHeight,
-        headerColor: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_COLORS.secondary,
-        isLocked: false
+        title: `Slideshow (${slidePattern}: ${baseProps.id})`,
+        w: slideshowWidth,
+        h: slideshowHeight,
+        headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+        isLocked: false,
+        slides: slideIds,
+        currentSlideIndex: 0,
+        slidePattern
       }
     })
 
-    // Create binding
-    editor.createBinding({
-      type: 'cc-slide-layout',
-      fromId: baseProps.id,
-      toId: slideIds[i],
-      props: {
-        placeholder: false
-      }
+    // Create all slides and bindings
+    slideIds.forEach((slideId, i) => {
+      const { x: slideX, y: slideY } = calculateSlidePosition(
+        i,
+        numSlides,
+        slidePattern,
+        slideWidth,
+        slideHeight,
+        slideshowWidth,
+        slideshowHeight
+      )
+
+      // Create slide
+      editor.createShape<CCSlideShape>({
+        id: slideId,
+        type: 'cc-slide',
+        x: slideX,
+        y: slideY,
+        parentId: baseProps.id,
+        props: {
+          title: `Slide ${i + 1} (${slideId})`,
+          w: slideWidth,
+          h: slideHeight,
+          headerColor: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_COLORS.secondary,
+          isLocked: false
+        }
+      })
+
+      // Create binding
+      editor.createBinding({
+        type: 'cc-slide-layout',
+        fromId: baseProps.id,
+        toId: slideId,
+        props: {
+          isMovingWithParent: false
+        }
+      })
     })
-  }
+  })
 } 

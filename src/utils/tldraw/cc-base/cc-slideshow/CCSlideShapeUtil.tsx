@@ -6,6 +6,7 @@ import { ccShapeMigrations } from '../cc-migrations'
 import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
+import { logger } from '../../../../debugConfig'
 
 type CCSlideShowShapeProps = CCSlideShowShape['props']
 
@@ -52,6 +53,24 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
 
   onBeforeCreate(shape: CCSlideShape): CCSlideShape {
     return shape
+  }
+
+  onTranslateStart = (shape: CCSlideShape) => {
+    const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
+
+    logger.debug('slide-shape-util', '✅ onTranslateStart', {
+      bindings
+    })
+
+    const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
+
+    logger.debug('slide-shape-util', '✅ onTranslateStart', {
+      slideBinding
+    })
+
+    if (!slideBinding) {
+      return
+    }
   }
 
   onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
@@ -256,7 +275,16 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
 
   onTranslateEnd = (shape: CCSlideShape) => {
     const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
+
+    logger.debug('slide-shape-util', '✅ onTranslateEnd', {
+      bindings
+    })
+
     const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
+
+    logger.debug('slide-shape-util', '✅ onTranslateEnd', {
+      slideBinding
+    })
 
     if (!slideBinding) {
       return

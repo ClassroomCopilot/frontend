@@ -61,7 +61,7 @@ export class CCSlideShowShapeUtil extends CCBaseShapeUtil<CCSlideShowShape> {
     }]
   }
 
-  override renderContent = (shape: CCSlideShowShape) => {
+  override renderContent = () => {
     return <div />
   }
-} 
+}

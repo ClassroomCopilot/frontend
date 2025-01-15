@@ -1,63 +1,31 @@
-import { BindingUtil, TLBaseBinding, BindingOnCreateOptions } from '@tldraw/tldraw'
+import { BindingUtil, TLBaseBinding } from '@tldraw/tldraw'
 
 export interface CCSlideLayoutBinding extends TLBaseBinding<'cc-slide-layout', {
-  placeholder: boolean
+  isMovingWithParent: boolean
 }> {}
 
 export class CCSlideLayoutBindingUtil extends BindingUtil<CCSlideLayoutBinding> {
   static type = 'cc-slide-layout' as const
 
-  getDefaultProps() {
+  getDefaultProps(): CCSlideLayoutBinding['props'] {
     return {
-      placeholder: false
+      isMovingWithParent: false
     }
   }
 
-  onBeforeCreate = ({ binding }: BindingOnCreateOptions<CCSlideLayoutBinding>) => {
-    return binding
+  onBeforeCreate = () => {
+    return
   }
 
   onBeforeDelete = () => {
     return
   }
 
-  onTranslateStart = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    if (binding.props.placeholder) {
-      return
-    }
-
-    const maybeSlideshow = this.editor.getShape(binding.fromId)
-    if (!maybeSlideshow || maybeSlideshow.type !== 'cc-slideshow') {
-      return
-    }
-
-    // Mark binding as placeholder during translation
-    this.editor.updateBinding({
-      id: binding.id,
-      type: binding.type,
-      fromId: binding.fromId,
-      toId: binding.toId,
-      props: { placeholder: true }
-    })
+  onTranslateStart = () => {
+    return
   }
 
-  onTranslateEnd = ({ binding }: { binding: CCSlideLayoutBinding }) => {
-    if (!binding.props.placeholder) {
-      return
-    }
-
-    const maybeSlideshow = this.editor.getShape(binding.fromId)
-    if (!maybeSlideshow || maybeSlideshow.type !== 'cc-slideshow') {
-      return
-    }
-
-    // Reset placeholder status
-    this.editor.updateBinding({
-      id: binding.id,
-      type: binding.type,
-      fromId: binding.fromId,
-      toId: binding.toId,
-      props: { placeholder: false }
-    })
+  onTranslateEnd = () => {
+    return
   }
 } 
