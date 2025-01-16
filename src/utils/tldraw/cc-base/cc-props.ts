@@ -94,6 +94,8 @@ export const ccShapeProps = {
 export const ccBindingProps = {
   'cc-slide-layout': {
     isMovingWithParent: T.boolean.optional(),
+    placeholder: T.boolean.optional(),
+    index: T.string
   },
 }
 
@@ -152,6 +154,8 @@ export function getDefaultCCSlideProps() {
 export function getDefaultCCSlideLayoutBindingProps() {
   return {
     isMovingWithParent: false,
+    placeholder: false,
+    index: '0',
   }
 }
 
