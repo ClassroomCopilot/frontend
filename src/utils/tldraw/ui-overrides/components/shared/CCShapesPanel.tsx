@@ -165,7 +165,7 @@ export const CCShapesPanel: React.FC = () => {
         </div>
         
         <button 
-          onClick={() => handleCreateShape('cc-slideshow', 'horizontal', 4)}
+          onClick={() => handleCreateShape('cc-slideshow', 'horizontal', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}
           style={BUTTON_STYLES.SHAPE_BUTTON}
           onMouseOver={(e) => {
             Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
@@ -177,7 +177,7 @@ export const CCShapesPanel: React.FC = () => {
           Horizontal Slideshow
         </button>
         <button 
-          onClick={() => handleCreateShape('cc-slideshow', 'vertical', 4)}
+          onClick={() => handleCreateShape('cc-slideshow', 'vertical', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}
           style={BUTTON_STYLES.SHAPE_BUTTON}
           onMouseOver={(e) => {
             Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
@@ -189,7 +189,7 @@ export const CCShapesPanel: React.FC = () => {
           Vertical Slideshow
         </button>
         <button 
-          onClick={() => handleCreateShape('cc-slideshow', 'grid', 4)}
+          onClick={() => handleCreateShape('cc-slideshow', 'grid', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}
           style={BUTTON_STYLES.SHAPE_BUTTON}
           onMouseOver={(e) => {
             Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);

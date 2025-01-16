@@ -71,7 +71,6 @@ export const ccShapeProps = {
 
   slideshow: {
     ...baseShapeProps,
-    slides: T.arrayOf(T.string),
     currentSlideIndex: T.number,
     slidePattern: T.string,
   },
@@ -135,7 +134,6 @@ export function getDefaultCCSlideShowProps() {
     h: 600,
     headerColor: '#3e6589',
     isLocked: false,
-    slides: [],
     currentSlideIndex: 0,
     slidePattern: 'horizontal',
   }

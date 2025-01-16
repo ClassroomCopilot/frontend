@@ -1,4 +1,4 @@
-import { Editor, TLShapeId, createShapeId } from '@tldraw/tldraw'
+import { Editor, TLShapeId, createShapeId, getIndexBetween, IndexKey } from '@tldraw/tldraw'
 import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
@@ -136,13 +136,13 @@ export const createSlideshow = (
         h: slideshowHeight,
         headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
         isLocked: false,
-        slides: slideIds,
         currentSlideIndex: 0,
         slidePattern
       }
     })
 
     // Create all slides and bindings
+    let prevIndex: IndexKey | undefined = undefined
     slideIds.forEach((slideId, i) => {
       const { x: slideX, y: slideY } = calculateSlidePosition(
         i,
@@ -160,7 +160,6 @@ export const createSlideshow = (
         type: 'cc-slide',
         x: slideX,
         y: slideY,
-        parentId: baseProps.id,
         props: {
           title: `Slide ${i + 1} (${slideId})`,
           w: slideWidth,
@@ -170,13 +169,18 @@ export const createSlideshow = (
         }
       })
 
-      // Create binding
+      // Create binding with proper index
+      const index = getIndexBetween(prevIndex, undefined)
+      prevIndex = index
+
       editor.createBinding({
         type: 'cc-slide-layout',
         fromId: baseProps.id,
         toId: slideId,
         props: {
-          isMovingWithParent: false
+          index,
+          isMovingWithParent: true,
+          placeholder: false
         }
       })
     })

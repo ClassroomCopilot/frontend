@@ -1,4 +1,4 @@
-import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, TLShapeId } from '@tldraw/tldraw'
+import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle } from '@tldraw/tldraw'
 import { getDefaultCCSlideShowProps } from '../cc-props'
 import { ccShapeProps } from '../cc-props'
 import { ccShapeMigrations } from '../cc-migrations'
@@ -12,7 +12,6 @@ export interface CCSlideShowShape extends CCBaseShape {
     h: number
     headerColor: string
     isLocked: boolean
-    slides: TLShapeId[]
     currentSlideIndex: number
     slidePattern: string
   }
@@ -45,20 +44,6 @@ export class CCSlideShowShapeUtil extends CCBaseShapeUtil<CCSlideShowShape> {
 
   onBeforeCreate(shape: CCSlideShowShape): CCSlideShowShape {
     return shape
-  }
-
-  onChildrenChange = (shape: CCSlideShowShape) => {
-    const children = this.editor.getSortedChildIdsForParent(shape.id)
-    if (children.length === 0) return []
-
-    return [{
-      id: shape.id,
-      type: 'cc-slideshow',
-      props: {
-        ...shape.props,
-        slides: children
-      }
-    }]
   }
 
   override renderContent = () => {

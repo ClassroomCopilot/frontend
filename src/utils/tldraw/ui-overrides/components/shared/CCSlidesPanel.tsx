@@ -11,6 +11,7 @@ import { CCSlideShape } from '../../../cc-base/cc-slideshow/CCSlideShapeUtil'
 import { CCSlideShowShape } from '../../../cc-base/cc-slideshow/CCSlideShowShapeUtil'
 import { useTLDraw } from '../../../../../contexts/TLDrawContext'
 import { logger } from '../../../../../debugConfig'
+import { CCSlideLayoutBinding } from '../../../cc-base/cc-slideshow/CCSlideLayoutBindingUtil'
 
 interface CCSlidesProps {
   onPanelTypeChange: (type: string) => void
@@ -48,13 +49,18 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
   }
 
   const renderSlideshow = (slideshow: CCSlideShowShape) => {
+    const bindings = editor
+      .getBindingsFromShape<CCSlideLayoutBinding>(slideshow, 'cc-slide-layout')
+      .filter(b => !b.props.placeholder)
+      .sort((a, b) => (a.props.index > b.props.index ? 1 : -1))
+    
     return (
       <div key={slideshow.id} className="slideshow-container">
         <div className="slideshow-header">
           <div className="slideshow-title">
             <h3>{slideshow.props.title || 'Untitled Slideshow'}</h3>
             <span className="slide-count">
-              {slideshow.props.slides.length} slides
+              {bindings.length} slides
             </span>
           </div>
           {presentationMode && (
@@ -70,8 +76,8 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
           )}
         </div>
         <div className="slides-list">
-          {slideshow.props.slides.map((slideId, index) => {
-            const slide = editor.getShape(slideId) as CCSlideShape
+          {bindings.map((binding, index) => {
+            const slide = editor.getShape(binding.toId) as CCSlideShape
             if (!slide) return null
 
             const isCurrentSlide = currentSlide?.id === slide.id

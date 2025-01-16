@@ -1,4 +1,4 @@
-import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle } from '@tldraw/tldraw'
+import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, Vec, getIndexBetween, clamp } from '@tldraw/tldraw'
 import { getDefaultCCSlideProps } from '../cc-props'
 import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { ccShapeProps } from '../cc-props'
@@ -7,8 +7,6 @@ import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
 import { logger } from '../../../../debugConfig'
-
-type CCSlideShowShapeProps = CCSlideShowShape['props']
 
 export interface CCSlideShape extends CCBaseShape {
   type: 'cc-slide'
@@ -46,390 +44,268 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     return args.fromShapeType === 'cc-slideshow' && args.toShapeType === 'cc-slide' && args.bindingType === 'cc-slide-layout'
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  override renderContent = (shape: CCSlideShape) => {
+  private getTargetSlideshow(shape: CCSlideShape, pageAnchor: Vec) {
+    return this.editor.getShapeAtPoint(pageAnchor, {
+      hitInside: true,
+      filter: (otherShape) =>
+        this.editor.canBindShapes({ fromShape: otherShape, toShape: shape, binding: 'cc-slide-layout' }),
+    }) as CCSlideShowShape | undefined
+  }
+
+  getBindingIndexForPosition(shape: CCSlideShape, slideshow: CCSlideShowShape, pageAnchor: Vec) {
+    // Get all non-placeholder bindings, sorted by index
+    const allBindings = this.editor
+      .getBindingsFromShape<CCSlideLayoutBinding>(slideshow, 'cc-slide-layout')
+      .filter(b => !b.props.placeholder || b.toId === shape.id)  // Include our binding if it's placeholder
+      .sort((a, b) => (a.props.index > b.props.index ? 1 : -1))
+
+    const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING
+    const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
+    const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING
+
+    // Calculate target order based on position
+    let order: number
+    if (slideshow.props.slidePattern === 'horizontal') {
+      order = clamp(
+        Math.round((pageAnchor.x - slideshow.x - spacing) / (shape.props.w + spacing)),
+        0,
+        allBindings.length
+      )
+    } else if (slideshow.props.slidePattern === 'vertical') {
+      order = clamp(
+        Math.round((pageAnchor.y - slideshow.y - headerHeight - contentPadding - spacing) / (shape.props.h + spacing)),
+        0,
+        allBindings.length
+      )
+    } else if (slideshow.props.slidePattern === 'grid') {
+      const cols = Math.ceil(Math.sqrt(allBindings.length))
+      const col = clamp(
+        Math.round((pageAnchor.x - slideshow.x - spacing) / (shape.props.w + spacing)),
+        0,
+        cols
+      )
+      const row = clamp(
+        Math.round((pageAnchor.y - slideshow.y - headerHeight - contentPadding - spacing) / (shape.props.h + spacing)),
+        0,
+        Math.ceil(allBindings.length / cols)
+      )
+      order = clamp(row * cols + col, 0, allBindings.length)
+    } else {
+      order = 0
+    }
+
+    // Get the bindings before and after our target position
+    const belowSib = allBindings[order - 1]
+    const aboveSib = allBindings[order]
+
+    // If we're already at this position, keep our current index
+    if (belowSib?.toId === shape.id) {
+      return belowSib.props.index
+    } else if (aboveSib?.toId === shape.id) {
+      return aboveSib.props.index
+    }
+
+    // Otherwise, get an index between the two siblings
+    return getIndexBetween(belowSib?.props.index, aboveSib?.props.index)
+  }
+
+  override onTranslateStart = (shape: CCSlideShape) => {
+    const bindings = this.editor.getBindingsToShape<CCSlideLayoutBinding>(shape.id, 'cc-slide-layout')
+    logger.debug('shape', '✅ onTranslateStart', { 
+      shape,
+      bindings,
+      hasBindings: bindings.length > 0,
+      bindingTypes: bindings.map(b => ({
+        id: b.id,
+        fromId: b.fromId,
+        placeholder: b.props.placeholder,
+        isMovingWithParent: b.props.isMovingWithParent
+      }))
+    })
+
+    this.editor.updateBindings(
+      bindings.map((binding) => ({
+        ...binding,
+        props: { ...binding.props, placeholder: true },
+      }))
+    )
+  }
+
+  override onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
+    const pageAnchor = this.editor.getShapePageTransform(current).applyToPoint({ x: current.props.w / 2, y: current.props.h / 2 })
+    const targetSlideshow = this.getTargetSlideshow(current, pageAnchor)
+
+    // Get current binding if any
+    const currentBindings = this.editor.getBindingsToShape<CCSlideLayoutBinding>(current.id, 'cc-slide-layout')
+    const currentBinding = currentBindings[0]
+    const currentSlideshow = currentBinding ? this.editor.getShape<CCSlideShowShape>(currentBinding.fromId) : undefined
+
+    logger.debug('shape', '✅ onTranslate', {
+      initial,
+      current,
+      hasTargetSlideshow: !!targetSlideshow,
+      targetSlideshowId: targetSlideshow?.id,
+      currentBindings: currentBindings.map(b => ({
+        id: b.id,
+        fromId: b.fromId,
+        placeholder: b.props.placeholder,
+        isMovingWithParent: b.props.isMovingWithParent
+      })),
+      isInSlideshow: targetSlideshow ? this.isSlideInSlideshow(current, targetSlideshow) : false
+    })
+
+    // If we're moving out of a slideshow
+    if (currentBinding && currentSlideshow && !this.isSlideInSlideshow(current, currentSlideshow)) {
+      logger.debug('shape', '✅ onTranslate: Moving out of slideshow', {
+        slideId: current.id,
+        slideshowId: currentSlideshow.id
+      })
+      // Delete all bindings
+      this.editor.deleteBindings(currentBindings)
+      return current
+    }
+
+    // If we have no target slideshow, return
+    if (!targetSlideshow) {
+      return current
+    }
+
+    // Calculate new index
+    const index = this.getBindingIndexForPosition(current, targetSlideshow, pageAnchor)
+    
+    // If we have a current binding and it's for this slideshow
+    if (currentBinding && currentBinding.fromId === targetSlideshow.id) {
+      // Only update if index changed
+      if (currentBinding.props.index !== index) {
+        logger.debug('shape', '✅ onTranslate: Updating binding index', {
+          slideId: current.id,
+          slideshowId: targetSlideshow.id,
+          oldIndex: currentBinding.props.index,
+          newIndex: index
+        })
+        this.editor.updateBinding<CCSlideLayoutBinding>({
+          id: currentBinding.id,
+          type: currentBinding.type,
+          fromId: currentBinding.fromId,
+          toId: currentBinding.toId,
+          props: {
+            ...currentBinding.props,
+            index,
+            isMovingWithParent: true,
+          },
+        })
+      }
+    } else if (this.isSlideInSlideshow(current, targetSlideshow)) {
+      logger.debug('shape', '✅ onTranslate: Creating new placeholder binding', {
+        slideId: current.id,
+        slideshowId: targetSlideshow.id,
+        index
+      })
+      // Create new placeholder binding if we're inside the slideshow
+      this.editor.createBinding<CCSlideLayoutBinding>({
+        type: 'cc-slide-layout',
+        fromId: targetSlideshow.id,
+        toId: current.id,
+        props: {
+          index,
+          isMovingWithParent: true,
+          placeholder: true,
+        },
+      })
+    }
+
+    return current
+  }
+
+  private isSlideInSlideshow(slide: CCSlideShape, slideshow: CCSlideShowShape): boolean {
+    const slideCenter = this.editor.getShapePageTransform(slide).applyToPoint({
+      x: slide.props.w / 2,
+      y: slide.props.h / 2
+    })
+    const slideshowBounds = this.editor.getShapeGeometry(slideshow).bounds
+    
+    // Use smaller padding to be more lenient
+    const padding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING / 4
+    return (
+      slideCenter.x >= slideshow.x + padding &&
+      slideCenter.x <= slideshow.x + slideshowBounds.width - padding &&
+      slideCenter.y >= slideshow.y + padding &&
+      slideCenter.y <= slideshow.y + slideshowBounds.height - padding
+    )
+  }
+
+  override onTranslateEnd = (shape: CCSlideShape) => {
+    const pageAnchor = this.editor.getShapePageTransform(shape).applyToPoint({ x: shape.props.w / 2, y: shape.props.h / 2 })
+    const targetSlideshow = this.getTargetSlideshow(shape, pageAnchor)
+    const bindings = this.editor.getBindingsToShape<CCSlideLayoutBinding>(shape.id, 'cc-slide-layout')
+    
+    logger.debug('shape', '✅ onTranslateEnd', {
+      shape,
+      hasTargetSlideshow: !!targetSlideshow,
+      targetSlideshowId: targetSlideshow?.id,
+      bindings: bindings.map(b => ({
+        id: b.id,
+        fromId: b.fromId,
+        placeholder: b.props.placeholder,
+        isMovingWithParent: b.props.isMovingWithParent
+      })),
+      isInSlideshow: targetSlideshow ? this.isSlideInSlideshow(shape, targetSlideshow) : false
+    })
+
+    // If we have a target slideshow and the slide is inside it
+    if (targetSlideshow && this.isSlideInSlideshow(shape, targetSlideshow)) {
+      const index = this.getBindingIndexForPosition(shape, targetSlideshow, pageAnchor)
+      
+      // Instead of deleting and recreating, update existing binding if it exists
+      const existingBinding = bindings[0]
+      if (existingBinding && existingBinding.fromId === targetSlideshow.id) {
+        logger.debug('shape', '✅ onTranslateEnd: Updating existing binding', {
+          slideId: shape.id,
+          slideshowId: targetSlideshow.id,
+          bindingId: existingBinding.id,
+          index
+        })
+        this.editor.updateBinding<CCSlideLayoutBinding>({
+          id: existingBinding.id,
+          type: existingBinding.type,
+          fromId: existingBinding.fromId,
+          toId: existingBinding.toId,
+          props: {
+            index,
+            isMovingWithParent: true,
+            placeholder: false,
+          },
+        })
+      } else {
+        logger.debug('shape', '✅ onTranslateEnd: Creating new binding', {
+          slideId: shape.id,
+          slideshowId: targetSlideshow.id,
+          index
+        })
+        // If no existing binding or from different slideshow, delete and create new
+        this.editor.deleteBindings(bindings)
+        this.editor.createBinding<CCSlideLayoutBinding>({
+          type: 'cc-slide-layout',
+          fromId: targetSlideshow.id,
+          toId: shape.id,
+          props: {
+            index,
+            isMovingWithParent: true,
+            placeholder: false,
+          },
+        })
+      }
+    } else {
+      logger.debug('shape', '✅ onTranslateEnd: Removing bindings', {
+        slideId: shape.id,
+        bindings: bindings.map(b => b.id)
+      })
+      // Just delete bindings if we're not in a slideshow
+      this.editor.deleteBindings(bindings)
+    }
+  }
+
+  override renderContent = () => {
     return <div />
-  }
-
-  onBeforeCreate(shape: CCSlideShape): CCSlideShape {
-    return shape
-  }
-
-  onTranslateStart = (shape: CCSlideShape) => {
-    const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
-
-    logger.debug('slide-shape-util', '✅ onTranslateStart', {
-      bindings
-    })
-
-    const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
-
-    logger.debug('slide-shape-util', '✅ onTranslateStart', {
-      slideBinding
-    })
-
-    if (!slideBinding) {
-      return
-    }
-  }
-
-  onTranslate = (initial: CCSlideShape, current: CCSlideShape) => {
-    const bindings = this.editor.getBindingsToShape(current.id, 'cc-slide-layout')
-    const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
-
-    if (!slideBinding) {
-      return current
-    }
-
-    const slideshow = this.editor.getShape(slideBinding.fromId) as CCSlideShowShape
-    if (!slideshow) {
-      return current
-    }
-
-    // Get constants
-    const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING;
-    const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT;
-    const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING;
-    const verticalOffset = headerHeight + contentPadding;
-
-    // Get all slides in their current order
-    const slides = slideshow.props.slides
-      .map(id => this.editor.getShape(id))
-      .filter((s): s is CCSlideShape => s?.type === 'cc-slide')
-      .map((slide, index) => ({ slide, index }));
-
-    const currentIndex = slides.findIndex(s => s.slide.id === current.id);
-    if (currentIndex === -1) return current;
-
-    // Calculate slot dimensions
-    const slotWidth = current.props.w + spacing;
-    const slotHeight = current.props.h + spacing;
-
-    // Apply pattern-specific logic
-    if (slideshow.props.slidePattern === 'vertical') {
-      // Constrain movement to vertical only and centered horizontally
-      const slideshowProps = slideshow.props as CCSlideShowShapeProps;
-      const constrainedX = (slideshowProps.w - current.props.w) / 2;
-      const constrainedY = Math.max(
-        verticalOffset + spacing,
-        Math.min(slideshowProps.h - current.props.h - spacing, current.y)
-      );
-
-      // Calculate positions
-      const getSlotPosition = (index: number) => verticalOffset + spacing + (index * slotHeight);
-      
-      // Find which slot we're closest to
-      let nearestSlot = currentIndex;
-      const movingDown = constrainedY > getSlotPosition(currentIndex);
-
-      if (movingDown && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (constrainedY > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingDown && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (constrainedY < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        // Move the displaced slide to the current slide's original position
-        const displacedSlide = slides.find(({ index }) => index === clampedSlot);
-        if (displacedSlide) {
-          this.editor.updateShape<CCSlideShape>({
-            id: displacedSlide.slide.id,
-            type: 'cc-slide',
-            x: constrainedX,
-            y: getSlotPosition(currentIndex)
-          });
-        }
-      }
-
-      return {
-        ...current,
-        x: constrainedX,
-        y: constrainedY
-      };
-    } else if (slideshow.props.slidePattern === 'horizontal') {
-      // Horizontal pattern
-      const slideshowProps = slideshow.props as CCSlideShowShapeProps;
-      const constrainedX = Math.max(
-        spacing,
-        Math.min(slideshowProps.w - current.props.w - spacing, current.x)
-      );
-      const constrainedY = initial.y;
-
-      // Calculate positions
-      const getSlotPosition = (index: number) => spacing + (index * slotWidth);
-      
-      // Find which slot we're closest to
-      let nearestSlot = currentIndex;
-      const movingRight = constrainedX > getSlotPosition(currentIndex);
-
-      if (movingRight && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (constrainedX > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingRight && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (constrainedX < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        // Move the displaced slide to the current slide's original position
-        const displacedSlide = slides.find(({ index }) => index === clampedSlot);
-        if (displacedSlide) {
-          this.editor.updateShape<CCSlideShape>({
-            id: displacedSlide.slide.id,
-            type: 'cc-slide',
-            x: getSlotPosition(currentIndex),
-            y: constrainedY
-          });
-        }
-      }
-
-      return {
-        ...current,
-        x: constrainedX,
-        y: constrainedY
-      };
-    } else {
-      // Grid pattern
-      const slideshowProps = slideshow.props as CCSlideShowShapeProps;
-      const constrainedX = Math.max(
-        spacing,
-        Math.min(slideshowProps.w - current.props.w - spacing, current.x)
-      );
-      const constrainedY = Math.max(
-        verticalOffset + spacing,
-        Math.min(slideshowProps.h - current.props.h - spacing, current.y)
-      );
-
-      // Calculate grid dimensions
-      const gridColumns = Math.floor(((slideshow.props as CCSlideShowShape['props']).w - spacing) / slotWidth);
-      const currentRow = Math.floor(currentIndex / gridColumns);
-      const currentCol = currentIndex % gridColumns;
-
-      // Calculate positions
-      const getSlotPosition = (index: number) => {
-        const row = Math.floor(index / gridColumns);
-        const col = index % gridColumns;
-        return {
-          x: spacing + (col * slotWidth),
-          y: verticalOffset + spacing + (row * slotHeight)
-        };
-      };
-
-      // Find nearest grid position
-      const currentPos = getSlotPosition(currentIndex);
-      let nearestSlot = currentIndex;
-
-      // Check if we've moved significantly in either direction
-      const movedRight = constrainedX > currentPos.x + slotWidth / 2;
-      const movedLeft = constrainedX < currentPos.x - slotWidth / 2;
-      const movedDown = constrainedY > currentPos.y + slotHeight / 2;
-      const movedUp = constrainedY < currentPos.y - slotHeight / 2;
-
-      if (movedRight && currentCol < gridColumns - 1) {
-        nearestSlot = currentIndex + 1;
-      } else if (movedLeft && currentCol > 0) {
-        nearestSlot = currentIndex - 1;
-      } else if (movedDown && currentRow < Math.floor((slides.length - 1) / gridColumns)) {
-        nearestSlot = currentIndex + gridColumns;
-      } else if (movedUp && currentRow > 0) {
-        nearestSlot = currentIndex - gridColumns;
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        // Move the displaced slide to the current slide's original position
-        const displacedSlide = slides.find(({ index }) => index === clampedSlot);
-        if (displacedSlide) {
-          const originalPos = getSlotPosition(currentIndex);
-          this.editor.updateShape<CCSlideShape>({
-            id: displacedSlide.slide.id,
-            type: 'cc-slide',
-            x: originalPos.x,
-            y: originalPos.y
-          });
-        }
-      }
-
-    return {
-      ...current,
-        x: constrainedX,
-        y: constrainedY
-      };
-    }
-  }
-
-  onTranslateEnd = (shape: CCSlideShape) => {
-    const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout')
-
-    logger.debug('slide-shape-util', '✅ onTranslateEnd', {
-      bindings
-    })
-
-    const slideBinding = bindings[0] as CCSlideLayoutBinding | undefined
-
-    logger.debug('slide-shape-util', '✅ onTranslateEnd', {
-      slideBinding
-    })
-
-    if (!slideBinding) {
-      return
-    }
-
-    const slideshow = this.editor.getShape(slideBinding.fromId) as CCSlideShowShape
-    if (!slideshow) {
-      return
-    }
-
-    // Get constants
-    const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING;
-    const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT;
-    const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING;
-    const verticalOffset = headerHeight + contentPadding;
-
-    // Get all slides in their current order
-    const slides = slideshow.props.slides
-      .map(id => this.editor.getShape(id))
-      .filter((s): s is CCSlideShape => s?.type === 'cc-slide')
-      .map((slide, index) => ({ slide, index }));
-
-    const currentIndex = slides.findIndex(s => s.slide.id === shape.id);
-    if (currentIndex === -1) return;
-
-    // Calculate slot dimensions
-    const slotWidth = shape.props.w + spacing;
-    const slotHeight = shape.props.h + spacing;
-
-    if (slideshow.props.slidePattern === 'vertical') {
-      // Calculate positions
-      const getSlotPosition = (index: number) => verticalOffset + spacing + (index * slotHeight);
-      
-      // Find nearest slot based on current position
-      const currentPosition = shape.y;
-      let nearestSlot = currentIndex;
-      
-      // Find which slot we're closest to
-      const movingDown = currentPosition > getSlotPosition(currentIndex);
-
-      if (movingDown && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (currentPosition > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingDown && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (currentPosition < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        this.editor.batch(() => {
-          // Update slide order first
-          const newSlides = [...slideshow.props.slides];
-          const [movedSlide] = newSlides.splice(currentIndex, 1);
-          newSlides.splice(clampedSlot, 0, movedSlide);
-          
-          this.editor.updateShape<CCSlideShowShape>({
-            id: slideshow.id,
-            type: 'cc-slideshow',
-            props: {
-              ...slideshow.props,
-              slides: newSlides
-            }
-          });
-
-          // Then update positions based on new order
-          newSlides.forEach((id, index) => {
-            const slide = this.editor.getShape(id) as CCSlideShape | undefined;
-            if (slide?.type === 'cc-slide') {
-              const slideshowProps = slideshow.props as CCSlideShowShape['props'];
-              this.editor.updateShape<CCSlideShape>({
-                id: slide.id,
-                type: 'cc-slide',
-                x: (slideshowProps.w - slide.props.w) / 2,
-                y: getSlotPosition(index)
-              });
-            }
-          });
-        });
-      }
-    } else {
-      // Horizontal pattern
-      const getSlotPosition = (index: number) => spacing + (index * slotWidth);
-      
-      // Find nearest slot based on current position
-      const currentPosition = shape.x;
-      let nearestSlot = currentIndex;
-      
-      // Find which slot we're closest to
-      const movingRight = currentPosition > getSlotPosition(currentIndex);
-
-      if (movingRight && currentIndex < slides.length - 1) {
-        const nextSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex + 1)) / 2;
-        if (currentPosition > nextSlotMidpoint) {
-          nearestSlot = currentIndex + 1;
-        }
-      } else if (!movingRight && currentIndex > 0) {
-        const prevSlotMidpoint = (getSlotPosition(currentIndex) + getSlotPosition(currentIndex - 1)) / 2;
-        if (currentPosition < prevSlotMidpoint) {
-          nearestSlot = currentIndex - 1;
-        }
-      }
-
-      const clampedSlot = Math.max(0, Math.min(slides.length - 1, nearestSlot));
-      
-      if (clampedSlot !== currentIndex) {
-        this.editor.batch(() => {
-          // Update slide order first
-          const newSlides = [...slideshow.props.slides];
-          const [movedSlide] = newSlides.splice(currentIndex, 1);
-          newSlides.splice(clampedSlot, 0, movedSlide);
-          
-          this.editor.updateShape<CCSlideShowShape>({
-            id: slideshow.id,
-            type: 'cc-slideshow',
-            props: {
-              ...slideshow.props,
-              slides: newSlides
-            }
-          });
-
-          // Then update positions based on new order
-          newSlides.forEach((id, index) => {
-            const slide = this.editor.getShape(id) as CCSlideShape | undefined;
-            if (slide?.type === 'cc-slide') {
-              this.editor.updateShape<CCSlideShape>({
-                id: slide.id,
-                type: 'cc-slide',
-                x: getSlotPosition(index),
-                y: shape.y
-              });
-            }
-          });
-        });
-      }
-    }
-  }
-
-  getParentId = (shape: CCSlideShape) => {
-    const bindings = this.editor.getBindingsToShape(shape.id, 'cc-slide-layout');
-    return bindings[0]?.fromId;
   }
 } 

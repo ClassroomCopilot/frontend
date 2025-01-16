@@ -67,7 +67,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
       slides: [],
       currentSlideIndex: 0,
       slidePattern: 'horizontal',
-      numSlides: 4,
+      numSlides: 8,
     }
   },
   'cc-youtube-embed': {
