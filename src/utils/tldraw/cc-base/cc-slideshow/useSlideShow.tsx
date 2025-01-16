@@ -2,6 +2,7 @@ import { Editor, atom, useEditor, useValue } from '@tldraw/tldraw'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideShape } from './CCSlideShapeUtil'
 import { logger } from '../../../../debugConfig'
+import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
 
 // Atoms for tracking current slideshow and slide
 export const $currentSlideShow = atom<CCSlideShowShape | null>('current slideshow', null)
@@ -50,24 +51,33 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
     timestamp: new Date().toISOString()
   })
 
-  // Find the parent slideshow
-  const slideshows = getSlideShowsFromPage(editor)
-  const parentSlideshow = slideshows.find(show => 
-    show.props.slides.includes(slide.id)
-  )
+  // Find the parent slideshow through bindings
+  const binding = editor.getBindingsToShape(slide.id, 'cc-slide-layout')[0]
+  if (!binding) {
+    logger.warn('navigation', '⚠️ No binding found for slide', { slideId: slide.id })
+    return
+  }
 
+  const parentSlideshow = editor.getShape(binding.fromId) as CCSlideShowShape
   if (!parentSlideshow) {
     logger.warn('navigation', '⚠️ No parent slideshow found for slide', { slideId: slide.id })
     return
   }
 
-  // Get the index of this slide in the slideshow
-  const slideIndex = parentSlideshow.props.slides.indexOf(slide.id)
+  // Get all bindings for this slideshow, sorted by index
+  const bindings = editor
+    .getBindingsFromShape(parentSlideshow, 'cc-slide-layout')
+    .filter((b): b is CCSlideLayoutBinding => b.type === 'cc-slide-layout')
+    .filter(b => !b.props.placeholder)
+    .sort((a, b) => (a.props.index > b.props.index ? 1 : -1))
+
+  // Find the index of this slide's binding
+  const slideIndex = bindings.findIndex(b => b.toId === slide.id)
   logger.debug('selection', '📍 Current slide position', {
     slideId: slide.id,
     slideIndex,
     slideshowId: parentSlideshow.id,
-    totalSlides: parentSlideshow.props.slides.length
+    totalSlides: bindings.length
   })
   
   editor.batch(() => {
@@ -77,7 +87,6 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
     })
 
     // Update the slideshow's currentSlideIndex
-    // This will trigger PresentationService's store listener which handles camera updates
     editor.updateShape<CCSlideShowShape>({
       id: parentSlideshow.id,
       type: 'cc-slideshow',
@@ -110,18 +119,26 @@ export function moveToSlideShow(editor: Editor, slideshow: CCSlideShowShape, isP
   // Update current slideshow state
   $currentSlideShow.set(slideshow)
   
-  // Move to the current slide in the slideshow
-  const currentSlideId = slideshow.props.slides[slideshow.props.currentSlideIndex]
-  const currentSlide = editor.getShape(currentSlideId) as CCSlideShape | undefined
-  
-  if (currentSlide) {
-    moveToSlide(editor, currentSlide, isPresentation)
-  } else {
-    logger.warn('navigation', '⚠️ Could not find current slide in slideshow', {
-      slideshowId: slideshow.id,
-      currentSlideId,
-      currentIndex: slideshow.props.currentSlideIndex
-    })
+  // Get all bindings for this slideshow, sorted by index
+  const bindings = editor
+    .getBindingsFromShape(slideshow, 'cc-slide-layout')
+    .filter((b): b is CCSlideLayoutBinding => b.type === 'cc-slide-layout')
+    .filter(b => !b.props.placeholder)
+    .sort((a, b) => (a.props.index > b.props.index ? 1 : -1))
+
+  // Get the current slide based on currentSlideIndex
+  const currentBinding = bindings[slideshow.props.currentSlideIndex]
+  if (currentBinding) {
+    const currentSlide = editor.getShape(currentBinding.toId) as CCSlideShape
+    if (currentSlide) {
+      moveToSlide(editor, currentSlide, isPresentation)
+    } else {
+      logger.warn('navigation', '⚠️ Could not find current slide in slideshow', {
+        slideshowId: slideshow.id,
+        currentSlideId: currentBinding.toId,
+        currentIndex: slideshow.props.currentSlideIndex
+      })
+    }
   }
 }
 
