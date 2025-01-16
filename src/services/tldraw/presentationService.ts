@@ -2,6 +2,7 @@ import { Editor, TLStoreEventInfo, createShapeId, TLShape } from '@tldraw/tldraw
 import { logger } from '../../debugConfig'
 import { CCSlideShowShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideShapeUtil'
+import { CCSlideLayoutBinding } from '../../utils/tldraw/cc-base/cc-slideshow/CCSlideLayoutBindingUtil'
 
 export class PresentationService {
     private editor: Editor
@@ -179,10 +180,20 @@ export class PresentationService {
                     to: toShow.props.currentSlideIndex
                 })
 
-                const currentSlide = this.editor.getShape(
-                    toShow.props.slides[toShow.props.currentSlideIndex]
-                ) as CCSlideShape
+                // Get all bindings for this slideshow, sorted by index
+                const bindings = this.editor
+                    .getBindingsFromShape(toShow, 'cc-slide-layout')
+                    .filter((b): b is CCSlideLayoutBinding => b.type === 'cc-slide-layout')
+                    .filter(b => !b.props.placeholder)
+                    .sort((a, b) => (a.props.index > b.props.index ? 1 : -1))
 
+                const currentBinding = bindings[toShow.props.currentSlideIndex]
+                if (!currentBinding) {
+                    logger.warn('presentation', '⚠️ Could not find binding for target slide')
+                    continue
+                }
+
+                const currentSlide = this.editor.getShape(currentBinding.toId) as CCSlideShape
                 if (!currentSlide) {
                     logger.warn('presentation', '⚠️ Could not find target slide')
                     continue
