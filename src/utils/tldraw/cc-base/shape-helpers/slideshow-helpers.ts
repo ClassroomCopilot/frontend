@@ -1,98 +1,10 @@
-import { Editor, TLShapeId, createShapeId, getIndexBetween, IndexKey } from '@tldraw/tldraw'
+import { Editor, TLShapeId, createShapeId, createBindingId } from '@tldraw/tldraw'
+import { CC_SHAPE_CONFIGS } from '../cc-configs'
 import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
-
-interface SlideshowDimensions {
-  width: number
-  height: number
-}
-
-export const calculateSlideshowDimensions = (
-  numSlides: number,
-  slidePattern: string,
-  slideWidth: number = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
-  slideHeight: number = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
-): SlideshowDimensions => {
-  const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
-  const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING
-  const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING
-
-  switch (slidePattern) {
-    case 'vertical':
-      return {
-        width: slideWidth + spacing * 2,
-        height: headerHeight + (slideHeight * numSlides + spacing * (numSlides + 1)) + contentPadding * 2
-      }
-    case 'radial':
-      return {
-        width: slideWidth + spacing * 2,
-        height: headerHeight + (slideHeight * numSlides + spacing * (numSlides + 1)) + contentPadding * 2
-      }
-    case 'grid': {
-      const cols = Math.ceil(Math.sqrt(numSlides))
-      const rows = Math.ceil(numSlides / cols)
-      return {
-        width: slideWidth * cols + spacing * (cols + 1),
-        height: headerHeight + (slideHeight * rows + spacing * (rows + 1)) + contentPadding * 2
-      }
-    }
-    case 'horizontal':
-    default:
-      return {
-        width: slideWidth * numSlides + spacing * (numSlides + 1),
-        height: headerHeight + (slideHeight + spacing * 2) + contentPadding * 2
-      }
-  }
-}
-
-interface SlidePosition {
-  x: number
-  y: number
-}
-
-export const calculateSlidePosition = (
-  index: number,
-  numSlides: number,
-  slidePattern: string,
-  slideWidth: number,
-  slideHeight: number,
-  slideshowWidth: number,
-  slideshowHeight: number
-): SlidePosition => {
-  const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING
-  const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
-  const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING
-  const cols = Math.ceil(Math.sqrt(numSlides))
-  const contentHeight = slideshowHeight - headerHeight - contentPadding * 2
-  const radius = Math.min(slideshowWidth, contentHeight) / 3
-
-  switch (slidePattern) {
-    case 'vertical':
-      return {
-        x: (slideshowWidth - slideWidth) / 2,
-        y: headerHeight + contentPadding + spacing + index * (slideHeight + spacing)
-      }
-    case 'grid':
-      return {
-        x: spacing + (index % cols) * (slideWidth + spacing),
-        y: headerHeight + contentPadding + spacing + Math.floor(index / cols) * (slideHeight + spacing)
-      }
-    case 'radial': {
-      const angle = (2 * Math.PI * index) / numSlides
-      return {
-        x: slideshowWidth / 2 + radius * Math.cos(angle) - slideWidth / 2,
-        y: headerHeight + contentPadding + contentHeight / 2 + radius * Math.sin(angle) - slideHeight / 2
-      }
-    }
-    case 'horizontal':
-    default:
-      return {
-        x: spacing + index * (slideWidth + spacing),
-        y: headerHeight + contentPadding + spacing
-      }
-  }
-}
+import axios from '../../../../axiosConfig'
+import { logger } from '../../../../debugConfig'
 
 export const createSlideshow = (
   editor: Editor,
@@ -103,86 +15,181 @@ export const createSlideshow = (
     rotation: number
     isLocked: boolean
   },
-  slidePattern: string = 'horizontal',
-  numSlides: number = 3
+  slidePattern = 'horizontal',
+  numSlides = 3
 ) => {
-  // Start batch operation
-  editor.batch(() => {
-    const slideWidth = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH
-    const slideHeight = CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT
-    const slideIds: TLShapeId[] = []
+  const config = CC_SHAPE_CONFIGS['cc-slideshow']
+  
+  // Create slideshow shape
+  editor.createShape<CCSlideShowShape>({
+    ...baseProps,
+    type: 'cc-slideshow',
+    props: {
+      ...config.defaultProps,
+      w: config.width,
+      h: config.height,
+      slidePattern,
+      currentSlideIndex: 0,
+    },
+  })
 
-    // Create slide IDs first
-    for (let i = 0; i < numSlides; i++) {
-      slideIds.push(createShapeId())
+  // Create slides
+  for (let i = 0; i < numSlides; i++) {
+    const slideId = createShapeId()
+    editor.createShape<CCSlideShape>({
+      id: slideId,
+      type: 'cc-slide',
+      x: baseProps.x + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING,
+      y: baseProps.y + CC_BASE_STYLE_CONSTANTS.HEADER.height + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2,
+      rotation: 0,
+      isLocked: false,
+      props: {
+        ...CC_SHAPE_CONFIGS['cc-slide'].defaultProps,
+        w: CC_SHAPE_CONFIGS['cc-slide'].width,
+        h: CC_SHAPE_CONFIGS['cc-slide'].height,
+        title: `Slide ${i + 1}`,
+      },
+    })
+
+    // Create binding between slideshow and slide
+    editor.createBinding({
+      id: createBindingId(),
+      type: 'cc-slide-layout',
+      fromId: baseProps.id,
+      toId: slideId,
+      props: {
+        index: `a${i + 1}`,
+        isMovingWithParent: true,
+        placeholder: false,
+      },
+    })
+  }
+}
+
+export const createPowerPointSlideshow = async (
+  editor: Editor,
+  file: File,
+  x: number,
+  y: number
+) => {
+  try {
+    // Create form data for file upload
+    const formData = new FormData()
+    // FastAPI expects the file parameter to be named 'file'
+    formData.append('file', file, file.name)
+    
+    logger.debug('slideshow-helpers', 'Uploading PowerPoint file.', {
+      name: file.name,
+      size: file.size,
+    })
+
+    // Send file to backend for processing
+    const response = await axios.post('/api/assets/powerpoint/convert', formData)
+
+    logger.debug('slideshow-helpers', 'Response status.', {
+      status: response.status,
+    })
+
+    if (response.status !== 200) {
+      if (response.status === 404) {
+        throw new Error('PowerPoint conversion endpoint not found. Please check if the backend service is running.')
+      }
+      const errorText = response.data.message
+      logger.error('slideshow-helpers', 'Server error response.', {
+        status: response.status,
+        text: errorText,
+      })
+      throw new Error(`Server error: ${errorText || response.statusText}`)
     }
 
-    // Calculate dimensions
-    const { width: slideshowWidth, height: slideshowHeight } = calculateSlideshowDimensions(
-      numSlides,
-      slidePattern,
-      slideWidth,
-      slideHeight
-    )
-
-    // Create the slideshow
-    editor.createShape<CCSlideShowShape>({
-      ...baseProps,
-      id: baseProps.id,
-      type: 'cc-slideshow',
-      props: {
-        title: `Slideshow (${slidePattern}: ${baseProps.id})`,
-        w: slideshowWidth,
-        h: slideshowHeight,
-        headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
-        isLocked: false,
-        currentSlideIndex: 0,
-        slidePattern
-      }
+    const data = response.data
+    logger.debug('slideshow-helpers', 'Response data.', {
+      data,
     })
 
-    // Create all slides and bindings
-    let prevIndex: IndexKey | undefined = undefined
-    slideIds.forEach((slideId, i) => {
-      const { x: slideX, y: slideY } = calculateSlidePosition(
-        i,
-        numSlides,
-        slidePattern,
-        slideWidth,
-        slideHeight,
-        slideshowWidth,
-        slideshowHeight
-      )
+    if (data.status !== 'success') {
+      logger.error('slideshow-helpers', 'PowerPoint processing error.', {
+        message: data.message || 'Unknown error',
+      })
+      throw new Error(data.message || 'Failed to process PowerPoint')
+    }
 
-      // Create slide
-      editor.createShape<CCSlideShape>({
-        id: slideId,
-        type: 'cc-slide',
-        x: slideX,
-        y: slideY,
+    if (!data.slides || !Array.isArray(data.slides) || data.slides.length === 0) {
+      logger.error('slideshow-helpers', 'No slides found in PowerPoint file.')
+      throw new Error('No slides found in PowerPoint file')
+    }
+
+    // Create slideshow with the number of slides from PowerPoint
+    const slideshowId = createShapeId()
+    const baseProps = {
+      id: slideshowId,
+      x,
+      y,
+      rotation: 0,
+      isLocked: false,
+    }
+
+    // Create slideshow with the slides from PowerPoint
+    editor.batch(() => {
+      const config = CC_SHAPE_CONFIGS['cc-slideshow']
+      
+      // Create slideshow shape
+      editor.createShape<CCSlideShowShape>({
+        ...baseProps,
+        type: 'cc-slideshow',
         props: {
-          title: `Slide ${i + 1} (${slideId})`,
-          w: slideWidth,
-          h: slideHeight,
-          headerColor: CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_COLORS.secondary,
-          isLocked: false
-        }
+          ...config.defaultProps,
+          w: config.width,
+          h: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT + 
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT +  // Slideshow's own header
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 +    // Top and bottom spacing
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING, // Extra padding for content
+          slidePattern: 'horizontal',
+          title: file.name.replace('.pptx', ''),
+          currentSlideIndex: 0,
+        },
       })
 
-      // Create binding with proper index
-      const index = getIndexBetween(prevIndex, undefined)
-      prevIndex = index
+      // Create slides with images
+      data.slides.forEach((slide: { index: number, data: string }, i: number) => {
+        const slideId = createShapeId()
+        editor.createShape<CCSlideShape>({
+          id: slideId,
+          type: 'cc-slide',
+          x: x + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING,
+          y: y + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT + 
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING,
+          rotation: 0,
+          isLocked: false,
+          props: {
+            ...CC_SHAPE_CONFIGS['cc-slide'].defaultProps,
+            w: CC_SHAPE_CONFIGS['cc-slide'].width,
+            h: CC_SHAPE_CONFIGS['cc-slide'].height,
+            title: `Slide ${i + 1}`,
+            imageData: slide.data,
+          },
+        })
 
-      editor.createBinding({
-        type: 'cc-slide-layout',
-        fromId: baseProps.id,
-        toId: slideId,
-        props: {
-          index,
-          isMovingWithParent: true,
-          placeholder: false
-        }
+        // Create binding between slideshow and slide
+        editor.createBinding({
+          id: createBindingId(),
+          type: 'cc-slide-layout',
+          fromId: slideshowId,
+          toId: slideId,
+          props: {
+            index: `a${i + 1}`,
+            isMovingWithParent: true,
+            placeholder: false,
+          },
+        })
       })
     })
-  })
+
+    return true
+  } catch (error) {
+    logger.error('slideshow-helpers', 'Error creating PowerPoint slideshow.', {
+      error,
+    })
+    return false
+  }
 } 

@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useEditor, createShapeId } from '@tldraw/tldraw';
 import { BasePanel } from './BasePanel';
 import { CCSlidesPanel } from './CCSlidesPanel';
 import { CCYoutubePanel } from './CCYoutubePanel';
 import { BUTTON_STYLES } from './panel-styles';
 import { CC_SHAPE_CONFIGS } from '../../../cc-base/cc-configs';
-import { createSlideshow } from '../../../cc-base/shape-helpers/slideshow-helpers';
+import { createSlideshow, createPowerPointSlideshow } from '../../../cc-base/shape-helpers/slideshow-helpers';
 
 const PANEL_TYPES = [
   { id: 'cc-shapes', label: 'Shapes' },
@@ -17,6 +17,7 @@ export const CCShapesPanel: React.FC = () => {
   const editor = useEditor();
   const [currentPanelType, setCurrentPanelType] = React.useState('cc-shapes');
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!editor) {
@@ -86,6 +87,30 @@ export const CCShapesPanel: React.FC = () => {
         break;
       default:
         break;
+    }
+  };
+
+  const handlePowerPointUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editor || !event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    const file = event.target.files[0];
+    if (!file.name.endsWith('.pptx')) {
+      alert('Please select a PowerPoint file (.pptx)');
+      return;
+    }
+
+    const { x, y } = editor.getViewportScreenCenter();
+    const success = await createPowerPointSlideshow(editor, file, x, y);
+
+    if (!success) {
+      alert('Failed to process PowerPoint file. Please try again.');
+    }
+
+    // Clear the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -211,6 +236,33 @@ export const CCShapesPanel: React.FC = () => {
           }}
         >
           Radial Slideshow
+        </button>
+
+        <div style={{ borderTop: '1px solid var(--color-divider)', margin: '8px 0' }} />
+        
+        <div style={{ fontSize: '14px', color: 'var(--color-text)', marginBottom: '4px' }}>
+          Import PowerPoint
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pptx"
+          onChange={handlePowerPointUpload}
+          style={{ display: 'none' }}
+        />
+        
+        <button 
+          onClick={() => fileInputRef.current?.click()}
+          style={BUTTON_STYLES.SHAPE_BUTTON}
+          onMouseOver={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
+          }}
+          onMouseOut={(e) => {
+            Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
+          }}
+        >
+          Upload PowerPoint
         </button>
       </div>
     </BasePanel>

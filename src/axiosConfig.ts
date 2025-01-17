@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { logger } from './debugConfig';
 
-const baseURL = 'https://' + import.meta.env.VITE_SITE_URL;
+// Use development backend URL if no custom URL is provided
+const baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 const instance = axios.create({
   baseURL,
-  timeout: 10000,
+  timeout: 30000, // Increased timeout for file uploads
   headers: {
     'Content-Type': 'application/json'
   }
@@ -14,6 +15,11 @@ const instance = axios.create({
 // Add request interceptor for logging
 instance.interceptors.request.use(
   (config) => {
+    // Don't override Content-Type if it's already set (e.g., for multipart/form-data)
+    if (config.headers['Content-Type'] === 'application/json' && config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     logger.debug('axios', '🔄 Outgoing request', {
       method: config.method,
       url: config.url,

@@ -19,7 +19,7 @@ export const CC_BASE_STYLE_CONSTANTS = {
     borderRadius: 4,
   },
   CONTENT: {
-    padding: 16,
+    padding: 8,
     borderRadius: 8,
     borderWidth: 2,
     backgroundColor: 'white',
@@ -101,11 +101,11 @@ export const CC_CALENDAR_STYLE_CONSTANTS = {
 
 // Slideshow specific styles
 export const CC_SLIDESHOW_STYLE_CONSTANTS = {
-  DEFAULT_SLIDE_WIDTH: 800,
-  DEFAULT_SLIDE_HEIGHT: 600,
-  SLIDE_HEADER_HEIGHT: 40,
+  DEFAULT_SLIDE_WIDTH: 1280,
+  DEFAULT_SLIDE_HEIGHT: 720,
+  SLIDE_HEADER_HEIGHT: 32,
   SLIDE_HEADER_PADDING: 8,
-  SLIDE_CONTENT_PADDING: 16,
+  SLIDE_CONTENT_PADDING: 0,
   SLIDE_BORDER_RADIUS: 4,
   SLIDE_BORDER_WIDTH: 1,
   SLIDE_SPACING: 16,

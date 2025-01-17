@@ -1,6 +1,6 @@
 import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, Vec, getIndexBetween, clamp } from '@tldraw/tldraw'
 import { getDefaultCCSlideProps } from '../cc-props'
-import { CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
+import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { ccShapeProps } from '../cc-props'
 import { ccShapeMigrations } from '../cc-migrations'
 import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
@@ -16,6 +16,7 @@ export interface CCSlideShape extends CCBaseShape {
     h: number
     headerColor: string
     isLocked: boolean
+    imageData?: string // Optional image data in base64 format
   }
 }
 
@@ -60,7 +61,7 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
       .sort((a, b) => (a.props.index > b.props.index ? 1 : -1))
 
     const spacing = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING
-    const headerHeight = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT
+    const headerHeight = CC_BASE_STYLE_CONSTANTS.HEADER.height
     const contentPadding = CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING
 
     // Calculate target order based on position
@@ -305,7 +306,32 @@ export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {
     }
   }
 
-  override renderContent = () => {
-    return <div />
+  override renderContent = (shape: CCSlideShape) => {
+    
+    return (
+      <div style={{ 
+        width: '100%', 
+        height: '100%', 
+        position: 'relative',
+        backgroundColor: 'white',
+        borderRadius: '4px',
+        overflow: 'hidden'
+      }}>
+        {shape.props.imageData && (
+          <img 
+            src={shape.props.imageData} 
+            alt={shape.props.title}
+            style={{
+              width: '100%',
+              height: `100%`,
+              objectFit: 'contain',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }}
+          />
+        )}
+      </div>
+    )
   }
 } 

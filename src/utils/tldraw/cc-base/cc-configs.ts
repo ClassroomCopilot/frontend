@@ -57,17 +57,31 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   },
   'cc-slideshow': {
     width: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH * 3 + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 4,
-    height: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT + CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2,
+    height: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT + 
+      CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT +
+      CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 +
+      CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING,
     xOffset: 400,
     yOffset: 300,
     defaultProps: {
       title: 'Slideshow',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
       isLocked: false,
-      slides: [],
       currentSlideIndex: 0,
       slidePattern: 'horizontal',
-      numSlides: 8,
+      numSlides: 3,
+    }
+  },
+  'cc-slide': {
+    width: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
+    height: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT,
+    xOffset: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH / 2,
+    yOffset: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT / 2,
+    defaultProps: {
+      title: 'Slide',
+      headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      isLocked: false,
+      imageData: '',
     }
   },
   'cc-youtube-embed': {
