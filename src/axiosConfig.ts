@@ -2,7 +2,7 @@ import axios from 'axios';
 import { logger } from './debugConfig';
 
 // Use development backend URL if no custom URL is provided
-const baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const baseURL = import.meta.env.VITE_BACKEND_URL;
 
 const instance = axios.create({
   baseURL,
@@ -60,4 +60,8 @@ instance.interceptors.response.use(
   }
 );
 
-export default instance;
+// Add type guard for Axios errors
+export const isAxiosError = axios.isAxiosError;
+
+// Export the axios instance with the type guard
+export default Object.assign(instance, { isAxiosError });

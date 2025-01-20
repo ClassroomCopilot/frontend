@@ -4,6 +4,7 @@ import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-sty
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
 import axios from '../../../../axiosConfig'
+import { AxiosError } from 'axios'
 import { logger } from '../../../../debugConfig'
 
 export const createSlideshow = (
@@ -66,25 +67,25 @@ export const createSlideshow = (
   }
 }
 
-export const createPowerPointSlideshow = async (
-  editor: Editor,
-  file: File,
-  x: number,
-  y: number
-) => {
+export const createPowerPointSlideshow = async (editor: Editor, file: File, x: number, y: number): Promise<boolean> => {
   try {
-    // Create form data for file upload
-    const formData = new FormData()
-    // FastAPI expects the file parameter to be named 'file'
-    formData.append('file', file, file.name)
-    
-    logger.debug('slideshow-helpers', 'Uploading PowerPoint file.', {
-      name: file.name,
-      size: file.size,
-    })
+    logger.debug('slideshow-helpers', 'Uploading PowerPoint file.', { name: file.name, size: file.size });
 
-    // Send file to backend for processing
-    const response = await axios.post('/api/assets/powerpoint/convert', formData)
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axios.post('/api/assets/powerpoint/convert', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      // Increase timeout to 10 minutes (600000ms)
+      timeout: 600000,
+      // Add progress monitoring
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
+        logger.debug('slideshow-helpers', `Upload progress: ${percentCompleted}%`);
+      }
+    });
 
     logger.debug('slideshow-helpers', 'Response status.', {
       status: response.status,
@@ -187,9 +188,18 @@ export const createPowerPointSlideshow = async (
 
     return true
   } catch (error) {
-    logger.error('slideshow-helpers', 'Error creating PowerPoint slideshow.', {
-      error,
-    })
-    return false
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError;  // Type assertion
+      if (axiosError.code === 'ECONNABORTED') {
+        logger.error('slideshow-helpers', 'Request timed out while processing PowerPoint file. Please try a smaller file or wait longer.');
+      } else if (axiosError.response?.status === 413) {
+        logger.error('slideshow-helpers', 'File is too large. Maximum size is 50MB.');
+      } else {
+        logger.error('slideshow-helpers', 'Error creating PowerPoint slideshow.', { error });
+      }
+    } else {
+      logger.error('slideshow-helpers', 'Unexpected error creating PowerPoint slideshow.', { error });
+    }
+    return false;
   }
 } 
