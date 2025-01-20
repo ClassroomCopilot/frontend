@@ -6,7 +6,7 @@ const baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 const instance = axios.create({
   baseURL,
-  timeout: 30000, // Increased timeout for file uploads
+  timeout: 120000,  // Increase timeout to 120 seconds for large presentations
   headers: {
     'Content-Type': 'application/json'
   }
