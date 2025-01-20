@@ -78,7 +78,11 @@ export const ccShapeProps = {
 
   slide: {
     ...baseShapeProps,
-    imageData: T.string,
+    imageData: T.string.optional(),
+    meta: T.object({
+      text: T.string,
+      format: T.string,
+    }),
   },
 
   'cc-youtube-embed': {
@@ -166,6 +170,11 @@ export function getDefaultCCSlideProps() {
     h: totalHeight,
     headerColor: '#3e6589',
     isLocked: false,
+    imageData: '',
+    meta: {
+      text: '',
+      format: 'markdown'
+    }
   }
 }
 

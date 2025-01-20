@@ -17,6 +17,10 @@ export interface CCSlideShape extends CCBaseShape {
     headerColor: string
     isLocked: boolean
     imageData?: string // Optional image data in base64 format
+    meta: {
+      text: string
+      format: string
+    }
   }
 }
 

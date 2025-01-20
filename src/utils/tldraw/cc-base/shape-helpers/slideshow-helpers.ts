@@ -134,8 +134,15 @@ export const createPowerPointSlideshow = async (
         },
       })
 
-      // Create slides with images
-      data.slides.forEach((slide: { index: number, data: string }, i: number) => {
+      // Create slides with images and meta text
+      data.slides.forEach((slide: { 
+        index: number, 
+        data: string,
+        meta?: {
+          text: string,
+          format: string
+        }
+      }, i: number) => {
         const slideId = createShapeId()
         editor.createShape<CCSlideShape>({
           id: slideId,
@@ -151,6 +158,7 @@ export const createPowerPointSlideshow = async (
             h: CC_SHAPE_CONFIGS['cc-slide'].height,
             title: `Slide ${i + 1}`,
             imageData: slide.data,
+            meta: slide.meta || { text: '', format: 'markdown' }
           },
         })
 
@@ -267,8 +275,16 @@ export const createWordSlideshow = async (
         },
       })
 
-      // Create slides with images
-      data.slides.forEach((slide: { index: number, data: string, dimensions?: { width: number, height: number } }, i: number) => {
+      // Create slides with images and meta text
+      data.slides.forEach((slide: { 
+        index: number, 
+        data: string, 
+        dimensions?: { width: number, height: number },
+        meta?: {
+          text: string,
+          format: string
+        }
+      }, i: number) => {
         const slideId = createShapeId()
         editor.createShape<CCSlideShape>({
           id: slideId,
@@ -284,6 +300,7 @@ export const createWordSlideshow = async (
             h: slide.dimensions?.height ?? CC_SHAPE_CONFIGS['cc-slide'].height,
             title: `Page ${i + 1}`,
             imageData: slide.data,
+            meta: slide.meta || { text: '', format: 'markdown' }
           },
         })
 
@@ -400,8 +417,16 @@ export const createPDFSlideshow = async (
         },
       })
 
-      // Create slides with images
-      data.slides.forEach((slide: { index: number, data: string, dimensions?: { width: number, height: number } }, i: number) => {
+      // Create slides with images and meta text
+      data.slides.forEach((slide: { 
+        index: number, 
+        data: string, 
+        dimensions?: { width: number, height: number },
+        meta?: {
+          text: string,
+          format: string
+        }
+      }, i: number) => {
         const slideId = createShapeId()
         editor.createShape<CCSlideShape>({
           id: slideId,
@@ -417,6 +442,7 @@ export const createPDFSlideshow = async (
             h: slide.dimensions?.height ?? CC_SHAPE_CONFIGS['cc-slide'].height,
             title: `Page ${i + 1}`,
             imageData: slide.data,
+            meta: slide.meta || { text: '', format: 'markdown' }
           },
         })
 
