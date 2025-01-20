@@ -28,7 +28,7 @@ export default defineConfig(async ({ mode }) => {
         includeAssets: ['icons/*'],
         manifest: {
           name: 'Classroom Copilot',
-          short_name: 'ClassCopilot',
+          short_name: 'ClassroomCopilot',
           start_url: '/',
           display: 'fullscreen',
           background_color: '#ffffff',

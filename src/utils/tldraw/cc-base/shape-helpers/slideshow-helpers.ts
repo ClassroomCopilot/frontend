@@ -59,7 +59,7 @@ export const createSlideshow = (
       fromId: baseProps.id,
       toId: slideId,
       props: {
-        index: `a${i + 1}`,
+        index: `a${String(i + 1).padStart(3, '0')}`,
         isMovingWithParent: true,
         placeholder: false,
       },
@@ -178,7 +178,7 @@ export const createPowerPointSlideshow = async (editor: Editor, file: File, x: n
           fromId: slideshowId,
           toId: slideId,
           props: {
-            index: `a${i + 1}`,
+            index: `a${String(i + 1).padStart(3, '0')}`,
             isMovingWithParent: true,
             placeholder: false,
           },
