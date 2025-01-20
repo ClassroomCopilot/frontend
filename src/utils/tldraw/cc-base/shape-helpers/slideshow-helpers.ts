@@ -3,8 +3,7 @@ import { CC_SHAPE_CONFIGS } from '../cc-configs'
 import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
 import { CCSlideShowShape } from '../cc-slideshow/CCSlideShowShapeUtil'
 import { CCSlideShape } from '../cc-slideshow/CCSlideShapeUtil'
-import axios from '../../../../axiosConfig'
-import { AxiosError } from 'axios'
+import axios, { isAxiosError } from '../../../../axiosConfig'
 import { logger } from '../../../../debugConfig'
 
 export const createSlideshow = (
@@ -59,7 +58,7 @@ export const createSlideshow = (
       fromId: baseProps.id,
       toId: slideId,
       props: {
-        index: `a${String(i + 1).padStart(3, '0')}`,
+        index: `a${i + 1}`,
         isMovingWithParent: true,
         placeholder: false,
       },
@@ -67,60 +66,44 @@ export const createSlideshow = (
   }
 }
 
-export const createPowerPointSlideshow = async (editor: Editor, file: File, x: number, y: number): Promise<boolean> => {
+export const createPowerPointSlideshow = async (
+  editor: Editor,
+  file: File,
+  x: number,
+  y: number
+) => {
   try {
-    logger.debug('slideshow-helpers', 'Uploading PowerPoint file.', { name: file.name, size: file.size });
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await axios.post('/api/assets/powerpoint/convert', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      // Increase timeout to 10 minutes (600000ms)
-      timeout: 600000,
-      // Add progress monitoring
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
-        logger.debug('slideshow-helpers', `Upload progress: ${percentCompleted}%`);
-      }
-    });
-
-    logger.debug('slideshow-helpers', 'Response status.', {
-      status: response.status,
+    // Create form data for file upload
+    const formData = new FormData()
+    formData.append('file', file, file.name)
+    
+    logger.debug('slideshow-helpers', 'Uploading PowerPoint file.', {
+      name: file.name,
+      size: file.size,
     })
 
-    if (response.status !== 200) {
-      if (response.status === 404) {
-        throw new Error('PowerPoint conversion endpoint not found. Please check if the backend service is running.')
-      }
-      const errorText = response.data.message
-      logger.error('slideshow-helpers', 'Server error response.', {
-        status: response.status,
-        text: errorText,
-      })
-      throw new Error(`Server error: ${errorText || response.statusText}`)
+    const response = await axios.post('/api/assets/powerpoint/convert', formData)
+
+    logger.debug('slideshow-helpers', 'Response received.', {
+      status: response.status,
+      data: response.data,
+    })
+
+    const { data } = response
+    
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from server')
     }
 
-    const data = response.data
-    logger.debug('slideshow-helpers', 'Response data.', {
-      data,
-    })
-
     if (data.status !== 'success') {
-      logger.error('slideshow-helpers', 'PowerPoint processing error.', {
-        message: data.message || 'Unknown error',
-      })
       throw new Error(data.message || 'Failed to process PowerPoint')
     }
 
     if (!data.slides || !Array.isArray(data.slides) || data.slides.length === 0) {
-      logger.error('slideshow-helpers', 'No slides found in PowerPoint file.')
       throw new Error('No slides found in PowerPoint file')
     }
 
-    // Create slideshow with the number of slides from PowerPoint
+    // Create slideshow with the slides from PowerPoint
     const slideshowId = createShapeId()
     const baseProps = {
       id: slideshowId,
@@ -130,7 +113,7 @@ export const createPowerPointSlideshow = async (editor: Editor, file: File, x: n
       isLocked: false,
     }
 
-    // Create slideshow with the slides from PowerPoint
+    // Create slideshow in a batch operation
     editor.batch(() => {
       const config = CC_SHAPE_CONFIGS['cc-slideshow']
       
@@ -142,9 +125,9 @@ export const createPowerPointSlideshow = async (editor: Editor, file: File, x: n
           ...config.defaultProps,
           w: config.width,
           h: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT + 
-             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT +  // Slideshow's own header
-             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 +    // Top and bottom spacing
-             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING, // Extra padding for content
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT +
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 +
+             CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING,
           slidePattern: 'horizontal',
           title: file.name.replace('.pptx', ''),
           currentSlideIndex: 0,
@@ -171,7 +154,6 @@ export const createPowerPointSlideshow = async (editor: Editor, file: File, x: n
           },
         })
 
-        // Create binding between slideshow and slide
         editor.createBinding({
           id: createBindingId(),
           type: 'cc-slide-layout',
@@ -188,18 +170,31 @@ export const createPowerPointSlideshow = async (editor: Editor, file: File, x: n
 
     return true
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;  // Type assertion
-      if (axiosError.code === 'ECONNABORTED') {
-        logger.error('slideshow-helpers', 'Request timed out while processing PowerPoint file. Please try a smaller file or wait longer.');
-      } else if (axiosError.response?.status === 413) {
-        logger.error('slideshow-helpers', 'File is too large. Maximum size is 50MB.');
-      } else {
-        logger.error('slideshow-helpers', 'Error creating PowerPoint slideshow.', { error });
+    if (isAxiosError(error)) {
+      if (!error.response) {
+        logger.error('slideshow-helpers', 'Network error - Failed to reach the server', { error })
+        throw new Error('Network error - Failed to reach the server. Please check your connection.')
       }
-    } else {
-      logger.error('slideshow-helpers', 'Unexpected error creating PowerPoint slideshow.', { error });
+      
+      const {status} = error.response
+      const errorMessage = error.response.data?.message || error.message
+      
+      if (status === 404) {
+        logger.error('slideshow-helpers', 'PowerPoint conversion endpoint not found', { error })
+        throw new Error('PowerPoint conversion service is not available. Please check if the backend service is running.')
+      }
+      
+      if (status === 413) {
+        logger.error('slideshow-helpers', 'File too large', { error })
+        throw new Error('The PowerPoint file is too large to process.')
+      }
+      
+      logger.error('slideshow-helpers', `Server error (${status})`, { error: errorMessage })
+      throw new Error(`Server error (${status}): ${errorMessage}`)
     }
-    return false;
+    
+    // Handle non-Axios errors
+    logger.error('slideshow-helpers', 'Unexpected error creating PowerPoint slideshow', { error })
+    throw new Error('An unexpected error occurred while processing the PowerPoint file.')
   }
 } 

@@ -2,11 +2,11 @@ import axios from 'axios';
 import { logger } from './debugConfig';
 
 // Use development backend URL if no custom URL is provided
-const baseURL = import.meta.env.VITE_BACKEND_URL;
+const baseURL = `https://${import.meta.env.VITE_SITE_URL}`;
 
 const instance = axios.create({
   baseURL,
-  timeout: 120000,  // Increase timeout to 120 seconds for large presentations
+  timeout: 120000,  // Increase timeout to 120 seconds for large files
   headers: {
     'Content-Type': 'application/json'
   }
@@ -61,7 +61,7 @@ instance.interceptors.response.use(
 );
 
 // Add type guard for Axios errors
-export const isAxiosError = axios.isAxiosError;
+export const {isAxiosError} = axios;
 
 // Export the axios instance with the type guard
 export default Object.assign(instance, { isAxiosError });
