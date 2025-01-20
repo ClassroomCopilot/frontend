@@ -5,7 +5,7 @@ import { CCSlidesPanel } from './CCSlidesPanel';
 import { CCYoutubePanel } from './CCYoutubePanel';
 import { BUTTON_STYLES } from './panel-styles';
 import { CC_SHAPE_CONFIGS } from '../../../cc-base/cc-configs';
-import { createSlideshow, createPowerPointSlideshow } from '../../../cc-base/shape-helpers/slideshow-helpers';
+import { createSlideshow, createPowerPointSlideshow, createWordSlideshow, createPDFSlideshow } from '../../../cc-base/shape-helpers/slideshow-helpers';
 
 const PANEL_TYPES = [
   { id: 'cc-shapes', label: 'Shapes' },
@@ -90,22 +90,32 @@ export const CCShapesPanel: React.FC = () => {
     }
   };
 
-  const handlePowerPointUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!editor || !event.target.files || event.target.files.length === 0) {
       return;
     }
 
     const file = event.target.files[0];
-    if (!file.name.endsWith('.pptx')) {
-      alert('Please select a PowerPoint file (.pptx)');
-      return;
-    }
-
     const { x, y } = editor.getViewportScreenCenter();
-    const success = await createPowerPointSlideshow(editor, file, x, y);
+    let success = false;
 
-    if (!success) {
-      alert('Failed to process PowerPoint file. Please try again.');
+    try {
+      if (file.name.endsWith('.pptx')) {
+        success = await createPowerPointSlideshow(editor, file, x, y);
+      } else if (file.name.endsWith('.docx')) {
+        success = await createWordSlideshow(editor, file, x, y);
+      } else if (file.name.endsWith('.pdf')) {
+        success = await createPDFSlideshow(editor, file, x, y);
+      } else {
+        alert('Please select a PowerPoint (.pptx), Word (.docx), or PDF (.pdf) file');
+        return;
+      }
+
+      if (!success) {
+        alert('Failed to process file. Please try again.');
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'An unknown error occurred');
     }
 
     // Clear the file input
@@ -241,14 +251,14 @@ export const CCShapesPanel: React.FC = () => {
         <div style={{ borderTop: '1px solid var(--color-divider)', margin: '8px 0' }} />
         
         <div style={{ fontSize: '14px', color: 'var(--color-text)', marginBottom: '4px' }}>
-          Import PowerPoint
+          Import Office Documents
         </div>
 
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pptx"
-          onChange={handlePowerPointUpload}
+          accept=".pptx,.docx,.pdf"
+          onChange={handleFileUpload}
           style={{ display: 'none' }}
         />
         
@@ -262,7 +272,7 @@ export const CCShapesPanel: React.FC = () => {
             Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
           }}
         >
-          Upload PowerPoint
+          Upload Document
         </button>
       </div>
     </BasePanel>
