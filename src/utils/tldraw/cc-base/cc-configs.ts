@@ -18,8 +18,8 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   'cc-calendar': {
     width: 400,
     height: 600,
-    xOffset: 200,
-    yOffset: 300,
+    xOffset: 0,
+    yOffset: 0,
     defaultProps: {
       title: 'Calendar',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
@@ -32,8 +32,8 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   'cc-settings': {
     width: 400,
     height: 500,
-    xOffset: 200,
-    yOffset: 250,
+    xOffset: 0,
+    yOffset: 0,
     defaultProps: {
       title: 'User Settings',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
@@ -43,8 +43,8 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   'cc-live-transcription': {
     width: 300,
     height: 400,
-    xOffset: 200,
-    yOffset: 150,
+    xOffset: 0,
+    yOffset: 0,
     defaultProps: {
       title: 'Live Transcription',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
@@ -52,7 +52,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
       isRecording: false,
       segments: [],
       currentSegment: undefined,
-      lastProcessedSegment: '',
+      lastProcessedSegment: undefined,
     }
   },
   'cc-slideshow': {
@@ -60,9 +60,9 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     height: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT + 
       CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT +
       CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 +
-      CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING,
-    xOffset: 400,
-    yOffset: 300,
+      CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING * 2,
+    xOffset: 0,
+    yOffset: 0,
     defaultProps: {
       title: 'Slideshow',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
@@ -75,8 +75,8 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   'cc-slide': {
     width: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH,
     height: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT,
-    xOffset: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_WIDTH / 2,
-    yOffset: CC_SLIDESHOW_STYLE_CONSTANTS.DEFAULT_SLIDE_HEIGHT / 2,
+    xOffset: 0,
+    yOffset: 0,
     defaultProps: {
       title: 'Slide',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
@@ -87,8 +87,8 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
   'cc-youtube-embed': {
     width: 800,
     height: 450 + CC_BASE_STYLE_CONSTANTS.HEADER.height + (CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2),
-    xOffset: 400,
-    yOffset: (450 + CC_BASE_STYLE_CONSTANTS.HEADER.height + (CC_BASE_STYLE_CONSTANTS.CONTENT.padding * 2)) / 2,
+    xOffset: 0,
+    yOffset: 0,
     defaultProps: {
       title: 'YouTube Video',
       headerColor: '#ff0000',

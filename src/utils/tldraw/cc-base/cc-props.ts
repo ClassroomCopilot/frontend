@@ -123,9 +123,10 @@ export const getDefaultCCCalendarProps = () => ({
 
 export const getDefaultCCLiveTranscriptionProps = () => ({
   ...getDefaultCCBaseProps(),
+  isRecording: false,
   segments: [],
   currentSegment: undefined,
-  lastProcessedSegment: '',
+  lastProcessedSegment: undefined,
 })
 
 export const getDefaultCCSettingsProps = () => ({
