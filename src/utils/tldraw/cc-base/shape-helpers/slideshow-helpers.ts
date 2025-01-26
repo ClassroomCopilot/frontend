@@ -66,6 +66,28 @@ export const createSlideshow = (
   }
 }
 
+export const createSlideshowAtCenter = (
+  editor: Editor,
+  slidePattern = 'horizontal',
+  numSlides = 3
+) => {
+  if (!editor) return;
+
+  const { x, y } = editor.getViewportScreenCenter();
+  const config = CC_SHAPE_CONFIGS['cc-slideshow'];
+  const shapeId = createShapeId();
+
+  editor.run(() => {
+    createSlideshow(editor, {
+      id: shapeId,
+      x: x - config.xOffset,
+      y: y - config.yOffset,
+      rotation: 0,
+      isLocked: false,
+    }, slidePattern, numSlides);
+  });
+}
+
 export const createPowerPointSlideshow = async (
   editor: Editor,
   file: File,
@@ -489,4 +511,30 @@ export const createPDFSlideshow = async (
     logger.error('slideshow-helpers', 'Unexpected error creating PDF slideshow', { error })
     throw new Error('An unexpected error occurred while processing the PDF file.')
   }
-} 
+}
+
+export const handleSlideshowFileUpload = async (
+  editor: Editor,
+  file: File,
+  onComplete?: () => void
+) => {
+  if (!editor) return;
+
+  const { x, y } = editor.getViewportScreenCenter();
+
+  try {
+    if (file.name.endsWith('.pptx')) {
+      await createPowerPointSlideshow(editor, file, x, y);
+    } else if (file.name.endsWith('.docx')) {
+      await createWordSlideshow(editor, file, x, y);
+    } else if (file.name.endsWith('.pdf')) {
+      await createPDFSlideshow(editor, file, x, y);
+    } else {
+      throw new Error('Please select a PowerPoint (.pptx), Word (.docx), or PDF (.pdf) file');
+    }
+
+    onComplete?.();
+  } catch (error) {
+    throw error instanceof Error ? error : new Error('An unknown error occurred');
+  }
+}; 

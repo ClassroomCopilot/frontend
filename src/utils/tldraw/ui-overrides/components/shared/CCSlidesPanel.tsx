@@ -1,6 +1,5 @@
 import React from 'react'
 import { useEditor, TldrawUiButton } from '@tldraw/tldraw'
-import { BasePanel } from './BasePanel'
 import { 
   useSlideShows, 
   useCurrentSlide, 
@@ -13,17 +12,7 @@ import { useTLDraw } from '../../../../../contexts/TLDrawContext'
 import { logger } from '../../../../../debugConfig'
 import { CCSlideLayoutBinding } from '../../../cc-base/cc-slideshow/CCSlideLayoutBindingUtil'
 
-interface CCSlidesProps {
-  onPanelTypeChange: (type: string) => void
-  isExpanded: boolean
-  onExpandedChange: (expanded: boolean) => void
-}
-
-export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
-  onPanelTypeChange,
-  isExpanded,
-  onExpandedChange,
-}) => {
+export const CCSlidesPanel: React.FC = () => {
   const editor = useEditor()
   const slideshows = useSlideShows()
   const currentSlide = useCurrentSlide()
@@ -78,7 +67,9 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
         <div className="slides-list">
           {bindings.map((binding, index) => {
             const slide = editor.getShape(binding.toId) as CCSlideShape
-            if (!slide) return null
+            if (!slide) {
+              return null
+            }
 
             const isCurrentSlide = currentSlide?.id === slide.id
             return (
@@ -100,38 +91,27 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
   }
 
   return (
-    <BasePanel
-      panelTypes={[
-        { id: 'cc-shapes', label: 'Shapes' },
-        { id: 'slides', label: 'Slides' },
-      ]}
-      currentPanelType="slides"
-      onPanelTypeChange={onPanelTypeChange}
-      isExpanded={isExpanded}
-      onExpandedChange={onExpandedChange}
-    >
-      <div className="slides-panel">
-        <div className="slides-panel-tools">
-          <TldrawUiButton 
-            type="normal"
-            className="slides-panel-button presentation-button"
-            data-active={presentationMode}
-            data-testid="toggle-presentation"
-            onClick={handleTogglePresentation}
-          >
-            {presentationMode ? 'Exit Presentation' : 'Present'}
-          </TldrawUiButton>
-        </div>
-
-        {slideshows.length === 0 ? (
-          <div className="no-slides">
-            <p>No slideshows yet</p>
-            <p>Create a slideshow to get started</p>
-          </div>
-        ) : (
-          slideshows.map(renderSlideshow)
-        )}
+    <div className="slides-panel">
+      <div className="slides-panel-tools">
+        <TldrawUiButton 
+          type="normal"
+          className="slides-panel-button presentation-button"
+          data-active={presentationMode}
+          data-testid="toggle-presentation"
+          onClick={handleTogglePresentation}
+        >
+          {presentationMode ? 'Exit Presentation' : 'Present'}
+        </TldrawUiButton>
       </div>
+
+      {slideshows.length === 0 ? (
+        <div className="no-slides">
+          <p>No slideshows yet</p>
+          <p>Create a slideshow to get started</p>
+        </div>
+      ) : (
+        slideshows.map(renderSlideshow)
+      )}
 
       <style>{`
         .slides-panel {
@@ -248,6 +228,6 @@ export const CCSlidesPanel: React.FC<CCSlidesProps> = ({
           white-space: nowrap;
         }
       `}</style>
-    </BasePanel>
+    </div>
   )
 } 

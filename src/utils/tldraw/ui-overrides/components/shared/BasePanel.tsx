@@ -1,35 +1,51 @@
 import React from 'react';
 import { TldrawUiButton } from '@tldraw/tldraw';
 import { PANEL_DIMENSIONS, PANEL_STYLES, SELECT_STYLES } from './panel-styles';
+import { CCShapesPanel } from './CCShapesPanel';
+import { CCSlidesPanel } from './CCSlidesPanel';
+import { CCYoutubePanel } from './CCYoutubePanel';
+
+export const PANEL_TYPES = [
+  { id: 'cc-shapes', label: 'Shapes' },
+  { id: 'slides', label: 'Slides' },
+  { id: 'youtube', label: 'YouTube' },
+] as const;
+
+export type PanelType = typeof PANEL_TYPES[number]['id'];
 
 interface BasePanelProps {
-  panelTypes?: Array<{id: string, label: string}>;
-  onPanelTypeChange?: (panelType: string) => void;
-  currentPanelType?: string;
-  children: React.ReactNode;
-  isExpanded: boolean;
-  onExpandedChange: (expanded: boolean) => void;
+  initialPanelType?: PanelType;
 }
 
 export const BasePanel: React.FC<BasePanelProps> = ({
-  panelTypes,
-  onPanelTypeChange,
-  currentPanelType = 'cc-shapes',
-  children,
-  isExpanded,
-  onExpandedChange
+  initialPanelType = 'cc-shapes',
 }) => {
+  const [currentPanelType, setCurrentPanelType] = React.useState<PanelType>(initialPanelType);
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const dimensions = PANEL_DIMENSIONS[currentPanelType as keyof typeof PANEL_DIMENSIONS];
+
+  const renderCurrentPanel = () => {
+    switch (currentPanelType) {
+      case 'cc-shapes':
+        return <CCShapesPanel />;
+      case 'slides':
+        return <CCSlidesPanel />;
+      case 'youtube':
+        return <CCYoutubePanel />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <>
       {!isExpanded && (
         <div 
           className="panel-handle"
-          onClick={() => onExpandedChange(true)}
+          onClick={() => setIsExpanded(true)}
           onTouchEnd={(e) => {
             e.stopPropagation();
-            onExpandedChange(true);
+            setIsExpanded(true);
           }}
           style={{
             position: 'absolute',
@@ -76,33 +92,31 @@ export const BasePanel: React.FC<BasePanelProps> = ({
               alignItems: 'center',
             }}
           >
-            {panelTypes && (
-              <select 
-                value={currentPanelType}
-                onChange={(e) => onPanelTypeChange?.(e.target.value)}
-                style={SELECT_STYLES.PANEL_TYPE_SELECT}
-                onMouseOver={(e) => {
-                  Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT_HOVER);
-                }}
-                onMouseOut={(e) => {
-                  Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT);
-                }}
-              >
-                {panelTypes.map(type => (
-                  <option 
-                    key={type.id} 
-                    value={type.id}
-                    style={SELECT_STYLES.PANEL_TYPE_OPTION}
-                  >
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            )}
+            <select 
+              value={currentPanelType}
+              onChange={(e) => setCurrentPanelType(e.target.value as PanelType)}
+              style={SELECT_STYLES.PANEL_TYPE_SELECT}
+              onMouseOver={(e) => {
+                Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT_HOVER);
+              }}
+              onMouseOut={(e) => {
+                Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT);
+              }}
+            >
+              {PANEL_TYPES.map(type => (
+                <option 
+                  key={type.id} 
+                  value={type.id}
+                  style={SELECT_STYLES.PANEL_TYPE_OPTION}
+                >
+                  {type.label}
+                </option>
+              ))}
+            </select>
             
             <TldrawUiButton
               type="icon"
-              onClick={() => onExpandedChange(false)}
+              onClick={() => setIsExpanded(false)}
               style={{
                 padding: PANEL_STYLES.SPACING.PADDING.BUTTON,
                 fontSize: PANEL_STYLES.TYPOGRAPHY.BUTTON.SIZE,
@@ -120,7 +134,7 @@ export const BasePanel: React.FC<BasePanelProps> = ({
               padding: PANEL_STYLES.SPACING.PADDING.DEFAULT,
             }}
           >
-            {children}
+            {renderCurrentPanel()}
           </div>
         </div>
       )}
