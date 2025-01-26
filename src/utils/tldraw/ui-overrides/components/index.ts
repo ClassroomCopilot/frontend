@@ -2,8 +2,8 @@ import { TLComponents } from '@tldraw/tldraw';
 
 import { RegularToolbar } from './regular/toolbar';
 import { RegularHelperButtons } from './regular/helperButton';
-import { RegularHelpMenu } from './regular/helpMenu';
-import { RegularMainMenu } from './regular/mainMenu';
+// import { RegularHelpMenu } from './regular/helpMenu';
+// import { RegularMainMenu } from './regular/mainMenu';
 import { RegularNavigationPanel } from './regular/navigationPanel';
 import { RegularPageMenu } from './regular/pageMenu';
 import { RegularQuickActions } from './regular/quickActions';
@@ -16,8 +16,8 @@ import { RegularDebugMenu } from './regular/debugMenu';
 
 import { PresentationToolbar } from './presentation/toolbar';
 import { PresentationHelperButtons } from './presentation/helperButton';
-import { PresentationHelpMenu } from './presentation/helpMenu';
-import { PresentationMainMenu } from './presentation/mainMenu';
+// import { PresentationHelpMenu } from './presentation/helpMenu';
+// import { PresentationMainMenu } from './presentation/mainMenu';
 import { PresentationNavigationPanel } from './presentation/navigationPanel';
 import { PresentationPageMenu } from './presentation/pageMenu';
 import { PresentationQuickActions } from './presentation/quickActions';
@@ -33,8 +33,8 @@ export const regularComponentsIndex: TLComponents = {
     Toolbar: RegularToolbar,
     InFrontOfTheCanvas: CCPanel,
     HelperButtons: RegularHelperButtons,
-    HelpMenu: RegularHelpMenu,
-    MainMenu: RegularMainMenu,
+    // HelpMenu: RegularHelpMenu,
+    // MainMenu: RegularMainMenu,
     NavigationPanel: RegularNavigationPanel,
     PageMenu: RegularPageMenu,
     QuickActions: RegularQuickActions,
@@ -50,8 +50,8 @@ export const presentationComponentsIndex: TLComponents = {
     Toolbar: PresentationToolbar,
     InFrontOfTheCanvas: CCPanel,
     HelperButtons: PresentationHelperButtons,
-    HelpMenu: PresentationHelpMenu,
-    MainMenu: PresentationMainMenu,
+    // HelpMenu: PresentationHelpMenu,
+    // MainMenu: PresentationMainMenu,
     NavigationPanel: PresentationNavigationPanel,
     PageMenu: PresentationPageMenu,
     QuickActions: PresentationQuickActions,

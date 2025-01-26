@@ -24,6 +24,10 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
     return getDefaultCCCalendarProps() as CCCalendarShape['props'];
   }
 
+  override isAspectRatioLocked = () => true
+  override canResize = () => true
+  override canBind = () => false
+
   onCreate = (shape: CCCalendarShape) => {
     // Force a resize after creation to ensure calendar renders correctly
     setTimeout(() => {
@@ -53,10 +57,6 @@ export class CCCalendarShapeUtil extends CCBaseShapeUtil<CCCalendarShape> {
       isFilled: true,
     })
   }
-
-  override isAspectRatioLocked = () => true
-  override canResize = () => true
-  override canBind = () => false
 
   override onResize = (
     shape: CCCalendarShape,
