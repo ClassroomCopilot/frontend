@@ -1,14 +1,8 @@
 import React from 'react'
-import { BaseBoxShapeUtil, HTMLContainer, TLBaseShape, toDomPrecision } from '@tldraw/tldraw'
+import { BaseBoxShapeUtil, HTMLContainer, toDomPrecision } from '@tldraw/tldraw'
+import { CCBaseShape } from './cc-types'
 import { CC_BASE_STYLE_CONSTANTS } from './cc-styles'
-
-export interface CCBaseShape extends TLBaseShape<string, {
-  title: string
-  w: number
-  h: number
-  headerColor: string
-  isLocked: boolean
-}> {}
+import { logger } from '../../../debugConfig'
 
 export interface ToolbarItem {
   id: string
@@ -34,8 +28,14 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
     )
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getToolbarItems(shape: T): ToolbarItem[] {
     return []
+  }
+
+  onAfterCreate(shape: T) {
+    logger.info('cc-base-shape-util', 'onAfterCreate', shape)
+    return shape
   }
 
   component(shape: T) {
@@ -79,13 +79,13 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
                 key={item.id}
                 title={item.label}
                 onClick={(e) => {
-                  console.log('Button clicked:', item.id)
+                  logger.info('cc-base-shape-util', 'toolbar item clicked', item.id)
                   e.preventDefault()
                   e.stopPropagation()
                   item.onClick(e, shape)
                 }}
                 onPointerDown={(e) => {
-                  console.log('Button pointer down:', item.id)
+                  logger.info('cc-base-shape-util', 'toolbar item pointer down', item.id)
                   e.preventDefault()
                   e.stopPropagation()
                 }}
@@ -127,7 +127,7 @@ export abstract class CCBaseShapeUtil<T extends CCBaseShape> extends BaseBoxShap
             bottom: 0,
             overflow: 'auto',
             padding: CC_BASE_STYLE_CONSTANTS.CONTENT.padding,
-            backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
+            backgroundColor: shape.props.backgroundColor,
           }}
         >
           {this.renderContent(shape)}

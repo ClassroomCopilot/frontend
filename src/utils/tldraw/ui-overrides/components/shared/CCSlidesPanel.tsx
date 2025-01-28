@@ -11,6 +11,7 @@ import { CCSlideShowShape } from '../../../cc-base/cc-slideshow/CCSlideShowShape
 import { useTLDraw } from '../../../../../contexts/TLDrawContext'
 import { logger } from '../../../../../debugConfig'
 import { CCSlideLayoutBinding } from '../../../cc-base/cc-slideshow/CCSlideLayoutBindingUtil'
+import './panel.css'
 
 export const CCSlidesPanel: React.FC = () => {
   const editor = useEditor()
@@ -67,9 +68,7 @@ export const CCSlidesPanel: React.FC = () => {
         <div className="slides-list">
           {bindings.map((binding, index) => {
             const slide = editor.getShape(binding.toId) as CCSlideShape
-            if (!slide) {
-              return null
-            }
+            if (!slide) return null
 
             const isCurrentSlide = currentSlide?.id === slide.id
             return (
@@ -91,11 +90,11 @@ export const CCSlidesPanel: React.FC = () => {
   }
 
   return (
-    <div className="slides-panel">
+    <div className="panel-container">
       <div className="slides-panel-tools">
         <TldrawUiButton 
           type="normal"
-          className="slides-panel-button presentation-button"
+          className="shape-button"
           data-active={presentationMode}
           data-testid="toggle-presentation"
           onClick={handleTogglePresentation}
@@ -105,129 +104,13 @@ export const CCSlidesPanel: React.FC = () => {
       </div>
 
       {slideshows.length === 0 ? (
-        <div className="no-slides">
+        <div className="panel-empty-state">
           <p>No slideshows yet</p>
           <p>Create a slideshow to get started</p>
         </div>
       ) : (
         slideshows.map(renderSlideshow)
       )}
-
-      <style>{`
-        .slides-panel {
-          padding: 8px;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          max-height: 400px;
-          overflow-y: auto;
-        }
-
-        .slides-panel-tools {
-          display: flex;
-          justify-content: flex-start;
-          padding: 0 0 8px 0;
-          border-bottom: 1px solid var(--color-divider);
-        }
-
-        .presentation-button {
-          width: 100%;
-          justify-content: center;
-          font-weight: 500;
-        }
-
-        .presentation-button[data-active="true"] {
-          background-color: var(--color-selected);
-          color: var(--color-selected-contrast);
-        }
-
-        .no-slides {
-          text-align: center;
-          color: var(--color-text-2);
-          padding: 16px;
-        }
-
-        .slideshow-container {
-          border: 1px solid var(--color-divider);
-          border-radius: 4px;
-          overflow: hidden;
-        }
-
-        .slideshow-header {
-          background: var(--color-muted);
-          padding: 8px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .slideshow-title {
-          flex: 1;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-right: 8px;
-        }
-
-        .slideshow-header h3 {
-          margin: 0;
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .zoom-button {
-          padding: 4px;
-          min-width: 24px;
-          height: 24px;
-          border-radius: 4px;
-        }
-
-        .zoom-button:hover {
-          background-color: var(--color-hover);
-        }
-
-        .slide-count {
-          font-size: 12px;
-          color: var(--color-text-2);
-        }
-
-        .slides-list {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .slide-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px;
-          cursor: pointer;
-          border-bottom: 1px solid var(--color-divider);
-          transition: background-color 0.2s;
-        }
-
-        .slide-item:hover {
-          background-color: var(--color-hover);
-        }
-
-        .slide-item.selected {
-          background-color: var(--color-selected);
-        }
-
-        .slide-number {
-          font-size: 12px;
-          color: var(--color-text-2);
-          min-width: 24px;
-        }
-
-        .slide-title {
-          font-size: 13px;
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-      `}</style>
     </div>
   )
 } 

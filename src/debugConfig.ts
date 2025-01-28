@@ -43,6 +43,11 @@ export type LogCategory =
     | 'snapshot-toolbar'
     | 'microphone-state-tool'
     | 'graph-shape'
+    | 'graph-panel'
+    | 'graph-shape-shared'  // For shared graph shape functionality
+    | 'graph-shape-user'    // For user node specific functionality
+    | 'graph-shape-teacher' // For teacher node specific functionality
+    | 'graph-shape-student' // For student node specific functionality
     | 'calendar-shape'
     | 'calendar'
     | 'supabase'
@@ -67,7 +72,8 @@ export type LogCategory =
     | 'transcription-service' // For transcription service related logs
     | 'slideshow-helpers' // For slideshow helpers related logs
     | 'slide-shape' // For slide shape util related logs
-
+    | 'cc-base-shape-util' // For cc base shape util related logs
+    | 'cc-user-node-shape-util' // For cc user node shape util related logs
 interface LogConfig {
     enabled: boolean        // Master switch to turn logging on/off
     level: LogLevel        // Current log level
@@ -114,8 +120,6 @@ class DebugLogger {
             trace: '🔍'   // Magnifying glass for trace
         }
 
-        const timestamp = new Date().toISOString()
-        const prefixWithTimestamp = `[${timestamp}] ${levelEmojis[level]} [${category}]`
         const prefix = `${levelEmojis[level]} [${category}]`
 
         if (data) {
@@ -152,7 +156,7 @@ export const logger = new DebugLogger()
 logger.setConfig({
     enabled: true,
     level: 'debug',
-    categories: ['app', 'header', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool', 'store-service', 'morphic-page', 'not-found', 'share-handler', 'transcription-service', 'slideshow-helpers', 'slide-shape']
+    categories: ['app', 'header', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool', 'store-service', 'morphic-page', 'not-found', 'share-handler', 'transcription-service', 'slideshow-helpers', 'slide-shape', 'graph-panel', 'cc-user-node-shape-util', 'cc-base-shape-util']
 })
 
 export default logger

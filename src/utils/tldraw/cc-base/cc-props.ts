@@ -1,21 +1,22 @@
-import { T } from '@tldraw/tldraw'
+import { T } from 'tldraw'
 import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from './cc-styles'
 
-// Define the base props interface
 export interface CCBaseProps {
   title: string
   w: number
   h: number
   headerColor: string
+  backgroundColor: string
   isLocked: boolean
 }
 
 // Create a constant for the base props validation
-const baseShapeProps = {
+export const baseShapeProps = {
   title: T.string,
   w: T.number,
   h: T.number,
   headerColor: T.string,
+  backgroundColor: T.string,
   isLocked: T.boolean,
 }
 
@@ -78,7 +79,7 @@ export const ccShapeProps = {
 
   slide: {
     ...baseShapeProps,
-    imageData: T.string.optional(),
+    imageData: T.string,
     meta: T.object({
       text: T.string,
       format: T.string,
@@ -110,6 +111,7 @@ export const getDefaultCCBaseProps = () => ({
   w: 100,
   h: 100,
   headerColor: '#3e6589',
+  backgroundColor: '#ffffff',
   isLocked: false,
 })
 
@@ -137,20 +139,21 @@ export const getDefaultCCSettingsProps = () => ({
 })
 
 export function getDefaultCCSlideShowProps() {
-  // Standard 16:9 ratio dimensions for UI
+  // Base 16:9 ratio dimensions
   const baseWidth = 1280
   const baseHeight = 720
   // Add header height and spacing
   const totalHeight = baseHeight + 
-    CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT + // Slideshow's own header
-    CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 + // Top and bottom spacing
-    CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING // Extra padding for content
+  CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_HEADER_HEIGHT + // Slideshow's own header
+  CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_SPACING * 2 + // Top and bottom spacing
+  CC_SLIDESHOW_STYLE_CONSTANTS.SLIDE_CONTENT_PADDING // Extra padding for content
   
   return {
     title: 'Slideshow',
     w: baseWidth,
     h: totalHeight,
     headerColor: '#3e6589',
+    backgroundColor: '#0f0f0f',
     isLocked: false,
     currentSlideIndex: 0,
     slidePattern: 'horizontal',
@@ -159,7 +162,7 @@ export function getDefaultCCSlideShowProps() {
 }
 
 export function getDefaultCCSlideProps() {
-  // Standard 16:9 ratio dimensions for UI
+  // Base 16:9 ratio dimensions
   const baseWidth = 1280
   const baseHeight = 720
   // Add header height
@@ -170,6 +173,7 @@ export function getDefaultCCSlideProps() {
     w: baseWidth,
     h: totalHeight,
     headerColor: '#3e6589',
+    backgroundColor: '#0f0f0f',
     isLocked: false,
     imageData: '',
     meta: {
@@ -197,6 +201,7 @@ export function getDefaultCCYoutubeEmbedProps() {
     w: 800,
     h: totalHeight,
     headerColor: '#ff0000',
+    backgroundColor: '#0f0f0f',
     isLocked: false,
     video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     transcript: [],

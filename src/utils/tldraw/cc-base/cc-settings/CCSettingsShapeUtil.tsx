@@ -1,4 +1,5 @@
-import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShape } from '../cc-types'
 import { ccShapeProps, getDefaultCCSettingsProps } from '../cc-props'
 import { ccShapeMigrations } from '../cc-migrations'
 import { SettingsComponent } from './SettingsComponent'
@@ -10,6 +11,7 @@ export interface CCSettingsShape extends CCBaseShape {
     w: number
     h: number
     headerColor: string
+    backgroundColor: string
     isLocked: boolean
     userEmail: string
     userRole: string

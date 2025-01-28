@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, memo } from 'react'
-import { CCBaseShapeUtil, CCBaseShape } from '../CCBaseShapeUtil'
+import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShape } from '../cc-types'
 import { CC_YOUTUBE_EMBED_STYLE_CONSTANTS } from './cc-youtube-embed-styles'
 import { getYoutubeTranscript, extractVideoId } from './youtubeService'
 import { formatTime, Player, OnStateChangeEvent, PlayerState } from './cc-youtube-embed-helpers'
@@ -38,6 +39,7 @@ export interface CCYoutubeEmbedShape extends CCBaseShape {
     w: number
     h: number
     headerColor: string
+    backgroundColor: string
     isLocked: boolean
     video_url: string
     transcript: TranscriptLine[]
@@ -203,6 +205,7 @@ export class CCYoutubeEmbedShapeUtil extends CCBaseShapeUtil<CCYoutubeEmbedShape
     return getDefaultCCYoutubeEmbedProps()
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   override isAspectRatioLocked(shape: CCYoutubeEmbedShape) {
     return true
   }

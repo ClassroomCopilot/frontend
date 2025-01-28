@@ -5,16 +5,14 @@ import { createSlideshowAtCenter, handleSlideshowFileUpload } from '../../../cc-
 import { createCalendarShapeAtCenter } from '../../../cc-base/shape-helpers/calendar-helpers';
 import { createSettingsShapeAtCenter } from '../../../cc-base/shape-helpers/settings-helpers';
 import { createLiveTranscriptionShapeAtCenter } from '../../../cc-base/shape-helpers/transcription-helpers';
-import { BUTTON_STYLES } from './panel-styles';
+import './panel.css';
 
 export const CCShapesPanel: React.FC = () => {
   const editor = useEditor();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateShape = (shapeType: keyof typeof CC_SHAPE_CONFIGS, slidePattern?: string, numSlides?: number) => {
-    if (!editor) {
-      return;
-    }
+    if (!editor) return;
 
     switch (shapeType) {
       case 'cc-calendar':
@@ -35,9 +33,7 @@ export const CCShapesPanel: React.FC = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!editor || !event.target.files || event.target.files.length === 0) {
-      return;
-    }
+    if (!editor || !event.target.files || event.target.files.length === 0) return;
 
     try {
       await handleSlideshowFileUpload(editor, event.target.files[0], () => {
@@ -51,125 +47,52 @@ export const CCShapesPanel: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <button 
-        onClick={() => handleCreateShape('cc-calendar')}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Calendar Shape
-      </button>
-      <button 
-        onClick={() => handleCreateShape('cc-settings')}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Settings Shape
-      </button>
-      <button 
-        onClick={() => handleCreateShape('cc-live-transcription')}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Live Transcription
-      </button>
-
-      <div style={{ borderTop: '1px solid var(--color-divider)', margin: '8px 0' }} />
-      
-      <div style={{ fontSize: '14px', color: 'var(--color-text)', marginBottom: '4px' }}>
-        Slideshow Patterns
-      </div>
-      
-      <button 
-        onClick={() => handleCreateShape('cc-slideshow', 'horizontal', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Horizontal Slideshow
-      </button>
-      <button 
-        onClick={() => handleCreateShape('cc-slideshow', 'vertical', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Vertical Slideshow
-      </button>
-      <button 
-        onClick={() => handleCreateShape('cc-slideshow', 'grid', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Grid Slideshow
-      </button>
-      <button 
-        onClick={() => handleCreateShape('cc-slideshow', 'radial')}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Radial Slideshow
-      </button>
-
-      <div style={{ borderTop: '1px solid var(--color-divider)', margin: '8px 0' }} />
-      
-      <div style={{ fontSize: '14px', color: 'var(--color-text)', marginBottom: '4px' }}>
-        Import Office Documents
+    <div className="panel-container">
+      <div className="panel-section">
+        <button className="shape-button" onClick={() => handleCreateShape('cc-calendar')}>
+          Calendar Shape
+        </button>
+        <button className="shape-button" onClick={() => handleCreateShape('cc-settings')}>
+          Settings Shape
+        </button>
+        <button className="shape-button" onClick={() => handleCreateShape('cc-live-transcription')}>
+          Live Transcription
+        </button>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pptx,.docx,.pdf"
-        onChange={handleFileUpload}
-        style={{ display: 'none' }}
-      />
+      <div className="panel-divider" />
       
-      <button 
-        onClick={() => fileInputRef.current?.click()}
-        style={BUTTON_STYLES.SHAPE_BUTTON}
-        onMouseOver={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON_HOVER);
-        }}
-        onMouseOut={(e) => {
-          Object.assign(e.currentTarget.style, BUTTON_STYLES.SHAPE_BUTTON);
-        }}
-      >
-        Upload Document
-      </button>
+      <div className="panel-section">
+        <div className="panel-section-title">Slideshow Patterns</div>
+        <button className="shape-button" onClick={() => handleCreateShape('cc-slideshow', 'horizontal', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}>
+          Horizontal Slideshow
+        </button>
+        <button className="shape-button" onClick={() => handleCreateShape('cc-slideshow', 'vertical', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}>
+          Vertical Slideshow
+        </button>
+        <button className="shape-button" onClick={() => handleCreateShape('cc-slideshow', 'grid', Number(CC_SHAPE_CONFIGS['cc-slideshow'].defaultProps.numSlides ?? 3))}>
+          Grid Slideshow
+        </button>
+        <button className="shape-button" onClick={() => handleCreateShape('cc-slideshow', 'radial')}>
+          Radial Slideshow
+        </button>
+      </div>
+
+      <div className="panel-divider" />
+      
+      <div className="panel-section">
+        <div className="panel-section-title">Import Office Documents</div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pptx,.docx,.pdf"
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+        />
+        <button className="shape-button" onClick={() => fileInputRef.current?.click()}>
+          Upload Document
+        </button>
+      </div>
     </div>
   );
 };

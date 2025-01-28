@@ -2,6 +2,9 @@ import { createTLSchema, defaultShapeSchemas, defaultBindingSchemas } from '@tld
 import { createTLSchemaFromUtils, defaultBindingUtils, defaultShapeUtils } from '@tldraw/tldraw';
 import { ShapeUtils } from './shapes';
 import { allBindingUtils } from './bindings';
+import { ccGraphShapeProps } from './cc-base/cc-graph-props';
+import { ccGraphMigrations } from './cc-base/cc-graph-migrations';
+import { GraphShapeType } from './cc-base/cc-graph-types';
 
 // Create schema with shape definitions
 export const customSchema = createTLSchema({
@@ -14,7 +17,15 @@ export const customSchema = createTLSchema({
                 props: util.props,
                 migrations: util.migrations,
             }
-        }), {})
+        }), {}),
+        // Add graph shapes
+        ...(ccGraphShapeProps ? Object.entries(ccGraphShapeProps).reduce((acc, [type, props]) => ({
+            ...acc,
+            [type]: {
+                props,
+                migrations: ccGraphMigrations[type as GraphShapeType],
+            }
+        }), {}) : {})
     },
     bindings: {
         ...defaultBindingSchemas,

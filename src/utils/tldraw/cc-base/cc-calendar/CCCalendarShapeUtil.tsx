@@ -1,4 +1,5 @@
-import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShape } from '../cc-types'
 import { ccShapeProps, getDefaultCCCalendarProps } from '../cc-props'
 import { ccShapeMigrations } from '../cc-migrations'
 import { Rectangle2d } from 'tldraw'

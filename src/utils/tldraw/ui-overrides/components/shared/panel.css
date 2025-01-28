@@ -1,14 +1,198 @@
+/* Base Panel Layout */
+.panel-root {
+  position: absolute;
+  left: 0;
+  background-color: var(--color-panel);
+  box-shadow: var(--shadow-2);
+  border-radius: 4px;
+}
+
+.panel-handle {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--color-panel);
+  padding: 20px;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-2);
+  z-index: 999;
+  touch-action: none;
+}
+
+.panel-header {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-type-select {
+  appearance: none;
+  padding: 4px 8px;
+  padding-right: 24px;
+  background-color: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  width: 100%;
+}
+
+.panel-type-select:hover {
+  background-color: var(--color-hover);
+}
+
+.panel-type-option {
+  padding: 4px 8px;
+  background-color: var(--color-panel);
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.panel-content {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+}
+
+/* Common Panel Styles */
+.panel-container {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Input Styles */
+.panel-input {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-muted-1);
+  font-size: 14px;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.panel-input:focus {
+  outline: none;
+  border-color: var(--color-selected);
+}
+
+.panel-input::placeholder {
+  color: var(--color-text-2);
+}
+
+/* Button Styles */
 .shape-button {
-    padding: 8px;
-    background-color: var(--color-muted);
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--color-text);
-    transition: background-color 0.2s;
-  }
-  
-  .shape-button:hover {
-    background-color: var(--color-hover);
-  }
+  padding: 8px 12px;
+  width: 100%;
+  text-align: left;
+  background-color: var(--color-panel);
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.shape-button:hover {
+  background-color: var(--color-hover);
+}
+
+/* Section Styles */
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-section-title {
+  font-size: 14px;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.panel-divider {
+  border-top: 1px solid var(--color-divider);
+  margin: 8px 0;
+}
+
+/* Dropdown/Flyout Menu */
+.panel-dropdown {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background-color: var(--color-panel);
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  padding: 4px;
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+  width: 200px;
+}
+
+/* Slides Panel Specific */
+.slides-panel-tools {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 0 8px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.slideshow-container {
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.slideshow-header {
+  background: var(--color-muted);
+  padding: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slides-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.slide-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-divider);
+  transition: background-color 0.2s;
+}
+
+.slide-item:hover {
+  background-color: var(--color-hover);
+}
+
+.slide-item.selected {
+  background-color: var(--color-selected);
+}
+
+/* Empty State */
+.panel-empty-state {
+  text-align: center;
+  color: var(--color-text-2);
+  padding: 16px;
+}

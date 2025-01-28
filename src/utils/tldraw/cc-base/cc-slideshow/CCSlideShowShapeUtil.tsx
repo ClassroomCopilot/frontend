@@ -1,20 +1,18 @@
 import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle } from '@tldraw/tldraw'
-import { getDefaultCCSlideShowProps } from '../cc-props'
-import { ccShapeProps } from '../cc-props'
+import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { ccShapeProps, getDefaultCCSlideShowProps, CCBaseProps } from '../cc-props'
 import { ccShapeMigrations } from '../cc-migrations'
-import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { CCBaseShape } from '../cc-types'
+
+type CCSlideshowProps = CCBaseProps & {
+  currentSlideIndex: number
+  slidePattern: string
+  numSlides: number
+}
 
 export interface CCSlideShowShape extends CCBaseShape {
   type: 'cc-slideshow'
-  props: {
-    title: string
-    w: number
-    h: number
-    headerColor: string
-    isLocked: boolean
-    currentSlideIndex: number
-    slidePattern: string
-  }
+  props: CCSlideshowProps
 }
 
 export class CCSlideShowShapeUtil extends CCBaseShapeUtil<CCSlideShowShape> {

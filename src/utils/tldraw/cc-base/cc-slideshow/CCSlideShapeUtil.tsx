@@ -1,27 +1,24 @@
 import { DefaultColorStyle, DefaultDashStyle, DefaultSizeStyle, Vec, getIndexBetween, clamp } from '@tldraw/tldraw'
-import { getDefaultCCSlideProps } from '../cc-props'
-import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
-import { ccShapeProps } from '../cc-props'
-import { ccShapeMigrations } from '../cc-migrations'
-import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil'
+import { ccShapeProps, getDefaultCCSlideProps, CCBaseProps } from '../cc-props'
+import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCSlideShowShape } from './CCSlideShowShapeUtil'
 import { CCSlideLayoutBinding } from './CCSlideLayoutBindingUtil'
+import { CC_BASE_STYLE_CONSTANTS, CC_SLIDESHOW_STYLE_CONSTANTS } from '../cc-styles'
+import { ccShapeMigrations } from '../cc-migrations'
 import { logger } from '../../../../debugConfig'
+import { CCBaseShape } from '../cc-types'
+
+type CCSlideProps = CCBaseProps & {
+  imageData?: string
+  meta: {
+    text: string
+    format: string
+  }
+}
 
 export interface CCSlideShape extends CCBaseShape {
   type: 'cc-slide'
-  props: {
-    title: string
-    w: number
-    h: number
-    headerColor: string
-    isLocked: boolean
-    imageData?: string // Optional image data in base64 format
-    meta: {
-      text: string
-      format: string
-    }
-  }
+  props: CCSlideProps
 }
 
 export class CCSlideShapeUtil extends CCBaseShapeUtil<CCSlideShape> {

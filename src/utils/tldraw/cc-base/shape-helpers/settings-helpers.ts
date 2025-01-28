@@ -1,6 +1,9 @@
 import { Editor, TLShapeId, createShapeId } from '@tldraw/tldraw'
 import { CC_SHAPE_CONFIGS } from '../cc-configs'
 
+const type = 'cc-settings'
+const config = CC_SHAPE_CONFIGS[type]
+
 export const createSettingsShape = (
   editor: Editor,
   baseProps: {
@@ -11,11 +14,9 @@ export const createSettingsShape = (
     isLocked: boolean
   }
 ) => {
-  const config = CC_SHAPE_CONFIGS['cc-settings']
-  
   editor.createShape({
     ...baseProps,
-    type: 'cc-settings',
+    type,
     props: {
       ...config.defaultProps,
       w: config.width,
@@ -28,7 +29,6 @@ export const createSettingsShapeAtCenter = (editor: Editor) => {
   if (!editor) return;
 
   const { x, y } = editor.getViewportScreenCenter();
-  const config = CC_SHAPE_CONFIGS['cc-settings'];
   const shapeId = createShapeId();
 
   createSettingsShape(editor, {

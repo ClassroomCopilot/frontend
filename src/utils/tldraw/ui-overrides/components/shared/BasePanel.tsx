@@ -1,14 +1,17 @@
 import React from 'react';
 import { TldrawUiButton } from '@tldraw/tldraw';
-import { PANEL_DIMENSIONS, PANEL_STYLES, SELECT_STYLES } from './panel-styles';
+import { PANEL_DIMENSIONS, Z_INDICES } from './panel-styles';
 import { CCShapesPanel } from './CCShapesPanel';
 import { CCSlidesPanel } from './CCSlidesPanel';
 import { CCYoutubePanel } from './CCYoutubePanel';
+import { CCGraphPanel } from './CCGraphPanel';
+import './panel.css';
 
 export const PANEL_TYPES = [
   { id: 'cc-shapes', label: 'Shapes' },
   { id: 'slides', label: 'Slides' },
   { id: 'youtube', label: 'YouTube' },
+  { id: 'graph', label: 'Graph' },
 ] as const;
 
 export type PanelType = typeof PANEL_TYPES[number]['id'];
@@ -32,6 +35,8 @@ export const BasePanel: React.FC<BasePanelProps> = ({
         return <CCSlidesPanel />;
       case 'youtube':
         return <CCYoutubePanel />;
+      case 'graph':
+        return <CCGraphPanel />;
       default:
         return null;
     }
@@ -47,19 +52,6 @@ export const BasePanel: React.FC<BasePanelProps> = ({
             e.stopPropagation();
             setIsExpanded(true);
           }}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            backgroundColor: 'var(--color-panel)',
-            padding: PANEL_STYLES.SPACING.PADDING.HANDLE,
-            borderRadius: PANEL_STYLES.HANDLE.BORDER_RADIUS,
-            cursor: 'pointer',
-            boxShadow: 'var(--shadow-2)',
-            zIndex: PANEL_STYLES.Z_INDEX.HANDLE,
-            touchAction: 'none',
-          }}
         >
           ›
         </div>
@@ -67,47 +59,25 @@ export const BasePanel: React.FC<BasePanelProps> = ({
 
       {isExpanded && (
         <div 
-          className="base-panel"
+          className="panel-root"
           style={{
-            position: 'absolute',
-            left: 0,
             top: dimensions.topOffset,
             height: `calc(100% - ${dimensions.bottomOffset})`,
             width: dimensions.width,
-            backgroundColor: 'var(--color-panel)',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: 'var(--shadow-2)',
-            zIndex: PANEL_STYLES.Z_INDEX.PANEL,
-            borderRadius: PANEL_STYLES.HANDLE.BORDER_RADIUS,
+            zIndex: Z_INDICES.PANEL,
           }}
         >
-          <div 
-            className="panel-header"
-            style={{
-              padding: PANEL_STYLES.SPACING.PADDING.DEFAULT,
-              borderBottom: '1px solid var(--color-divider)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          <div className="panel-header">
             <select 
               value={currentPanelType}
               onChange={(e) => setCurrentPanelType(e.target.value as PanelType)}
-              style={SELECT_STYLES.PANEL_TYPE_SELECT}
-              onMouseOver={(e) => {
-                Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT_HOVER);
-              }}
-              onMouseOut={(e) => {
-                Object.assign(e.currentTarget.style, SELECT_STYLES.PANEL_TYPE_SELECT);
-              }}
+              className="panel-type-select"
             >
               {PANEL_TYPES.map(type => (
                 <option 
                   key={type.id} 
                   value={type.id}
-                  style={SELECT_STYLES.PANEL_TYPE_OPTION}
+                  className="panel-type-option"
                 >
                   {type.label}
                 </option>
@@ -117,23 +87,12 @@ export const BasePanel: React.FC<BasePanelProps> = ({
             <TldrawUiButton
               type="icon"
               onClick={() => setIsExpanded(false)}
-              style={{
-                padding: PANEL_STYLES.SPACING.PADDING.BUTTON,
-                fontSize: PANEL_STYLES.TYPOGRAPHY.BUTTON.SIZE,
-              }}
             >
               Hide
             </TldrawUiButton>
           </div>
 
-          <div 
-            className="panel-content"
-            style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: PANEL_STYLES.SPACING.PADDING.DEFAULT,
-            }}
-          >
+          <div className="panel-content">
             {renderCurrentPanel()}
           </div>
         </div>

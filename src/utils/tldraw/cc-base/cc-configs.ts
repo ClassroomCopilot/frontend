@@ -9,6 +9,7 @@ export interface CCShapeConfig {
   defaultProps: {
     title: string
     headerColor: string
+    backgroundColor: string
     isLocked: boolean
     [key: string]: string | number | boolean | Date | TLShapeId[] | undefined | null
   }
@@ -23,6 +24,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     defaultProps: {
       title: 'Calendar',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
       isLocked: false,
       date: new Date().toISOString(),
       events: [],
@@ -37,6 +39,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     defaultProps: {
       title: 'User Settings',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
       isLocked: false,
     }
   },
@@ -48,6 +51,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     defaultProps: {
       title: 'Live Transcription',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
       isLocked: false,
       isRecording: false,
       segments: [],
@@ -66,6 +70,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     defaultProps: {
       title: 'Slideshow',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
       isLocked: false,
       currentSlideIndex: 0,
       slidePattern: 'horizontal',
@@ -80,6 +85,7 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     defaultProps: {
       title: 'Slide',
       headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
       isLocked: false,
       imageData: '',
     }
@@ -91,7 +97,8 @@ export const CC_SHAPE_CONFIGS: Record<string, CCShapeConfig> = {
     yOffset: 0,
     defaultProps: {
       title: 'YouTube Video',
-      headerColor: '#ff0000',
+      headerColor: CC_BASE_STYLE_CONSTANTS.COLORS.primary,
+      backgroundColor: CC_BASE_STYLE_CONSTANTS.CONTENT.backgroundColor,
       isLocked: false,
       video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       transcript: [],

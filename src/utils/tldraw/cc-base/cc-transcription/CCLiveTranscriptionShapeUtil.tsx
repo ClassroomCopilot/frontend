@@ -1,6 +1,7 @@
 import React from 'react';
-import { CCBaseShape, CCBaseShapeUtil } from '../CCBaseShapeUtil';
+import { CCBaseShapeUtil } from '../CCBaseShapeUtil';
 import { TLShapeId } from '@tldraw/tldraw';
+import { CCBaseShape } from '../cc-types';
 import { TranscriptionManager } from '../cc-transcription/TranscriptionManager';
 import { ccShapeProps, getDefaultCCLiveTranscriptionProps } from '../cc-props';
 import { ccShapeMigrations } from '../cc-migrations';
@@ -21,6 +22,7 @@ export interface CCLiveTranscriptionShape extends CCBaseShape {
     w: number
     h: number
     headerColor: string
+    backgroundColor: string
     isLocked: boolean
     isRecording: boolean
     segments: TranscriptionSegment[]
