@@ -1,5 +1,5 @@
 import axios from '../../axiosConfig';
-import { TeacherNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
+import { CCTeacherNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
 import { logger } from '../../debugConfig';
 import { AxiosError } from 'axios';
 
@@ -29,7 +29,7 @@ export interface TeacherTimetableEvent {
 export class TimetableNeoDBService {
     static async uploadWorkerTimetable(
         file: File, 
-        workerNode: TeacherNodeInterface
+        workerNode: CCTeacherNodeProps
     ): Promise<UploadTimetableResponse> {
         logger.debug('timetable-service', '📤 Uploading timetable', {
             fileName: file.name,
@@ -171,7 +171,7 @@ export class TimetableNeoDBService {
 
     static async handleTimetableUpload(
         file: File | undefined,
-        workerNode: TeacherNodeInterface | undefined
+        workerNode: CCTeacherNodeProps | undefined
     ): Promise<UploadResult> {
         if (!file) {
             return {
@@ -196,7 +196,7 @@ export class TimetableNeoDBService {
 
         // Validate worker node has required fields
         const requiredFields = ['unique_id', 'teacher_code', 'teacher_name_formal', 'teacher_email', 'worker_db_name', 'path'];
-        const missingFields = requiredFields.filter(field => !workerNode[field as keyof TeacherNodeInterface]);
+        const missingFields = requiredFields.filter(field => !(field in workerNode));
         
         if (missingFields.length > 0) {
             logger.error('timetable-service', '❌ Missing required teacher fields:', { missingFields });

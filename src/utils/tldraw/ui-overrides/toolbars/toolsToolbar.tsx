@@ -2,7 +2,6 @@ import { useEditor, createShapeId, createShapeId as createParentId, IndexKey } f
 import { useNeo4j } from '../../../../contexts/Neo4jContext'
 import graphState from '../../graph/graphStateUtil';
 import { ReactNode, useEffect } from 'react';
-import { NODE_SHAPE_TYPES } from '../../graph/graph-shape-types';
 
 export function ToolsToolbar({ children }: { children: (props: { 
   handlePutUserNode: () => void,
@@ -25,7 +24,7 @@ export function ToolsToolbar({ children }: { children: (props: {
             const centerX = editor.getViewportScreenCenter().x
             const centerY = editor.getViewportScreenCenter().y
             const newNode = {
-                type: NODE_SHAPE_TYPES.USER,
+                type: 'user',
                 id: newShapeId,
                 x: centerX,
                 y: centerY,

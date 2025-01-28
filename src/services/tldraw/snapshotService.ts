@@ -4,7 +4,7 @@ import axios from '../../axiosConfig';
 import logger from '../../debugConfig';
 import { SharedStoreService } from './sharedStoreService';
 import { StorageKeys, storageService } from '../auth/localStorageService';
-import { UserNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
+import { CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
 
 export interface LoadingState {
     status: 'loading' | 'ready' | 'error';
@@ -16,7 +16,7 @@ function replaceBackslashes(input: string | undefined): string {
 }
 
 export const loadUserNodeTldrawFile = async (
-    userNode: UserNodeInterface,
+    userNode: CCUserNodeProps,
     store: TLStore,
     sharedStore?: SharedStoreService,
     setLoadingState?: (state: LoadingState) => void

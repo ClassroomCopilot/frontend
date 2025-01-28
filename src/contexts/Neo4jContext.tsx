@@ -4,10 +4,10 @@ import { formatEmailForDatabase } from '../services/graph/userNeoDBService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { logger } from '../debugConfig';
 import { UserNeoDBService, ProcessedUserNodes } from '../services/graph/userNeoDBService';
-import { UserNodeInterface } from '../utils/tldraw/graph/graph-shape-types';
+import { CCUserNodeProps } from '../utils/tldraw/cc-base/cc-graph-types'
 
 export interface Neo4jContextType {
-    userNode: UserNodeInterface | null;
+    userNode: CCUserNodeProps | null;
     userNodes: ProcessedUserNodes | null;
     userDbName: string | null;
     workerDbName: string | null;
@@ -27,7 +27,7 @@ const Neo4jContext = createContext<Neo4jContextType>({
 export const Neo4jProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [userNodes, setUserNodes] = useState<ProcessedUserNodes | null>(null);
-    const [userNode, setUserNode] = useState<UserNodeInterface | null>(null);
+    const [userNode, setUserNode] = useState<CCUserNodeProps | null>(null);
     const [userDbName, setUserDbName] = useState<string | null>(null);
     const [workerDbName, setWorkerDbName] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);

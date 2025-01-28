@@ -19,7 +19,7 @@ export type CCGraphShapeProps = CCBaseProps & {
     path: string
     created: string
     merged: string
-    state: ShapeState | null
+    state: ShapeState | null | undefined
     defaultComponent: boolean | null
 }
 
@@ -263,4 +263,4 @@ export type CCRegistrationPeriodNodeProps = CCGraphShapeProps & {
     start_time: string
     end_time: string
     period_code: string
-} 
+}

@@ -1,7 +1,7 @@
 import { supabase } from '../../supabaseClient';
 import axiosInstance from '../../axiosConfig';
 import { CCUser } from '../../services/auth/authService';
-import { SchoolNodeInterface, UserNodeInterface, CalendarNodeInterface, TeacherNodeInterface, StudentNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
+import { CCSchoolNodeProps, CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
 import { logger } from '../../debugConfig';
 import { storageService, StorageKeys } from '../auth/localStorageService';
 
@@ -20,7 +20,7 @@ export function formatEmailForDatabase(email: string): string {
   return `${sanitized}`;
 }
 
-async function fetchSchoolNode(schoolUuid: string): Promise<SchoolNodeInterface> {
+async function fetchSchoolNode(schoolUuid: string): Promise<CCSchoolNodeProps> {
   logger.debug('neo4j-service', '🔄 Fetching school node', { schoolUuid });
   
   try {
@@ -39,7 +39,7 @@ async function fetchSchoolNode(schoolUuid: string): Promise<SchoolNodeInterface>
 }
 
 // Neo4j data in Supabase
-export async function updateUserNeo4jDetails(userId: string, userNode: UserNodeInterface) {
+export async function updateUserNeo4jDetails(userId: string, userNode: CCUserNodeProps) {
   const { error } = await supabase
     .from('user_profiles')
     .update({ 
@@ -55,11 +55,11 @@ export async function updateUserNeo4jDetails(userId: string, userNode: UserNodeI
 }
 
 export interface ProcessedUserNodes {
-    privateUserNode: UserNodeInterface;
+    privateUserNode: CCUserNodeProps;
     connectedNodes: {
-        calendar?: CalendarNodeInterface;
-        teacher?: TeacherNodeInterface;
-        student?: StudentNodeInterface;
+        calendar?: CCCalendarNodeProps;
+        teacher?: CCTeacherNodeProps;
+        student?: CCStudentNodeProps;
     };
 }
 
@@ -139,17 +139,23 @@ export class UserNeoDBService {
         return processedNodes;
     }
 
-    private static processCalendarNode(nodeData: NodeData): CalendarNodeInterface {
+    private static processCalendarNode(nodeData: NodeData): CCCalendarNodeProps {
         // Create a base object with required fields from BaseNodeInterface
         const baseNode = {
             w: 0,
             h: 0,
+            title: '',
+            headerColor: '',
+            backgroundColor: '',
+            isLocked: false,
             color: '',
             __primarylabel__: 'Calendar',
             unique_id: String(nodeData.unique_id || ''),
             path: String(nodeData.path || ''),
             created: String(nodeData.created || ''),
             merged: String(nodeData.merged || ''),
+            state: null,
+            defaultComponent: false,
         };
 
         // Create the calendar node by spreading nodeData first, then adding missing required fields
@@ -159,20 +165,28 @@ export class UserNeoDBService {
             start_date: String(nodeData.start_date || ''),
             end_date: String(nodeData.end_date || ''),
             name: String(nodeData.name || ''),
+            calendar_type: String(nodeData.calendar_type || ''),
+            calendar_name: String(nodeData.calendar_name || ''),
         };
     }
 
-    private static processTeacherNode(nodeData: NodeData): TeacherNodeInterface {
+    private static processTeacherNode(nodeData: NodeData): CCTeacherNodeProps {
         // Create a base object with required fields from BaseNodeInterface
         const baseNode = {
             w: 0,
             h: 0,
+            title: '',
+            headerColor: '',
+            backgroundColor: '',
+            isLocked: false,
             color: '',
             __primarylabel__: 'Teacher',
             unique_id: String(nodeData.unique_id || ''),
             path: String(nodeData.path || ''),
             created: String(nodeData.created || ''),
             merged: String(nodeData.merged || ''),
+            state: null,
+            defaultComponent: false,
         };
 
         // Create the teacher node by spreading nodeData first, then adding missing required fields
@@ -186,17 +200,23 @@ export class UserNeoDBService {
         };
     }
 
-    private static processStudentNode(nodeData: NodeData): StudentNodeInterface {
+    private static processStudentNode(nodeData: NodeData): CCStudentNodeProps {
         // Create a base object with required fields from BaseNodeInterface
         const baseNode = {
             w: 0,
             h: 0,
+            title: '',
+            headerColor: '',
+            backgroundColor: '',
+            isLocked: false,
             color: '',
             __primarylabel__: 'Student',
             unique_id: String(nodeData.unique_id || ''),
             path: String(nodeData.path || ''),
             created: String(nodeData.created || ''),
             merged: String(nodeData.merged || ''),
+            state: null,
+            defaultComponent: false,
         };
 
         // Create the student node by spreading nodeData first, then adding missing required fields
@@ -206,7 +226,6 @@ export class UserNeoDBService {
             student_code: String(nodeData.student_code || ''),
             student_name_formal: String(nodeData.student_name_formal || ''),
             student_email: String(nodeData.student_email || ''),
-            worker_db_name: String(nodeData.worker_db_name || ''),
         };
     }
 
@@ -214,7 +233,7 @@ export class UserNeoDBService {
         user: CCUser, 
         username: string, 
         role: string, 
-    ): Promise<UserNodeInterface> {
+    ): Promise<CCUserNodeProps> {
         try {
             // For teachers and students, fetch school node first
             let schoolNode = null;

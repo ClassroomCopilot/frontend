@@ -1,6 +1,6 @@
 import React from 'react';
 import { TLUserPreferences, TLEditorSnapshot, TLUser } from '@tldraw/tldraw';
-import { CalendarNodeInterface } from '../../utils/tldraw/graph/graph-shape-types';
+import { CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
 import { ProcessedUserNodes } from '../graph/userNeoDBService';
 import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
 import { CCUser } from '../../services/auth/authService';
@@ -37,7 +37,7 @@ interface StorageValueTypes {
   [StorageKeys.NEO4J_USER_DB]: string;
   [StorageKeys.NEO4J_WORKER_DB]: string;
   [StorageKeys.USER_NODES]: ProcessedUserNodes;
-  [StorageKeys.CALENDAR_DATA]: CalendarNodeInterface[];
+  [StorageKeys.CALENDAR_DATA]: CCCalendarNodeProps[];
   [StorageKeys.TLDRAW_PREFERENCES]: TLUserPreferences;
   [StorageKeys.TLDRAW_FILE_PATH]: string;
   [StorageKeys.LOCAL_SNAPSHOT]: Partial<TLEditorSnapshot>;
