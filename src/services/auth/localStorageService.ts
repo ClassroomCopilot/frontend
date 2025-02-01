@@ -1,6 +1,6 @@
 import React from 'react';
 import { TLUserPreferences, TLEditorSnapshot, TLUser } from '@tldraw/tldraw';
-import { CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
+import { CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { ProcessedUserNodes } from '../graph/userNeoDBService';
 import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
 import { CCUser } from '../../services/auth/authService';

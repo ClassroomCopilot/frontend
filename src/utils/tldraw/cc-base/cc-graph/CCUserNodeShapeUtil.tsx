@@ -5,10 +5,10 @@ import {
   NodeErrorDisplay,
   checkShapeState,
   checkDefaultComponent
-} from './shared'
-import { ccGraphShapeProps, getDefaultCCUserNodeProps } from '../cc-graph-props'
-import { CCUserNodeProps } from '../cc-graph-types'
-import { getNodeStyles, NODE_THEMES, NODE_TYPE_THEMES } from './node-styles'
+} from './cc-graph-shared'
+import { ccGraphShapeProps, getDefaultCCUserNodeProps } from './cc-graph-props'
+import { CCUserNodeProps } from './cc-graph-types'
+import { getNodeStyles, NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
 
 export interface CCUserNodeShape extends CCBaseShape {
   type: 'cc-user-node'

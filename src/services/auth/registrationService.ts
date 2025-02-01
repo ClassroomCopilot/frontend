@@ -1,11 +1,11 @@
 import { supabase } from '../../supabaseClient';
 import { CCUser, convertToCCUser } from '../../services/auth/authService';
 import { EmailCredentials } from '../../services/auth/authService';
+import { formatEmailForDatabase } from '../graph/neoDBService';
 import { RegistrationResponse } from '../../services/auth/authService';
 import { UserNeoDBService } from '../graph/userNeoDBService';
 import { storageService, StorageKeys } from './localStorageService';
 import { logger } from '../../debugConfig';
-import { formatEmailForDatabase } from '../graph/userNeoDBService';
 
 const REGISTRATION_SERVICE = 'registration-service';
 

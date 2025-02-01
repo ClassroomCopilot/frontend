@@ -1,10 +1,10 @@
 import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCBaseShape } from '../cc-types'
-import { NodeProperty } from './shared'
-import { ccGraphShapeProps, getDefaultCCSchoolTimetableNodeProps } from '../cc-graph-props'
-import { getNodeStyles } from './node-styles'
-import { NODE_THEMES, NODE_TYPE_THEMES } from './node-styles'
-import { CCSchoolTimetableNodeProps } from '../cc-graph-types'
+import { NodeProperty } from './cc-graph-shared'
+import { ccGraphShapeProps, getDefaultCCSchoolTimetableNodeProps } from './cc-graph-props'
+import { getNodeStyles } from './cc-graph-styles'
+import { NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
+import { CCSchoolTimetableNodeProps } from './cc-graph-types'
 
 export interface CCSchoolTimetableNodeShape extends CCBaseShape {
   type: 'cc-school-timetable-node'

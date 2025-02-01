@@ -1,5 +1,5 @@
 import { T, TLBinding, TLShapeId } from '@tldraw/tldraw'
-import { baseShapeProps } from './cc-props'
+import { baseShapeProps } from '../cc-props'
 import { ShapeState } from './cc-graph-types'
 
 // State props validation

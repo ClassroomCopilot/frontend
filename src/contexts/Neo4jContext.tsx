@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { formatEmailForDatabase } from '../services/graph/userNeoDBService';
+import { formatEmailForDatabase } from '../services/graph/neoDBService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
-import { logger } from '../debugConfig';
 import { UserNeoDBService, ProcessedUserNodes } from '../services/graph/userNeoDBService';
-import { CCUserNodeProps } from '../utils/tldraw/cc-base/cc-graph-types'
+import { CCUserNodeProps } from '../utils/tldraw/cc-base/cc-graph/cc-graph-types'
+import { logger } from '../debugConfig';
 
 export interface Neo4jContextType {
     userNode: CCUserNodeProps | null;

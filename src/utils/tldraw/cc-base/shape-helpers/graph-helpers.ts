@@ -1,7 +1,7 @@
 import { Editor, createShapeId, TLShapeId, IndexKey } from '@tldraw/tldraw'
-import { ccGraphShapeProps, getDefaultCCUserNodeProps } from '../cc-graph-props'
-import { NODE_THEMES, NODE_TYPE_THEMES } from '../cc-graph/node-styles'
-import { GraphShapeType, CCUserNodeProps } from '../cc-graph-types'
+import { ccGraphShapeProps, getDefaultCCUserNodeProps } from '../cc-graph/cc-graph-props'
+import { NODE_THEMES, NODE_TYPE_THEMES } from '../cc-graph/cc-graph-styles'
+import { GraphShapeType, CCUserNodeProps } from '../cc-graph/cc-graph-types'
 import { logger } from '../../../../debugConfig'
 
 // Create a graph shape on the canvas

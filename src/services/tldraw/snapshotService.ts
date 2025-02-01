@@ -4,7 +4,7 @@ import axios from '../../axiosConfig';
 import logger from '../../debugConfig';
 import { SharedStoreService } from './sharedStoreService';
 import { StorageKeys, storageService } from '../auth/localStorageService';
-import { CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
+import { CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 
 export interface LoadingState {
     status: 'loading' | 'ready' | 'error';

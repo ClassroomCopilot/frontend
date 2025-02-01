@@ -1,7 +1,6 @@
 import { TLUserPreferences } from '@tldraw/tldraw';
 import { supabase } from '../../supabaseClient';
-import { CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
-import { StandardizedOneNoteDetails } from './microsoft/oneNoteService';
+import { CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { logger } from '../../debugConfig';
 import { UserRole } from '../../services/auth/authService';
 
@@ -11,8 +10,6 @@ export interface UserProfile {
   display_name: string;   // User's display name
   user_role: UserRole;            // Role (email_teacher, email_student, etc.)
   worker_db_name: string;       // Neo4j database name for worker
-  instance_count: number;       // Number of active instances
-  one_note_details: StandardizedOneNoteDetails | null; // OneNote integration details
   neo4j_user_node: CCUserNodeProps; // Neo4j user node data
   tldraw_preferences: TLUserPreferences;
   created_at: string;           // Timestamp

@@ -5,10 +5,10 @@ import {
   NodeErrorDisplay,
   checkShapeState,
   checkDefaultComponent 
-} from './shared'
-import { ccGraphShapeProps, getDefaultCCTeacherNodeProps } from '../cc-graph-props'
-import { getNodeStyles, NODE_THEMES, NODE_TYPE_THEMES } from './node-styles'
-import { CCTeacherNodeProps } from '../cc-graph-types'
+} from './cc-graph-shared'
+import { ccGraphShapeProps, getDefaultCCTeacherNodeProps } from './cc-graph-props'
+import { getNodeStyles, NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
+import { CCTeacherNodeProps } from './cc-graph-types'
 
 export interface CCTeacherNodeShape extends CCBaseShape {
   type: 'cc-teacher-node'

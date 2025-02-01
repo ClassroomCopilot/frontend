@@ -1,13 +1,13 @@
 import { Editor, createShapeId } from '@tldraw/tldraw';
-import { nodeTypeConfig } from './baseNodeShapeUtil';
-import { AllNodeShapes, NodeShapeType } from './graph-shape-types';
-import { logger } from '../../../debugConfig';
+import { getShapeType, isValidNodeType } from './cc-graph-types';
+import { AllNodeShapes, NodeShapeType } from './cc-graph-shapes';
+import { logger } from '../../../../debugConfig';
 
 export const GRID_CELL_SIZE = 250;
 export const GRID_PADDING = 50;
 export const GRID_MAX_COLUMNS = 8;
 
-const graphState = {
+export const graphState = {
     nodeData: new Map<string, AllNodeShapes>(),
     shapeIds: new Set<string>(),
     editor: null as Editor | null,
@@ -134,8 +134,8 @@ const graphState = {
         // Track the shape ID
         graphState.shapeIds.add(shapeId);
         
-        const nodeType = shape.props.__primarylabel__ as keyof typeof nodeTypeConfig;
-        if (!nodeTypeConfig[nodeType]) {
+        const nodeType = shape.props.__primarylabel__;
+        if (!isValidNodeType(nodeType)) {
             logger.error('graphStateUtil', '❌ Unknown node type', { 
                 type: nodeType, 
                 shape 
@@ -143,7 +143,7 @@ const graphState = {
             return;
         }
 
-        const shapeType = nodeTypeConfig[nodeType].shapeType as NodeShapeType;
+        const shapeType = getShapeType(nodeType) as NodeShapeType;
         graphState.nodeData.set(id, {
             ...shape,
             type: shapeType
@@ -216,5 +216,3 @@ const graphState = {
         return graphState.shapeIds.has(shapeId);
     },
 };
-
-export default graphState;

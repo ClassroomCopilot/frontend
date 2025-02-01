@@ -1,10 +1,19 @@
 import React from 'react';
 import { TldrawUiButton } from '@tldraw/tldraw';
-import { PANEL_DIMENSIONS, Z_INDICES } from './panel-styles';
 import { CCShapesPanel } from './CCShapesPanel';
 import { CCSlidesPanel } from './CCSlidesPanel';
 import { CCYoutubePanel } from './CCYoutubePanel';
 import { CCGraphPanel } from './CCGraphPanel';
+import { CCGraphSchoolCalendarPanel } from './CCGraphSchoolCalendarPanel';
+import { CCGraphSchoolTimetablePanel } from './CCGraphSchoolTimetablePanel';
+import { CCGraphSchoolCurriculumPanel } from './CCGraphSchoolCurriculumPanel';
+import { CCGraphTeacherCalendarPanel } from './CCGraphTeacherCalendarPanel';
+import { CCGraphTeacherTimetablePanel } from './CCGraphTeacherTimetablePanel';
+import { CCGraphTeacherCurriculumPanel } from './CCGraphTeacherCurriculumPanel';
+import { CCGraphStudentCalendarPanel } from './CCGraphStudentCalendarPanel';
+import { CCGraphStudentTimetablePanel } from './CCGraphStudentTimetablePanel';
+import { CCGraphStudentCurriculumPanel } from './CCGraphStudentCurriculumPanel';
+import { PANEL_DIMENSIONS, Z_INDICES } from './panel-styles';
 import './panel.css';
 
 export const PANEL_TYPES = [
@@ -12,6 +21,15 @@ export const PANEL_TYPES = [
   { id: 'slides', label: 'Slides' },
   { id: 'youtube', label: 'YouTube' },
   { id: 'graph', label: 'Graph' },
+  { id: 'cc-graph-school-calendar', label: 'Calendar' },
+  { id: 'cc-graph-school-timetable', label: 'Timetable' },
+  { id: 'cc-graph-school-curriculum', label: 'Curriculum' },
+  { id: 'cc-graph-teacher-calendar', label: 'Teacher Calendar' },
+  { id: 'cc-graph-teacher-timetable', label: 'Teacher Timetable' },
+  { id: 'cc-graph-teacher-curriculum', label: 'Teacher Curriculum' },
+  { id: 'cc-graph-student-calendar', label: 'Student Calendar' },
+  { id: 'cc-graph-student-timetable', label: 'Student Timetable' },
+  { id: 'cc-graph-student-curriculum', label: 'Student Curriculum' },
 ] as const;
 
 export type PanelType = typeof PANEL_TYPES[number]['id'];
@@ -37,6 +55,24 @@ export const BasePanel: React.FC<BasePanelProps> = ({
         return <CCYoutubePanel />;
       case 'graph':
         return <CCGraphPanel />;
+      case 'cc-graph-school-calendar':
+        return <CCGraphSchoolCalendarPanel />;
+      case 'cc-graph-school-timetable':
+        return <CCGraphSchoolTimetablePanel />;
+      case 'cc-graph-school-curriculum':
+        return <CCGraphSchoolCurriculumPanel />;
+      case 'cc-graph-teacher-calendar':
+        return <CCGraphTeacherCalendarPanel />;
+      case 'cc-graph-teacher-timetable':
+        return <CCGraphTeacherTimetablePanel />;
+      case 'cc-graph-teacher-curriculum':
+        return <CCGraphTeacherCurriculumPanel />;
+      case 'cc-graph-student-calendar':
+        return <CCGraphStudentCalendarPanel />;
+      case 'cc-graph-student-timetable':
+        return <CCGraphStudentTimetablePanel />;
+      case 'cc-graph-student-curriculum':
+        return <CCGraphStudentCurriculumPanel />;
       default:
         return null;
     }

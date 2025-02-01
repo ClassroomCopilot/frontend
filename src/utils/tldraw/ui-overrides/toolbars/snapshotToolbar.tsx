@@ -33,21 +33,23 @@ export function SnapshotToolbar({
         try {
             const nodePath = currentPath;
             if (!nodePath) {
+                logger.error('snapshot-toolbar', '❌ No path specified for saving');
                 throw new Error('No path specified for saving');
             }
 
             const isUserDb = nodePath.includes('cc.ccusers');
-            logger.warn('snapshot-toolbar', '💾 Saving snapshot using user db (worker db not supported in prod)', {
+            logger.info('snapshot-toolbar', '💾 Saving snapshot using user db (worker db not supported in prod)', {
                 isUserDb,
                 userDbName,
                 workerDbName
             });
             const dbName = isUserDb ? userDbName : workerDbName;
-            logger.warn('snapshot-toolbar', '💾 Saving snapshot using db', {
+            logger.info('snapshot-toolbar', '💾 Saving snapshot using db', {
                 dbName
             });
 
             if (!dbName) {
+                logger.error('snapshot-toolbar', '❌ Database name not available');
                 throw new Error('Database name not available');
             }
 

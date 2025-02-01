@@ -1,6 +1,6 @@
 import React, { CSSProperties } from 'react';
-import { ShapeState } from '../cc-graph-types'
-import { SHARED_NODE_STYLES } from './node-styles'
+import { ShapeState } from './cc-graph-types'
+import { SHARED_NODE_STYLES } from './cc-graph-styles'
 import { logger } from '../../../../debugConfig'
 
 // Error display component for nodes

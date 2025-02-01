@@ -1,42 +1,14 @@
 import { supabase } from '../../supabaseClient';
 import axiosInstance from '../../axiosConfig';
 import { CCUser } from '../../services/auth/authService';
-import { CCSchoolNodeProps, CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
-import { logger } from '../../debugConfig';
+import { formatEmailForDatabase } from './neoDBService';
+import { fetchSchoolNode } from './schoolNeoDBService';
 import { storageService, StorageKeys } from '../auth/localStorageService';
+import { CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { logger } from '../../debugConfig';
 
 // Dev configuration - only hardcoded value we need
 const DEV_SCHOOL_UUID = 'kevlarai';
-
-export function formatEmailForDatabase(email: string): string {
-  // Convert to lowercase and replace special characters
-  const sanitized = email.toLowerCase()
-    .replace('@', 'at')
-    .replace(/\./g, 'dot')
-    .replace(/_/g, 'underscore')
-    .replace(/-/g, 'dash');
-    
-  // Add prefix and ensure no consecutive dashes
-  return `${sanitized}`;
-}
-
-async function fetchSchoolNode(schoolUuid: string): Promise<CCSchoolNodeProps> {
-  logger.debug('neo4j-service', '🔄 Fetching school node', { schoolUuid });
-  
-  try {
-    const response = await axiosInstance.get(`/api/database/tools/get-school-node?school_uuid=${schoolUuid}`);
-    
-    if (response.data?.status === 'success' && response.data.school_node) {
-      logger.info('neo4j-service', '✅ School node fetched successfully');
-      return response.data.school_node;
-    }
-    
-    throw new Error('Failed to fetch school node: ' + JSON.stringify(response.data));
-  } catch (error) {
-    logger.error('neo4j-service', '❌ Failed to fetch school node:', error);
-    throw error;
-  }
-}
 
 // Neo4j data in Supabase
 export async function updateUserNeo4jDetails(userId: string, userNode: CCUserNodeProps) {

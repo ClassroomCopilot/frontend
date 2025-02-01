@@ -1,10 +1,10 @@
 import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCBaseShape } from '../cc-types'
-import { NodeProperty } from './shared'
-import { ccGraphShapeProps, getDefaultCCAcademicTermNodeProps } from '../cc-graph-props'
-import { CCAcademicTermNodeProps } from '../cc-graph-types'
-import { getNodeStyles } from './node-styles'
-import { NODE_THEMES, NODE_TYPE_THEMES } from './node-styles'
+import { NodeProperty } from './cc-graph-shared'
+import { ccGraphShapeProps, getDefaultCCAcademicTermNodeProps } from './cc-graph-props'
+import { CCAcademicTermNodeProps } from './cc-graph-types'
+import { getNodeStyles } from './cc-graph-styles'
+import { NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
 
 export interface CCAcademicTermNodeShape extends CCBaseShape {
   type: 'cc-academic-term-node'

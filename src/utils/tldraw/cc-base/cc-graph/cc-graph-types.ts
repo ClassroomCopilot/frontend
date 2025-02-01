@@ -1,6 +1,6 @@
 import { TLBinding, TLBaseShape, TLShapeId } from '@tldraw/tldraw'
-import { CCBaseShape } from './cc-types'
-import { CCBaseProps } from './cc-props'
+import { CCBaseShape } from '../cc-types'
+import { CCBaseProps } from '../cc-props'
 import { ccGraphShapeProps } from './cc-graph-props'
 
 // Export type for graph shape types
@@ -263,4 +263,99 @@ export type CCRegistrationPeriodNodeProps = CCGraphShapeProps & {
     start_time: string
     end_time: string
     period_code: string
+}
+
+// Define a type-safe mapping of node types to their configurations
+export type CCNodeTypes = {
+  User: { props: CCUserNodeProps }
+  Developer: { props: CCUserNodeProps }
+  Teacher: { props: CCTeacherNodeProps }
+  Student: { props: CCStudentNodeProps }
+  Calendar: { props: CCCalendarNodeProps }
+  TeacherTimetable: { props: CCTeacherTimetableNodeProps }
+  TimetableLesson: { props: CCTimetableLessonNodeProps }
+  PlannedLesson: { props: CCPlannedLessonNodeProps }
+  School: { props: CCSchoolNodeProps }
+  CalendarYear: { props: CCCalendarYearNodeProps }
+  CalendarMonth: { props: CCCalendarMonthNodeProps }
+  CalendarWeek: { props: CCCalendarWeekNodeProps }
+  CalendarDay: { props: CCCalendarDayNodeProps }
+  CalendarTimeChunk: { props: CCCalendarTimeChunkNodeProps }
+  ScienceLab: { props: CCScienceLabNodeProps }
+  KeyStageSyllabus: { props: CCKeyStageSyllabusNodeProps }
+  YearGroupSyllabus: { props: CCYearGroupSyllabusNodeProps }
+  CurriculumStructure: { props: CCCurriculumStructureNodeProps }
+  Topic: { props: CCTopicNodeProps }
+  TopicLesson: { props: CCTopicLessonNodeProps }
+  LearningStatement: { props: CCLearningStatementNodeProps }
+  SchoolTimetable: { props: CCSchoolTimetableNodeProps }
+  AcademicYear: { props: CCAcademicYearNodeProps }
+  AcademicTerm: { props: CCAcademicTermNodeProps }
+  AcademicWeek: { props: CCAcademicWeekNodeProps }
+  AcademicDay: { props: CCAcademicDayNodeProps }
+  AcademicPeriod: { props: CCAcademicPeriodNodeProps }
+  RegistrationPeriod: { props: CCRegistrationPeriodNodeProps }
+  PastoralStructure: { props: CCPastoralStructureNodeProps }
+  KeyStage: { props: CCKeyStageNodeProps }
+  Department: { props: CCDepartmentNodeProps }
+  Room: { props: CCRoomNodeProps }
+  SubjectClass: { props: CCSubjectClassNodeProps }
+}
+
+// Helper function to get shape type from node type
+export const getShapeType = (nodeType: keyof CCNodeTypes): string => {
+  return `cc-${nodeType.replace(/([A-Z])/g, '-$1').toLowerCase().substring(1)}-node`;
+}
+
+// Helper function to get allowed props from node type
+export const getAllowedProps = (): string[] => {
+  return ['__primarylabel__', 'unique_id'];
+}
+
+// Helper function to get node configuration
+export const getNodeConfig = <T extends keyof CCNodeTypes>(nodeType: T) => {
+  const shapeType = getShapeType(nodeType);
+  return {
+    shapeType,
+    allowedProps: getAllowedProps()
+  };
+}
+
+// Helper function to check if a string is a valid node type
+export const isValidNodeType = (type: string): type is keyof CCNodeTypes => {
+  return type in {
+    User: true,
+    Developer: true,
+    Teacher: true,
+    Student: true,
+    Calendar: true,
+    TeacherTimetable: true,
+    TimetableLesson: true,
+    PlannedLesson: true,
+    School: true,
+    CalendarYear: true,
+    CalendarMonth: true,
+    CalendarWeek: true,
+    CalendarDay: true,
+    CalendarTimeChunk: true,
+    ScienceLab: true,
+    KeyStageSyllabus: true,
+    YearGroupSyllabus: true,
+    CurriculumStructure: true,
+    Topic: true,
+    TopicLesson: true,
+    LearningStatement: true,
+    SchoolTimetable: true,
+    AcademicYear: true,
+    AcademicTerm: true,
+    AcademicWeek: true,
+    AcademicDay: true,
+    AcademicPeriod: true,
+    RegistrationPeriod: true,
+    PastoralStructure: true,
+    KeyStage: true,
+    Department: true,
+    Room: true,
+    SubjectClass: true,
+  };
 }

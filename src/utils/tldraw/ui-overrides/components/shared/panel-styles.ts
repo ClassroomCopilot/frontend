@@ -20,6 +20,51 @@ export const PANEL_DIMENSIONS = {
     topOffset: '20%',
     bottomOffset: '40%',
   },
+  'cc-graph-school-calendar': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-school-timetable': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-school-curriculum': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-teacher-calendar': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-teacher-timetable': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-teacher-curriculum': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-student-calendar': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-student-timetable': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
+  'cc-graph-student-curriculum': {
+    width: '300px',
+    topOffset: '20%',
+    bottomOffset: '40%',
+  },
 } as const;
 
 // Z-index constants for panel layering

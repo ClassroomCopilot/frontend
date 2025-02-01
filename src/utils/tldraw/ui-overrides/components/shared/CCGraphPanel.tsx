@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useEditor } from '@tldraw/tldraw';
 import { createGraphShape, createUserNodeFromProfile } from '../../../cc-base/shape-helpers/graph-helpers';
-import { ccGraphShapeProps, getDefaultCCUserNodeProps } from '../../../cc-base/cc-graph-props';
+import { ccGraphShapeProps, getDefaultCCUserNodeProps } from '../../../cc-base/cc-graph/cc-graph-props';
 import { useNeo4j } from '../../../../../contexts/Neo4jContext';
 import { logger } from '../../../../../debugConfig';
 import './panel.css';
-import { GraphShapeType } from '../../../cc-base/cc-graph-types';
+import { GraphShapeType } from '../../../cc-base/cc-graph/cc-graph-types';
 
 export const CCGraphPanel = () => {
   const editor = useEditor();

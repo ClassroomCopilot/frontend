@@ -9,26 +9,22 @@ import { logger } from '../debugConfig';
 interface UserContextType {
   profile: UserProfile | null;
   preferences: UserPreferences;
-  instanceCount: number;
   isMobile: boolean;
   isLoading: boolean;
   error: string | null;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
-  incrementInstanceCount: () => Promise<number>;
   clearError: () => void;
 }
 
 const UserContext = createContext<UserContextType>({
   profile: null,
   preferences: {},
-  instanceCount: 0,
   isMobile: false,
   isLoading: false,
   error: null,
   updateProfile: async () => {},
   updatePreferences: async () => {},
-  incrementInstanceCount: async () => 0,
   clearError: () => {},
 });
 
@@ -37,7 +33,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { userNode } = useNeo4j();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>({});
-  const [instanceCount, setInstanceCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMobile] = useState(window.innerWidth <= 768);
@@ -77,16 +72,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           display_name: data.display_name,
           user_role: data.user_role,
           worker_db_name: data.worker_db_name,
-          instance_count: data.instance_count,
           neo4j_user_node: data.neo4j_user_node,
           created_at: data.created_at,
           updated_at: data.updated_at,
-          one_note_details: data.one_note_details,
           tldraw_preferences: data.tldraw_preferences
         };
 
         setProfile(userProfile);
-        setInstanceCount(data.instance_count);
         
         // Load preferences
         setPreferences({
@@ -179,41 +171,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const incrementInstanceCount = async () => {
-    if (!user?.id) {
-      return 0;
-    }
-
-    try {
-      const { data, error } = await supabase.rpc('increment_instance_count', {
-        user_id: user.id
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const newCount = data.instance_count;
-      setInstanceCount(newCount);
-      return newCount;
-    } catch (error) {
-      logger.error('user-context', '❌ Failed to increment instance count', { error });
-      throw error;
-    }
-  };
-
   return (
     <UserContext.Provider
       value={{
         profile,
         preferences,
-        instanceCount,
         isMobile,
         isLoading,
         error,
         updateProfile,
         updatePreferences,
-        incrementInstanceCount,
         clearError: () => setError(null),
       }}
     >

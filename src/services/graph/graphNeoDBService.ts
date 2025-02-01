@@ -1,10 +1,9 @@
+import { Editor, createShapeId, IndexKey } from '@tldraw/tldraw';
 import axios from '../../axiosConfig';
+import { getShapeType, isValidNodeType } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { AllNodeShapes, NodeShapeType, ShapeUtils } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-shapes';
+import { graphState } from '../../utils/tldraw/cc-base/cc-graph/graphStateUtil';
 import { logger } from '../../debugConfig';
-import { createShapeId } from '@tldraw/tldraw';
-import { nodeTypeConfig } from '../../utils/tldraw/graph/baseNodeShapeUtil';
-import  graphState from '../../utils/tldraw/graph/graphStateUtil';
-import { AllNodeShapes } from '../../utils/tldraw/graph/graph-shape-types';
-import { Editor } from '@tldraw/tldraw';
 
 interface NodeResponse {
     __primarylabel__: string;
@@ -127,26 +126,46 @@ export class GraphNeoDBService {
     ) {
         const uniqueId = nodeData.unique_id;
         const nodeType = nodeData.__primarylabel__;
-        const config = nodeTypeConfig[nodeType as keyof typeof nodeTypeConfig];
 
-        if (!config) {
+        if (!isValidNodeType(nodeType)) {
             logger.warn('graph-service', '⚠️ Unknown node type', { data: nodeData });
             return;
         }
 
-        // Create shape with initial position
+        const shapeType = getShapeType(nodeType) as NodeShapeType;
+        
+        // Get the shape util for this node type
+        const shapeUtil = ShapeUtils[shapeType];
+        if (!shapeUtil) {
+            logger.warn('graph-service', '⚠️ No shape util found for type', { type: shapeType });
+            return;
+        }
+
+        // Get default props from the shape util's prototype
+        const defaultProps = shapeUtil.prototype.getDefaultProps();
+
+        // Create the shape with proper typing based on the node type
         const shape = {
-            type: config.shapeType,
             id: createShapeId(uniqueId),
+            type: shapeType,
             x: 0,
             y: 0,
+            rotation: 0,
+            index: 'a1' as IndexKey,
+            parentId: createShapeId('page:page'),
+            isLocked: false,
+            opacity: 1,
+            meta: {},
             props: {
+                ...defaultProps,
                 ...nodeData,
-                color: config.color,
+                __primarylabel__: nodeData.__primarylabel__,
+                unique_id: nodeData.unique_id,
+                path: nodeData.path as string || '',
             }
         };
 
-        // Add to graphState (this will handle both new and existing nodes)
+        // Add to graphState
         graphState.addNode(shape as AllNodeShapes);
 
         logger.debug('graph-service', '📝 Node processed', { 

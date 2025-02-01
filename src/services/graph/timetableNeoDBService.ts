@@ -1,5 +1,5 @@
 import axios from '../../axiosConfig';
-import { CCTeacherNodeProps } from '../../utils/tldraw/cc-base/cc-graph-types';
+import { CCTeacherNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { logger } from '../../debugConfig';
 import { AxiosError } from 'axios';
 

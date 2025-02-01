@@ -1,9 +1,9 @@
 import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
-import { ccGraphShapeProps, getDefaultCCAcademicDayNodeProps } from '../cc-graph-props'
-import { CCAcademicDayNodeProps } from '../cc-graph-types'
-import { NodeProperty } from './shared'
-import { getNodeStyles } from './node-styles'
-import { NODE_THEMES, NODE_TYPE_THEMES } from './node-styles'
+import { ccGraphShapeProps, getDefaultCCAcademicDayNodeProps } from './cc-graph-props'
+import { CCAcademicDayNodeProps } from './cc-graph-types'
+import { NodeProperty } from './cc-graph-shared'
+import { getNodeStyles } from './cc-graph-styles'
+import { NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
 import { CCBaseShape } from '../cc-types'
 
 export interface CCAcademicDayNodeShape extends CCBaseShape {

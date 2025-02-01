@@ -1,7 +1,9 @@
-import { useEditor, createShapeId, createShapeId as createParentId, IndexKey } from '@tldraw/tldraw'
+import { ReactNode } from 'react';
+import { useEditor } from '@tldraw/tldraw'
 import { useNeo4j } from '../../../../contexts/Neo4jContext'
-import graphState from '../../graph/graphStateUtil';
-import { ReactNode, useEffect } from 'react';
+import { graphState } from '../../../../utils/tldraw/cc-base/cc-graph/graphStateUtil';
+import { AllNodeShapes } from '../../../../utils/tldraw/cc-base/cc-graph/cc-graph-shapes';
+import { createUserNodeFromProfile } from '../../../../utils/tldraw/cc-base/shape-helpers/graph-helpers';
 
 export function ToolsToolbar({ children }: { children: (props: { 
   handlePutUserNode: () => void,
@@ -9,8 +11,6 @@ export function ToolsToolbar({ children }: { children: (props: {
 }) => ReactNode }) {
     const editor = useEditor();
     const { userNodes } = useNeo4j()
-    useEffect(() => {
-    }, [userNodes]);
 
     const handlePutUserNode = () => {
         if (!userNodes?.privateUserNode) {
@@ -20,51 +20,39 @@ export function ToolsToolbar({ children }: { children: (props: {
         const existingNode = graphState.getNode(userNodes.privateUserNode.unique_id);
         if (!existingNode) {
             console.log("Adding user node to graphState:", userNodes.privateUserNode);
-            const newShapeId = createShapeId(userNodes.privateUserNode.unique_id);
             const centerX = editor.getViewportScreenCenter().x
             const centerY = editor.getViewportScreenCenter().y
-            const newNode = {
-                type: 'user',
-                id: newShapeId,
-                x: centerX,
-                y: centerY,
-                props: {
-                    w: 200,
-                    h: 200,
-                    color: 'light-green' as const,
-                    __primarylabel__: 'User',
-                    unique_id: userNodes.privateUserNode.unique_id,
-                    path: userNodes.privateUserNode.path,
-                    created: userNodes.privateUserNode.created,
-                    merged: userNodes.privateUserNode.merged,
-                    user_id: userNodes.privateUserNode.user_id,
-                    user_type: userNodes.privateUserNode.user_type,
-                    user_name: userNodes.privateUserNode.user_name,
-                    user_email: userNodes.privateUserNode.user_email,
-                    worker_node_data: userNodes.privateUserNode.worker_node_data
+
+            // Create the user node using the helper function
+            const newShapeId = createUserNodeFromProfile(
+                editor,
+                userNodes.privateUserNode,
+                centerX,
+                centerY
+            );
+
+            if (newShapeId) {
+                // Get the shape's bounds
+                const {bounds} = editor.getShapeGeometry(newShapeId);
+                console.log("Getting bounds for user shape:", newShapeId);
+                console.log("Updating shape with width:", bounds.w, "and height:", bounds.h);
+
+                // Get the created shape
+                const shape = editor.getShape(newShapeId);
+                if (shape) {
+                    // Add to graphState with the correct dimensions
+                    graphState.addNode({
+                        ...shape,
+                        props: {
+                            ...shape.props,
+                            w: bounds.w,
+                            h: bounds.h
+                        }
+                    } as AllNodeShapes);
+                    graphState.setEditor(editor);
+                    graphState.updateShapesWithDagre();
                 }
-            };
-            console.log("Creating user shape:", newNode);
-            editor.createShape(newNode);
-            console.log("User shape created:", newNode);
-            console.log("Getting bounds for user shape:", newShapeId);
-            const {bounds} = editor.getShapeGeometry(newShapeId);
-            console.log("Updating shape with width:", bounds.w, "and height:", bounds.h);
-            const shapeWithWidthAndHeight = {
-                ...newNode,
-                w: bounds.w,
-                h: bounds.h,
-                rotation: 0,
-                index: 'a1' as IndexKey,
-                parentId: createParentId('page:page'),
-                isLocked: false,
-                opacity: 1,
-                meta: {},
-                typeName: 'shape' as const
             }
-            graphState.addNode(shapeWithWidthAndHeight);
-            graphState.setEditor(editor);
-            graphState.updateShapesWithDagre();
         } else {
             console.log(`Node with id ${userNodes.privateUserNode.unique_id} already exists on the canvas.`);
         }
