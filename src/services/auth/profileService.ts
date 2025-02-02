@@ -9,6 +9,7 @@ export interface UserProfile {
   email: string;                 // User's email
   display_name: string;   // User's display name
   user_role: UserRole;            // Role (email_teacher, email_student, etc.)
+  user_db_name: string;       // Neo4j database name for user
   worker_db_name: string;       // Neo4j database name for worker
   neo4j_user_node: CCUserNodeProps; // Neo4j user node data
   tldraw_preferences: TLUserPreferences;

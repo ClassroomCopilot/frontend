@@ -17,8 +17,10 @@ export const TimetableUploadSection = () => {
 
             const result = await TimetableNeoDBService.handleTimetableUpload(
                 event.target.files?.[0],
+                userNodes?.privateUserNode,
                 userNodes?.connectedNodes?.teacher
             );
+
 
             if (result.success) {
                 setSuccess(result.message);

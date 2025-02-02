@@ -1,5 +1,5 @@
 import axios from '../../axiosConfig';
-import { CCTeacherNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { CCTeacherNodeProps, CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { logger } from '../../debugConfig';
 import { AxiosError } from 'axios';
 
@@ -29,23 +29,36 @@ export interface TeacherTimetableEvent {
 export class TimetableNeoDBService {
     static async uploadWorkerTimetable(
         file: File, 
+        userNode: CCUserNodeProps,
         workerNode: CCTeacherNodeProps
     ): Promise<UploadTimetableResponse> {
         logger.debug('timetable-service', '📤 Uploading timetable', {
             fileName: file.name,
             workerDbName: workerNode.worker_db_name,
+            userDbName: workerNode.user_db_name,
             teacherCode: workerNode.teacher_code
         });
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('user_node', JSON.stringify({
+            unique_id: userNode.unique_id,
+            user_id: userNode.user_id,
+            user_type: userNode.user_type,
+            user_name: userNode.user_name,
+            user_email: userNode.user_email,
+            path: userNode.path,
+            worker_node_data: userNode.worker_node_data
+
+        }));
         formData.append('worker_node', JSON.stringify({
             unique_id: workerNode.unique_id,
             teacher_code: workerNode.teacher_code,
             teacher_name_formal: workerNode.teacher_name_formal,
             teacher_email: workerNode.teacher_email,
             path: workerNode.path,
-            worker_db_name: workerNode.worker_db_name
+            worker_db_name: workerNode.worker_db_name,
+            user_db_name: workerNode.user_db_name
         }));
 
         try {
@@ -171,6 +184,7 @@ export class TimetableNeoDBService {
 
     static async handleTimetableUpload(
         file: File | undefined,
+        userNode: CCUserNodeProps | undefined,
         workerNode: CCTeacherNodeProps | undefined
     ): Promise<UploadResult> {
         if (!file) {
@@ -187,6 +201,13 @@ export class TimetableNeoDBService {
             };
         }
 
+        if (!userNode) {
+            return {
+                success: false,
+                message: 'User information not found. Please ensure you are logged in as a user.'
+            };
+        }
+
         if (!workerNode) {
             return {
                 success: false,
@@ -195,19 +216,30 @@ export class TimetableNeoDBService {
         }
 
         // Validate worker node has required fields
-        const requiredFields = ['unique_id', 'teacher_code', 'teacher_name_formal', 'teacher_email', 'worker_db_name', 'path'];
-        const missingFields = requiredFields.filter(field => !(field in workerNode));
-        
-        if (missingFields.length > 0) {
-            logger.error('timetable-service', '❌ Missing required teacher fields:', { missingFields });
+        const requiredWorkerFields = ['unique_id', 'teacher_code', 'teacher_name_formal', 'teacher_email', 'worker_db_name', 'path'];
+        const requiredUserFields = ['unique_id', 'user_id', 'user_type', 'user_name', 'user_email', 'path', 'worker_node_data'];
+        const missingWorkerFields = requiredWorkerFields.filter(field => !(field in workerNode));
+        const missingUserFields = requiredUserFields.filter(field => !(field in userNode));
+
+
+        if (missingWorkerFields.length > 0) {
+            logger.error('timetable-service', '❌ Missing required teacher fields:', { missingWorkerFields });
             return {
                 success: false,
-                message: `Missing required teacher information: ${missingFields.join(', ')}`
+                message: `Missing required teacher information: ${missingWorkerFields.join(', ')}`
+            };
+        }
+
+        if (missingUserFields.length > 0) {
+            logger.error('timetable-service', '❌ Missing required user fields:', { missingUserFields });
+            return {
+                success: false,
+                message: `Missing required user information: ${missingUserFields.join(', ')}`
             };
         }
 
         try {
-            const result = await this.uploadWorkerTimetable(file, workerNode);
+            const result = await this.uploadWorkerTimetable(file, userNode, workerNode);
             return {
                 success: true,
                 message: result.message

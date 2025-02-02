@@ -4,7 +4,7 @@ import { CCUser } from '../../services/auth/authService';
 import { formatEmailForDatabase } from './neoDBService';
 import { fetchSchoolNode } from './schoolNeoDBService';
 import { storageService, StorageKeys } from '../auth/localStorageService';
-import { CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps, CCTeacherTimetableNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { logger } from '../../debugConfig';
 
 // Dev configuration - only hardcoded value we need
@@ -31,6 +31,7 @@ export interface ProcessedUserNodes {
     connectedNodes: {
         calendar?: CCCalendarNodeProps;
         teacher?: CCTeacherNodeProps;
+        timetable?: CCTeacherTimetableNodeProps;
         student?: CCStudentNodeProps;
     };
 }
@@ -100,9 +101,13 @@ export class UserNeoDBService {
                 case 'Teacher':
                     processedNodes.teacher = this.processTeacherNode(node.node_data);
                     break;
+                case 'TeacherTimetable':
+                    processedNodes.timetable = this.processTeacherTimetableNode(node.node_data);
+                    break;
                 case 'Student':
                     processedNodes.student = this.processStudentNode(node.node_data);
                     break;
+
                 default:
                     logger.debug('neo4j-service', `⚠️ Unhandled node type: ${node.node_type}`);
             }
@@ -163,12 +168,43 @@ export class UserNeoDBService {
 
         // Create the teacher node by spreading nodeData first, then adding missing required fields
         return {
-            ...nodeData,
             ...baseNode,
+            ...nodeData,
             teacher_code: String(nodeData.teacher_code || ''),
             teacher_name_formal: String(nodeData.teacher_name_formal || ''),
             teacher_email: String(nodeData.teacher_email || ''),
             worker_db_name: String(nodeData.worker_db_name || ''),
+            user_db_name: String(nodeData.user_db_name || ''),
+        };
+    }
+
+    private static processTeacherTimetableNode(nodeData: NodeData): CCTeacherTimetableNodeProps {
+        // Create a base object with required fields from BaseNodeInterface
+        const baseNode = {
+            w: 0,
+            h: 0,
+            title: '',
+            headerColor: '',
+            backgroundColor: '',
+            isLocked: false,
+            color: '',
+            __primarylabel__: 'TeacherTimetable',
+            unique_id: String(nodeData.unique_id || ''),
+            path: String(nodeData.path || ''),
+            created: String(nodeData.created || ''),
+            merged: String(nodeData.merged || ''),
+            state: null,
+            defaultComponent: false,
+        };
+
+        // Create the teacher timetable node by spreading nodeData first, then adding missing required fields
+        return {
+            ...baseNode,
+            ...nodeData,
+            teacher_id: String(nodeData.teacher_id || ''),
+            start_date: String(nodeData.start_date || ''),
+            end_date: String(nodeData.end_date || ''),
+
         };
     }
 

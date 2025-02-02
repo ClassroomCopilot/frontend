@@ -253,6 +253,25 @@ export const ccGraphShapeProps = {
     end_time: T.string,
     period_code: T.string,
   },
+  'cc-department-structure-node': {
+    ...graphBaseProps,
+    department_structure_type: T.string,
+  },
+  'cc-user-teacher-timetable-node': {
+    ...graphBaseProps,
+    school_db_name: T.string,
+    school_timetable_id: T.string,
+  },
+  'cc-user-timetable-lesson-node': {
+    ...graphBaseProps,
+    subject_class: T.string,
+    date: T.string,
+    start_time: T.string,
+    end_time: T.string,
+    period_code: T.string,
+    school_db_name: T.string,
+    school_period_id: T.string,
+  },
 } as const
 
 // Default props getters
@@ -604,4 +623,32 @@ export const getDefaultCCRegistrationPeriodNodeProps = () => ({
   start_time: '',
   end_time: '',
   period_code: '',
+})
+
+export const getDefaultCCDepartmentStructureNodeProps = () => ({
+  ...getDefaultBaseProps(),
+  title: 'Department Structure',
+  __primarylabel__: 'DepartmentStructure',
+  department_structure_type: '',
+})
+
+export const getDefaultCCUserTeacherTimetableNodeProps = () => ({
+  ...getDefaultBaseProps(),
+  title: 'User Teacher Timetable',
+  __primarylabel__: 'UserTeacherTimetable',
+  school_db_name: '',
+  school_timetable_id: '',
+})
+
+export const getDefaultCCUserTimetableLessonNodeProps = () => ({
+  ...getDefaultBaseProps(),
+  title: 'User Timetable Lesson',
+  __primarylabel__: 'UserTimetableLesson',
+  subject_class: '',
+  date: '',
+  start_time: '',
+  end_time: '',
+  period_code: '',
+  school_db_name: '',
+  school_period_id: '',
 })

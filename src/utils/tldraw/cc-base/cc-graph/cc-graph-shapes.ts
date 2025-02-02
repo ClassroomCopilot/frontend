@@ -33,6 +33,9 @@ import { CCRegistrationPeriodNodeShape, CCRegistrationPeriodNodeShapeUtil } from
 import { CCTeacherTimetableNodeShape, CCTeacherTimetableNodeShapeUtil } from './CCTeacherTimetableNodeShapeUtil'
 import { CCTimetableLessonNodeShape, CCTimetableLessonNodeShapeUtil } from './CCTimetableLessonNodeShapeUtil'
 import { CCPlannedLessonNodeShape, CCPlannedLessonNodeShapeUtil } from './CCPlannedLessonNodeShapeUtil'
+import { CCDepartmentStructureNodeShape, CCDepartmentStructureNodeShapeUtil } from './CCDepartmentStructureNodeShapeUtil'
+import { CCUserTeacherTimetableNodeShape, CCUserTeacherTimetableNodeShapeUtil } from './CCUserTeacherTimetableNodeShapeUtil'
+import { CCUserTimetableLessonNodeShape, CCUserTimetableLessonNodeShapeUtil } from './CCUserTimetableLessonNodeShapeUtil'
 
 // Create a const object with all node types
 export const NODE_SHAPE_TYPES = {
@@ -70,6 +73,9 @@ export const NODE_SHAPE_TYPES = {
     TEACHER_TIMETABLE: CCTeacherTimetableNodeShapeUtil.type,
     TIMETABLE_LESSON: CCTimetableLessonNodeShapeUtil.type,
     PLANNED_LESSON: CCPlannedLessonNodeShapeUtil.type,
+    DEPARTMENT_STRUCTURE: CCDepartmentStructureNodeShapeUtil.type,
+    USER_TEACHER_TIMETABLE: CCUserTeacherTimetableNodeShapeUtil.type,
+    USER_TIMETABLE_LESSON: CCUserTimetableLessonNodeShapeUtil.type,
 } as const;
 
 // Create the type from the const object's values
@@ -110,7 +116,10 @@ export type AllNodeShapes =
     | CCRegistrationPeriodNodeShape
     | CCTeacherTimetableNodeShape
     | CCTimetableLessonNodeShape
-    | CCPlannedLessonNodeShape;
+    | CCPlannedLessonNodeShape
+    | CCDepartmentStructureNodeShape
+    | CCUserTeacherTimetableNodeShape
+    | CCUserTimetableLessonNodeShape;
 
 // Export all shape utils in an object for easy access
 export const ShapeUtils = {
@@ -148,6 +157,9 @@ export const ShapeUtils = {
     [CCTeacherTimetableNodeShapeUtil.type]: CCTeacherTimetableNodeShapeUtil,
     [CCTimetableLessonNodeShapeUtil.type]: CCTimetableLessonNodeShapeUtil,
     [CCPlannedLessonNodeShapeUtil.type]: CCPlannedLessonNodeShapeUtil,
+    [CCDepartmentStructureNodeShapeUtil.type]: CCDepartmentStructureNodeShapeUtil,
+    [CCUserTeacherTimetableNodeShapeUtil.type]: CCUserTeacherTimetableNodeShapeUtil,
+    [CCUserTimetableLessonNodeShapeUtil.type]: CCUserTimetableLessonNodeShapeUtil,
 } as const;
 
 // Add a type guard to check if a shape is a valid node shape

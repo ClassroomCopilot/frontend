@@ -46,6 +46,7 @@ export type CCTeacherNodeProps = CCGraphShapeProps & {
     teacher_code: string
     teacher_name_formal: string
     teacher_email: string
+    user_db_name: string
     worker_db_name: string
 }
 
@@ -265,6 +266,25 @@ export type CCRegistrationPeriodNodeProps = CCGraphShapeProps & {
     period_code: string
 }
 
+export type CCDepartmentStructureNodeProps = CCGraphShapeProps & {
+    department_structure_type: string
+}
+
+export type CCUserTeacherTimetableNodeProps = CCGraphShapeProps & {
+  school_db_name: string
+  school_timetable_id: string
+}
+
+export type CCUserTimetableLessonNodeProps = CCGraphShapeProps & {
+  subject_class: string
+  date: string
+  start_time: string
+  end_time: string
+  period_code: string
+  school_db_name: string
+  school_period_id: string
+}
+
 // Define a type-safe mapping of node types to their configurations
 export type CCNodeTypes = {
   User: { props: CCUserNodeProps }
@@ -300,6 +320,9 @@ export type CCNodeTypes = {
   Department: { props: CCDepartmentNodeProps }
   Room: { props: CCRoomNodeProps }
   SubjectClass: { props: CCSubjectClassNodeProps }
+  DepartmentStructure: { props: CCDepartmentStructureNodeProps }
+  UserTeacherTimetable: { props: CCUserTeacherTimetableNodeProps }
+  UserTimetableLesson: { props: CCUserTimetableLessonNodeProps }
 }
 
 // Helper function to get shape type from node type
@@ -357,5 +380,8 @@ export const isValidNodeType = (type: string): type is keyof CCNodeTypes => {
     Department: true,
     Room: true,
     SubjectClass: true,
+    DepartmentStructure: true,
+    UserTeacherTimetable: true,
+    UserTimetableLesson: true,
   };
 }

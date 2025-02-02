@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { formatEmailForDatabase } from '../services/graph/neoDBService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { UserNeoDBService, ProcessedUserNodes } from '../services/graph/userNeoDBService';
 import { CCUserNodeProps } from '../utils/tldraw/cc-base/cc-graph/cc-graph-types'
@@ -74,7 +73,7 @@ export const Neo4jProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     useEffect(() => {
         if (userNodes && userNodes.connectedNodes.teacher) {
-            setUserDbName('cc.ccusers.' + formatEmailForDatabase(userNodes.privateUserNode.user_email));
+            setUserDbName(userNodes.connectedNodes.teacher.user_db_name);
             setWorkerDbName(userNodes.connectedNodes.teacher.worker_db_name);
         }
     }, [userNodes]);

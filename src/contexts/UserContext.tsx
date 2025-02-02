@@ -71,6 +71,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           email: data.email,
           display_name: data.display_name,
           user_role: data.user_role,
+          user_db_name: data.user_db_name,
           worker_db_name: data.worker_db_name,
           neo4j_user_node: data.neo4j_user_node,
           created_at: data.created_at,

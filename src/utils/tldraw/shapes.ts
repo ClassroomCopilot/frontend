@@ -39,6 +39,9 @@ import { CCAcademicWeekNodeShapeUtil } from './cc-base/cc-graph/CCAcademicWeekNo
 import { CCAcademicDayNodeShapeUtil } from './cc-base/cc-graph/CCAcademicDayNodeShapeUtil'
 import { CCAcademicPeriodNodeShapeUtil } from './cc-base/cc-graph/CCAcademicPeriodNodeShapeUtil'
 import { CCRegistrationPeriodNodeShapeUtil } from './cc-base/cc-graph/CCRegistrationPeriodNodeShapeUtil'
+import { CCDepartmentStructureNodeShapeUtil } from './cc-base/cc-graph/CCDepartmentStructureNodeShapeUtil'
+import { CCUserTeacherTimetableNodeShapeUtil } from './cc-base/cc-graph/CCUserTeacherTimetableNodeShapeUtil'
+import { CCUserTimetableLessonNodeShapeUtil } from './cc-base/cc-graph/CCUserTimetableLessonNodeShapeUtil'
 
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
@@ -82,6 +85,9 @@ export const ShapeUtils = {
   CCAcademicDayNode: CCAcademicDayNodeShapeUtil,
   CCAcademicPeriodNode: CCAcademicPeriodNodeShapeUtil,
   CCRegistrationPeriodNode: CCRegistrationPeriodNodeShapeUtil,
+  CCDepartmentStructureNode: CCDepartmentStructureNodeShapeUtil,
+  CCUserTeacherTimetableNode: CCUserTeacherTimetableNodeShapeUtil,
+  CCUserTimetableLessonNode: CCUserTimetableLessonNodeShapeUtil,
 }
 
 export const allShapeUtils = Object.values(ShapeUtils)

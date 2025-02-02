@@ -62,7 +62,8 @@ export class RegistrationService {
                     email: credentials.email,
                     display_name: username,
                     user_role: credentials.role,
-                    worker_db_name: `cc.ccusers.${formatEmailForDatabase(credentials.email)}`
+                    user_db_name: `cc.ccusers.${formatEmailForDatabase(credentials.email)}`,
+                    worker_db_name: `cc.ccschools.kevlarai`
                 }])
                 .select()
                 .single();
