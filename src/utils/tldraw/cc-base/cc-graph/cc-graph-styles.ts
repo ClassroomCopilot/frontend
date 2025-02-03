@@ -119,11 +119,14 @@ export const NODE_TYPE_THEMES: Record<string, keyof typeof NODE_THEMES> = {
   'cc-timetable-lesson-node': 'academic',
   'cc-planned-lesson-node': 'academic',
   'cc-school-timetable-node': 'academic',
+  'cc-user-teacher-timetable-node': 'academic',
+  'cc-user-timetable-lesson-node': 'academic',
   
   // Curriculum nodes
   'cc-curriculum-structure-node': 'curriculum',
   'cc-key-stage-node': 'curriculum',
   'cc-key-stage-syllabus-node': 'curriculum',
+
   'cc-year-group-syllabus-node': 'curriculum',
   'cc-subject-node': 'curriculum',
   'cc-topic-node': 'curriculum',

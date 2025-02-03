@@ -4,7 +4,7 @@ import { CCUser } from '../../services/auth/authService';
 import { formatEmailForDatabase } from './neoDBService';
 import { fetchSchoolNode } from './schoolNeoDBService';
 import { storageService, StorageKeys } from '../auth/localStorageService';
-import { CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps, CCTeacherTimetableNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps, CCUserTeacherTimetableNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { logger } from '../../debugConfig';
 
 // Dev configuration - only hardcoded value we need
@@ -31,7 +31,7 @@ export interface ProcessedUserNodes {
     connectedNodes: {
         calendar?: CCCalendarNodeProps;
         teacher?: CCTeacherNodeProps;
-        timetable?: CCTeacherTimetableNodeProps;
+        timetable?: CCUserTeacherTimetableNodeProps;
         student?: CCStudentNodeProps;
     };
 }
@@ -101,8 +101,8 @@ export class UserNeoDBService {
                 case 'Teacher':
                     processedNodes.teacher = this.processTeacherNode(node.node_data);
                     break;
-                case 'TeacherTimetable':
-                    processedNodes.timetable = this.processTeacherTimetableNode(node.node_data);
+                case 'UserTeacherTimetable':
+                    processedNodes.timetable = this.processUserTeacherTimetableNode(node.node_data);
                     break;
                 case 'Student':
                     processedNodes.student = this.processStudentNode(node.node_data);
@@ -178,7 +178,7 @@ export class UserNeoDBService {
         };
     }
 
-    private static processTeacherTimetableNode(nodeData: NodeData): CCTeacherTimetableNodeProps {
+    private static processUserTeacherTimetableNode(nodeData: NodeData): CCUserTeacherTimetableNodeProps {
         // Create a base object with required fields from BaseNodeInterface
         const baseNode = {
             w: 0,
@@ -201,11 +201,10 @@ export class UserNeoDBService {
         return {
             ...baseNode,
             ...nodeData,
-            teacher_id: String(nodeData.teacher_id || ''),
-            start_date: String(nodeData.start_date || ''),
-            end_date: String(nodeData.end_date || ''),
-
+            school_db_name: String(nodeData.school_db_name || ''),
+            school_timetable_id: String(nodeData.school_timetable_id || ''),
         };
+
     }
 
     private static processStudentNode(nodeData: NodeData): CCStudentNodeProps {

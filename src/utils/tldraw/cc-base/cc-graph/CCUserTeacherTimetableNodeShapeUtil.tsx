@@ -16,7 +16,7 @@ export class CCUserTeacherTimetableNodeShapeUtil extends CCBaseShapeUtil<CCUserT
   static props = ccGraphShapeProps['cc-user-teacher-timetable-node']
 
   getDefaultProps(): CCUserTeacherTimetableNodeShape['props'] {
-    const defaultProps = getDefaultCCUserTeacherTimetableNodeProps()
+    const defaultProps = getDefaultCCUserTeacherTimetableNodeProps() as CCUserTeacherTimetableNodeShape['props']
     const theme = NODE_THEMES[NODE_TYPE_THEMES[CCUserTeacherTimetableNodeShapeUtil.type]]
     return {
       ...defaultProps,
