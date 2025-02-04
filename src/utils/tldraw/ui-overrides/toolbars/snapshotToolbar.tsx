@@ -1,64 +1,35 @@
-import { useCallback, ReactNode, useEffect, useState } from 'react';
+import { useCallback, ReactNode } from 'react';
 import { useEditor, loadSnapshot, useToasts } from '@tldraw/tldraw';
-import { useNeo4j } from '../../../../contexts/Neo4jContext';
-import { saveNodeSnapshotToDatabase } from '../../../../services/tldraw/snapshotService';
-import { StorageKeys, storageService } from '../../../../services/auth/localStorageService';
-import logger from '../../../../debugConfig';
+import { UserNeoDBService } from '../../../../services/graph/userNeoDBService';
+import { useNavigationStore } from '../../../../stores/navigationStore';
 import { blankCanvasSnapshot } from '../../../tldraw/assets';
+import logger from '../../../../debugConfig';
 
 export function SnapshotToolbar({ 
-    children,
-    pathFromCalendar
+    children
 }: { 
-    children: (props: { save: () => void, resetToBlankCanvas: () => void }) => ReactNode,
-    pathFromCalendar: string | null
+    children: (props: { save: () => void, resetToBlankCanvas: () => void }) => ReactNode
 }) {
     const editor = useEditor();
     const { addToast } = useToasts();
-    const { userDbName, workerDbName } = useNeo4j();
-    const [currentPath, setCurrentPath] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (pathFromCalendar) {
-            setCurrentPath(pathFromCalendar);
-        } else {
-            const storedPath = storageService.get(StorageKeys.NODE_FILE_PATH);
-            if (storedPath) {
-                setCurrentPath(storedPath);
-            }
-        }
-    }, [pathFromCalendar]);
+    const { currentNode } = useNavigationStore();
 
     const save = useCallback(async () => {
         try {
-            const nodePath = currentPath;
-            if (!nodePath) {
-                logger.error('snapshot-toolbar', '❌ No path specified for saving');
-                throw new Error('No path specified for saving');
-            }
-
-            const isUserDb = nodePath.includes('cc.ccusers');
-            logger.info('snapshot-toolbar', '💾 Saving snapshot using user db (worker db not supported in prod)', {
-                isUserDb,
-                userDbName,
-                workerDbName
-            });
-            const dbName = isUserDb ? userDbName : workerDbName;
-            logger.info('snapshot-toolbar', '💾 Saving snapshot using db', {
-                dbName
-            });
-
-            if (!dbName) {
-                logger.error('snapshot-toolbar', '❌ Database name not available');
-                throw new Error('Database name not available');
+            if (!currentNode?.path) {
+                logger.error('snapshot-toolbar', '❌ No current node available for saving');
+                throw new Error('No current node available for saving');
             }
 
             logger.info('snapshot-toolbar', '💾 Saving snapshot', {
-                path: nodePath,
-                db_name: dbName
+                path: currentNode.path,
+                nodeId: currentNode.id,
+                nodeType: currentNode.type
             });
 
-            await saveNodeSnapshotToDatabase(nodePath, dbName, editor.store);
+            const snapshot = editor.getSnapshot();
+
+            await UserNeoDBService.saveNodeSnapshot(currentNode.path, snapshot);
 
             addToast({
                 title: 'Snapshot saved',
@@ -76,7 +47,7 @@ export function SnapshotToolbar({
                 icon: 'warning-triangle',
             });
         }
-    }, [editor, currentPath, userDbName, workerDbName, addToast]);
+    }, [editor, currentNode, addToast]);
 
     const resetToBlankCanvas = useCallback(() => {
         loadSnapshot(editor.store, blankCanvasSnapshot);

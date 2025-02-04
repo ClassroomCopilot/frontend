@@ -3,38 +3,8 @@ import axios from '../../axiosConfig';
 import { getShapeType, isValidNodeType } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { AllNodeShapes, NodeShapeType, ShapeUtils } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-shapes';
 import { graphState } from '../../utils/tldraw/cc-base/cc-graph/graphStateUtil';
+import { NodeResponse, ConnectedNodesResponse } from '../../types/api';
 import { logger } from '../../debugConfig';
-
-interface NodeResponse {
-    __primarylabel__: string;
-    unique_id: string;
-    [key: string]: unknown;
-}
-
-interface ConnectedNodeResponse {
-    node_type: string;
-    node_data: NodeResponse;
-    relationship_type: string;
-    relationship_properties: {
-        [key: string]: unknown;
-    };
-}
-
-interface RelationshipData {
-    start_node: NodeResponse;
-    end_node: NodeResponse;
-    relationship_type: string;
-    relationship_properties: {
-        [key: string]: unknown;
-    };
-}
-
-interface ConnectedNodesResponse {
-    status: string;
-    main_node: NodeResponse;
-    connected_nodes: ConnectedNodeResponse[];
-    relationships: RelationshipData[];
-}
 
 export class GraphNeoDBService {
     static async fetchConnectedNodesAndEdges(
@@ -83,7 +53,7 @@ export class GraphNeoDBService {
             });
 
             // Create a batch of nodes to process
-            const nodesToProcess: NodeResponse[] = [];
+            const nodesToProcess: NodeResponse['node_data'][] = [];
 
             // Add connected nodes first
             if (data.connected_nodes) {
@@ -94,7 +64,7 @@ export class GraphNeoDBService {
 
             // Add main node last (if it exists) to ensure it's processed after connected nodes
             if (data.main_node) {
-                nodesToProcess.push(data.main_node);
+                nodesToProcess.push(data.main_node.node_data);
             }
 
             // Process all nodes in batch
@@ -122,7 +92,7 @@ export class GraphNeoDBService {
     }
 
     private static async createOrUpdateNode(
-        nodeData: NodeResponse
+        nodeData: NodeResponse['node_data']
     ) {
         const uniqueId = nodeData.unique_id;
         const nodeType = nodeData.__primarylabel__;

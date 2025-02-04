@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   AppBar,
@@ -17,15 +17,18 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import { HEADER_HEIGHT } from './Layout';
 import { logger } from '../debugConfig';
+import { GraphNavigator } from '../components/navigation/GraphNavigator';
 
 const Header: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [signupAnchorEl, setSignupAnchorEl] = useState<null | HTMLElement>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const isAdmin = user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL;
+  const showGraphNavigation = location.pathname === '/single-player';
 
   // Update authentication state whenever user changes
   useEffect(() => {
@@ -105,9 +108,15 @@ const Header: React.FC = () => {
         display: 'flex', 
         justifyContent: 'space-between',
         minHeight: `${HEADER_HEIGHT}px !important`,
-        height: `${HEADER_HEIGHT}px`
+        height: `${HEADER_HEIGHT}px`,
+        gap: 2
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2,
+          minWidth: '200px'
+        }}>
           <IconButton
             color="inherit"
             onClick={handleMenuOpen}
@@ -137,7 +146,20 @@ const Header: React.FC = () => {
           </Typography>
         </Box>
 
-        <Box sx={{ width: '200px', display: 'flex', justifyContent: 'flex-end' }}>
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          justifyContent: 'center',
+          visibility: showGraphNavigation ? 'visible' : 'hidden'
+        }}>
+          <GraphNavigator />
+        </Box>
+
+        <Box sx={{ 
+          minWidth: '200px', 
+          display: 'flex', 
+          justifyContent: 'flex-end' 
+        }}>
           {isAuthenticated && (
             <Menu
               anchorEl={anchorEl}

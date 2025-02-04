@@ -37,6 +37,7 @@ export const ccGraphShapeProps = {
     teacher_code: T.string,
     teacher_name_formal: T.string,
     teacher_email: T.string,
+    user_db_name: T.string,
     worker_db_name: T.string,
   },
   'cc-student-node': {
@@ -311,6 +312,7 @@ export const getDefaultCCTeacherNodeProps = () => ({
   teacher_code: '',
   teacher_name_formal: '',
   teacher_email: '',
+  user_db_name: '',
   worker_db_name: '',
 })
 

@@ -5,6 +5,11 @@ import { formatEmailForDatabase } from './neoDBService';
 import { fetchSchoolNode } from './schoolNeoDBService';
 import { storageService, StorageKeys } from '../auth/localStorageService';
 import { CCUserNodeProps, CCTeacherNodeProps, CCStudentNodeProps, CCCalendarNodeProps, CCUserTeacherTimetableNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { NavigationNode } from '../../types/navigation';
+import { NodeResponse, ConnectedNodeResponse } from '../../types/api';
+import { TLEditorSnapshot } from '@tldraw/tldraw';
+import { localStoreService } from '../tldraw/localStoreService';
+import { LoadingState } from '../tldraw/snapshotService';
 import { logger } from '../../debugConfig';
 
 // Dev configuration - only hardcoded value we need
@@ -38,10 +43,7 @@ export interface ProcessedUserNodes {
 
 interface ConnectedNode {
     node_type: string;
-    node_data: {
-        __primarylabel__: string;
-        [key: string]: unknown;
-    };
+    node_data: NodeResponse['node_data'];
 }
 
 interface NodeData {
@@ -329,6 +331,178 @@ export class UserNeoDBService {
         } catch (error) {
             logger.error('neo4j-service', '❌ Neo4j user registration failed', error);
             throw error;
+        }
+    }
+
+    static async fetchUserNodeData(nodeId: string): Promise<{ node_type: string; node_data: NodeResponse['node_data'] } | null> {
+        try {
+            // Get the formatted email from the nodeId (User_surfacedashdev3atkevlaraidotcom -> surfacedashdev3atkevlaraidotcom)
+            const formattedEmail = nodeId.replace('User_', '');
+            const dbName = `cc.ccusers.${formattedEmail}`;
+
+            const response = await axiosInstance.get<{
+                status: string;
+                node: {
+                    node_type: string;
+                    node_data: NodeResponse['node_data'];
+                };
+            }>('/api/database/tools/get-node', {
+                params: { 
+                    unique_id: nodeId,
+                    db_name: dbName
+                }
+            });
+            
+            if (response.data?.status === 'success' && response.data.node) {
+                return response.data.node;
+            }
+            
+            return null;
+        } catch (error) {
+            logger.error('neo4j-service', '❌ Failed to fetch user node data:', error);
+            throw error;
+        }
+    }
+
+    static async fetchNodeData(nodeId: string, dbName: string): Promise<{ node_type: string; node_data: NodeResponse['node_data'] } | null> {
+        try {
+            logger.debug('neo4j-service', '🔄 Fetching node data', { nodeId, dbName });
+
+            const response = await axiosInstance.get<{
+                status: string;
+                node: {
+                    node_type: string;
+                    node_data: NodeResponse['node_data'];
+                };
+            }>('/api/database/tools/get-node', {
+                params: { 
+                    unique_id: nodeId,
+                    db_name: dbName
+                }
+            });
+            
+            if (response.data?.status === 'success' && response.data.node) {
+                return response.data.node;
+            }
+            
+            return null;
+        } catch (error) {
+            logger.error('neo4j-service', '❌ Failed to fetch node data:', error);
+            throw error;
+        }
+    }
+
+    static getNodeDatabaseName(node: NavigationNode): string {
+        // If the node path starts with /node_filesystem/users/, it's in a user database
+        if (node.path.startsWith('/node_filesystem/users/')) {
+            const parts = node.path.split('/');
+            // parts[3] should be the database name (e.g., cc.ccusers.surfacedashdev3atkevlaraidotcom)
+            return parts[3];
+        }
+        // For school/worker nodes, extract from the path or use a default
+        if (node.path.includes('/schools/')) {
+            return `cc.ccschools.${DEV_SCHOOL_UUID}`;
+        }
+        // Default to user database if we can't determine
+        return node.path.split('/')[3];
+    }
+
+    static async fetchConnectedNodes(nodeId: string, dbName?: string): Promise<NavigationNode[]> {
+        try {
+            // If dbName is not provided, determine it based on the node ID for user nodes
+            let effectiveDbName = dbName;
+            if (!effectiveDbName) {
+                if (nodeId.startsWith('User_')) {
+                    const formattedEmail = nodeId.replace('User_', '');
+                    effectiveDbName = `cc.ccusers.${formattedEmail}`;
+                } else {
+                    throw new Error('Database name required for non-user nodes');
+                }
+            }
+
+            const response = await axiosInstance.get<{
+                status: string;
+                connected_nodes: ConnectedNodeResponse[];
+            }>('/api/database/tools/get-connected-nodes', {
+                params: { 
+                    unique_id: nodeId,
+                    db_name: effectiveDbName
+                }
+            });
+            
+            if (response.data?.status === 'success' && response.data.connected_nodes) {
+                // Filter out the current node from the results
+                return response.data.connected_nodes
+                    .filter(node => node.node_data.unique_id !== nodeId)
+                    .map((node) => ({
+                        id: node.node_data.unique_id,
+                        type: node.node_type,
+                        label: node.node_data.title || node.node_data.name || node.node_data.unique_id,
+                        path: node.node_data.path,
+                    }));
+            }
+            
+            return [];
+        } catch (error) {
+            logger.error('neo4j-service', '❌ Failed to fetch connected nodes:', error);
+            throw error;
+        }
+    }
+
+    static async loadNodeSnapshot(path: string): Promise<TLEditorSnapshot> {
+        const dbName = this.getNodeDatabaseName({ path } as NavigationNode);
+        const response = await axiosInstance.get(
+            '/api/database/tldraw_fs/get_tldraw_node_file',
+            {
+                params: {
+                    path: path,
+                    db_name: dbName
+                }
+            }
+        );
+
+        if (response.data) {
+            return response.data;
+        }
+        throw new Error('Failed to load node snapshot');
+    }
+
+    static async saveNodeSnapshot(path: string, snapshot: TLEditorSnapshot): Promise<void> {
+        const dbName = this.getNodeDatabaseName({ path } as NavigationNode);
+        const response = await axiosInstance.post(
+            '/api/database/tldraw_fs/set_tldraw_node_file',
+            snapshot,
+            {
+                params: {
+                    path: path,
+                    db_name: dbName
+                }
+            }
+        );
+
+        if (response.data.status !== 'success') {
+            throw new Error('Failed to save node snapshot');
+        }
+    }
+
+    static async loadSnapshotIntoStore(
+        path: string, 
+        setLoadingState: (state: LoadingState) => void
+    ): Promise<void> {
+        try {
+            const snapshot = await this.loadNodeSnapshot(path);
+            if (snapshot) {
+                await localStoreService.loadSnapshot(snapshot, setLoadingState);
+                logger.info('neo4j-service', '✅ Loaded snapshot into store', { path });
+            } else {
+                setLoadingState({ status: 'error', error: 'No snapshot found' });
+            }
+        } catch (error) {
+            logger.error('neo4j-service', '❌ Failed to load snapshot into store:', error);
+            setLoadingState({ 
+                status: 'error', 
+                error: error instanceof Error ? error.message : 'Failed to load snapshot' 
+            });
         }
     }
 }
