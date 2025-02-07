@@ -6,6 +6,7 @@ import LoginPage from './pages/auth/loginPage';
 import SignupPage from './pages/auth/signupPage';
 import SinglePlayerPage from './pages/tldraw/singlePlayerPage';
 import MultiplayerUser from './pages/tldraw/multiplayerUser';
+import { CCExamMarker } from './pages/tldraw/CCExamMarker/CCExamMarker';
 import CalendarPage from './pages/user/calendarPage';
 import SettingsPage from './pages/user/settingsPage';
 import TLDrawCanvas from './pages/tldraw/TLDrawCanvas';
@@ -49,6 +50,10 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/teacher-planner"
           element={user ? <TeacherPlanner /> : null}
+        />
+        <Route
+          path="/exam-marker"
+          element={user ? <CCExamMarker /> : null}
         />
         <Route
           path="/morphic"

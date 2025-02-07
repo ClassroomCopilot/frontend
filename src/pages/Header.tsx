@@ -190,6 +190,9 @@ const Header: React.FC = () => {
               <MenuItem onClick={() => handleNavigation('/teacher-planner')}>
                 Teacher Planner
               </MenuItem>
+              <MenuItem onClick={() => handleNavigation('/exam-marker')}>
+                Exam Marker
+              </MenuItem>
               <MenuItem onClick={() => handleNavigation('/settings')}>
                 Settings
               </MenuItem>
