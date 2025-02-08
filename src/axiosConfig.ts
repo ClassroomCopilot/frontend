@@ -3,7 +3,7 @@ import { logger } from './debugConfig';
 
 // Use development backend URL if no custom URL is provided
 const baseURL = import.meta.env.VITE_SITE_URL.startsWith('http') 
-  ? import.meta.env.VITE_SITE_URL 
+  ? import.meta.env.VITE_SITE_URL
   : `https://${import.meta.env.VITE_SITE_URL}`;
 
 const instance = axios.create({

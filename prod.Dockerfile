@@ -54,6 +54,7 @@ COPY --from=builder /app/dist/ /usr/share/nginx/html/
 RUN echo "Contents of /usr/share/nginx/html after copying:" && \
     ls -la /usr/share/nginx/html
 
+# Expose port 80 for nginx
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

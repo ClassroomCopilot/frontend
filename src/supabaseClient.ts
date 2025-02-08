@@ -27,6 +27,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Log configuration in development
 if (import.meta.env.VITE_DEV === 'true') {
   logger.debug('supabase-client', '🔄 Supabase client initialized', {
-    url: supabaseUrl
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey
   });
 }
