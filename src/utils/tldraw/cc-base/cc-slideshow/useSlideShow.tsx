@@ -86,13 +86,15 @@ export function moveToSlide(editor: Editor, slide: CCSlideShape, isPresentation:
       to: slideIndex
     })
 
-    // Update the slideshow's currentSlideIndex
+    // Update the slideshow's currentSlideIndex and slides array
     editor.updateShape<CCSlideShowShape>({
       id: parentSlideshow.id,
       type: 'cc-slideshow',
       props: {
         ...parentSlideshow.props,
-        currentSlideIndex: slideIndex
+        currentSlideIndex: slideIndex,
+        slides: bindings.map(b => b.toId),
+        numSlides: bindings.length
       }
     })
 

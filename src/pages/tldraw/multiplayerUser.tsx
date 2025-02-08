@@ -30,7 +30,9 @@ import '../../utils/tldraw/tldraw.css';
 // App debug
 import { logger } from '../../debugConfig';
 
-const SYNC_WORKER_URL = `https://` + import.meta.env.VITE_SITE_URL + `/tldraw`;
+const SYNC_WORKER_URL = import.meta.env.VITE_SITE_URL.startsWith('http') 
+    ? `${import.meta.env.VITE_SITE_URL}/tldraw`
+    : `https://${import.meta.env.VITE_SITE_URL}/tldraw`;
 
 export default function TldrawMultiUser() {
     const { user } = useAuth();

@@ -53,7 +53,7 @@ export const PresentationStylePanel = (props: TLUiStylePanelProps) => {
                         </div>
                     )}
                 </UserToolbar>
-                <SnapshotToolbar pathFromCalendar={null}>
+                <SnapshotToolbar>
                     {({ save, resetToBlankCanvas }) => (
                         <div style={toolbarStyle}>
                             <TldrawUiButton type="icon" title="Save Snapshot" onClick={save} style={emojiButtonStyle}>

@@ -51,7 +51,9 @@ export class TranscriptionService {
       console.log('Got audio stream');
 
       const uuid = crypto.randomUUID();
-      const wsUrl = `wss://${import.meta.env.VITE_SITE_URL}/whisperlive`;
+      const wsUrl = import.meta.env.VITE_SITE_URL.startsWith('http')
+        ? `wss://${import.meta.env.VITE_SITE_URL.replace(/^https?:\/\//, '')}/whisperlive`
+        : `wss://${import.meta.env.VITE_SITE_URL}/whisperlive`;
       console.log('Connecting to WebSocket:', wsUrl);
 
       const ws = new WebSocket(wsUrl);

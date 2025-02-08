@@ -8,6 +8,7 @@ type CCSlideshowProps = CCBaseProps & {
   currentSlideIndex: number
   slidePattern: string
   numSlides: number
+  slides: string[]
 }
 
 export interface CCSlideShowShape extends CCBaseShape {

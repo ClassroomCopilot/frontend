@@ -2,7 +2,9 @@ import axios from 'axios';
 import { logger } from './debugConfig';
 
 // Use development backend URL if no custom URL is provided
-const baseURL = `https://${import.meta.env.VITE_SITE_URL}`;
+const baseURL = import.meta.env.VITE_SITE_URL.startsWith('http') 
+  ? import.meta.env.VITE_SITE_URL 
+  : `https://${import.meta.env.VITE_SITE_URL}`;
 
 const instance = axios.create({
   baseURL,

@@ -12,20 +12,21 @@ export default defineConfig(async ({ mode }) => {
   // Dynamic import of PWA plugin
   const { VitePWA } = await import('vite-plugin-pwa');
 
+  const isProd = mode === 'production';
+
   return {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
+        registerType: 'prompt',
+        injectRegister: 'auto',
         devOptions: {
-          enabled: true
+          enabled: false,
+          type: 'module'
         },
-        workbox: {
-          clientsClaim: true,
-          skipWaiting: true,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json}']
-        },
-        includeAssets: ['icons/*'],
         manifest: {
           name: 'Classroom Copilot',
           short_name: 'ClassroomCopilot',
@@ -58,23 +59,28 @@ export default defineConfig(async ({ mode }) => {
               type: 'image/png',
               purpose: 'maskable'
             }
-          ],
-          share_target: {
-            action: '/share',
-            method: 'POST',
-            enctype: 'multipart/form-data',
-            params: {
-              title: 'name',
-              text: 'description',
-              url: 'url',
-              files: [
-                {
-                  name: 'file',
-                  accept: ['image/*', 'text/*', 'application/pdf']
-                }
-              ]
-            }
-          }
+          ]
+        },
+        injectManifest: {
+          globPatterns: isProd ? [
+            'index.html',
+            'assets/**/*.{js,css,html,ico,png,svg,json}',
+            'icons/**/*.{png,svg}',
+            'manifest.webmanifest'
+          ] : [],
+          maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB
+          dontCacheBustURLsMatching: /\.[0-9a-f]{8}\./,
+          // Exclude development resources and source files
+          globIgnores: [
+            '**/node_modules/**/*',
+            'sw.js',
+            'workbox-*.js',
+            '**/*.map',
+            '**/vite/**/*',
+            '**/@vite/**/*',
+            '**/@react-refresh/**/*',
+            '**/src/**/*'
+          ]
         }
       })
     ],
@@ -93,6 +99,18 @@ export default defineConfig(async ({ mode }) => {
     clearScreen: false,
     optimizeDeps: {
       force: true
+    },
+    build: {
+      sourcemap: !isProd,
+      manifest: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom']
+          }
+        }
+      },
+      chunkSizeWarningLimit: 2000
     }
   };
 });

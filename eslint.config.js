@@ -1,17 +1,19 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import globals from 'globals';
 import pluginJs from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import importPlugin from 'eslint-plugin-import';
 
 export default [
   { 
     languageOptions: { 
       globals: {
         ...globals.browser,
-        ...globals.es2021
+        ...globals.es2021,
+        ...globals.node,
+        ...globals.serviceworker
       },
       parser: tsParser,
       parserOptions: {
@@ -21,6 +23,9 @@ export default [
           jsx: true
         }
       }
+    },
+    plugins: {
+      import: importPlugin
     }
   },
   pluginJs.configs.recommended,

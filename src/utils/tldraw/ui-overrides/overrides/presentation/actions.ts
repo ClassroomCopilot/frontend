@@ -1,4 +1,4 @@
-import { TLUiOverrides, computed } from '@tldraw/tldraw'
+import { TLUiOverrides, computed, TLParentId } from '@tldraw/tldraw'
 import { 
     moveToSlide, 
     $currentSlideShow, 
@@ -34,7 +34,7 @@ export const actionsPresentationUiOverrides: TLUiOverrides = {
                 }
 
                 const nextIndex = (currentShow.props.currentSlideIndex + 1) % currentShow.props.slides.length
-                const nextSlide = editor.getShape(currentShow.props.slides[nextIndex]) as CCSlideShape
+                const nextSlide = editor.getShape(currentShow.props.slides[nextIndex] as TLParentId) as CCSlideShape
                 
                 if (nextSlide) {
                     logger.info('navigation', '⌨️ Next slide shortcut (presentation)', {
@@ -62,7 +62,7 @@ export const actionsPresentationUiOverrides: TLUiOverrides = {
                 }
 
                 const prevIndex = (currentShow.props.currentSlideIndex - 1 + currentShow.props.slides.length) % currentShow.props.slides.length
-                const prevSlide = editor.getShape(currentShow.props.slides[prevIndex]) as CCSlideShape
+                const prevSlide = editor.getShape(currentShow.props.slides[prevIndex] as TLParentId) as CCSlideShape
                 
                 if (prevSlide) {
                     logger.info('navigation', '⌨️ Previous slide shortcut (presentation)', {
