@@ -21,7 +21,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 const navigationHandler = createHandlerBoundToURL('/index.html')
 const navigationRoute = new NavigationRoute(navigationHandler, {
   denylist: [
-    /^\/(api|supabase|whisperlive|tldraw)/,
+    /^\/(auth|rest|api|whisperlive|tldraw|search)/, // Remove ($|\/|$) to catch all search paths
     /^\/@.*/,  // Block all /@vite/, /@react-refresh/, etc.
     /^\/src\/.*/  // Block all /src/ paths
   ]
@@ -31,7 +31,13 @@ registerRoute(navigationRoute)
 // Cache page navigations (html) with a Network First strategy
 registerRoute(
   // Check to see if the request is a navigation to a new page
-  ({ request }) => request.mode === 'navigate',
+  ({ request, url }) => {
+    // Explicitly skip search routes
+    if (url.pathname.startsWith('/search')) {
+      return false;
+    }
+    return request.mode === 'navigate';
+  },
   new NetworkFirst({
     // Put all cached files in a cache named 'pages'
     cacheName: 'pages',
@@ -46,9 +52,13 @@ registerRoute(
 
 // Cache manifest and icons with a Stale While Revalidate strategy
 registerRoute(
-  ({ request }) => 
-    request.destination === 'manifest' || 
-    request.url.includes('/icons/'),
+  ({ request, url }) => {
+    // Explicitly skip search routes
+    if (url.pathname.startsWith('/search')) {
+      return false;
+    }
+    return request.destination === 'manifest' || request.url.includes('/icons/');
+  },
   new StaleWhileRevalidate({
     cacheName: 'manifest-and-icons',
     plugins: [
@@ -61,7 +71,11 @@ registerRoute(
 
 // Cache other static assets with a Cache First strategy
 registerRoute(
-  ({ request }) => {
+  ({ request, url }) => {
+    // Explicitly skip search routes
+    if (url.pathname.startsWith('/search')) {
+      return false;
+    }
     const destination = request.destination;
     return destination === 'style' || 
            destination === 'script' || 
