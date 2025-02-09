@@ -17,6 +17,7 @@ import { CCGraphStudentCalendarPanel } from './CCGraphStudentCalendarPanel';
 import { CCGraphStudentTimetablePanel } from './CCGraphStudentTimetablePanel';
 import { CCGraphStudentCurriculumPanel } from './CCGraphStudentCurriculumPanel';
 import { CCExamMarkerPanel } from './CCExamMarkerPanel';
+import { CCSearchPanel } from './CCSearchPanel'
 import { PANEL_DIMENSIONS, Z_INDICES } from './panel-styles';
 import './panel.css';
 
@@ -26,6 +27,7 @@ export const PANEL_TYPES = {
     { id: 'slides', label: 'Slides' },
     { id: 'youtube', label: 'YouTube' },
     { id: 'graph', label: 'Graph' },
+    { id: 'search', label: 'Search' },
     { id: 'cc-graph-school-calendar', label: 'Calendar' },
     { id: 'cc-graph-school-timetable', label: 'Timetable' },
     { id: 'cc-graph-school-curriculum', label: 'Curriculum' },
@@ -130,6 +132,8 @@ export const BasePanel: React.FC<BasePanelProps> = ({
         return <CCYoutubePanel />;
       case 'graph':
         return <CCGraphPanel />;
+      case 'search':
+        return <CCSearchPanel />;
       case 'cc-graph-school-calendar':
         return <CCGraphSchoolCalendarPanel />;
       case 'cc-graph-school-timetable':

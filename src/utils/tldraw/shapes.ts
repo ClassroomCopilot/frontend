@@ -42,7 +42,8 @@ import { CCRegistrationPeriodNodeShapeUtil } from './cc-base/cc-graph/CCRegistra
 import { CCDepartmentStructureNodeShapeUtil } from './cc-base/cc-graph/CCDepartmentStructureNodeShapeUtil'
 import { CCUserTeacherTimetableNodeShapeUtil } from './cc-base/cc-graph/CCUserTeacherTimetableNodeShapeUtil'
 import { CCUserTimetableLessonNodeShapeUtil } from './cc-base/cc-graph/CCUserTimetableLessonNodeShapeUtil'
-
+import { CCSearchShapeUtil } from './cc-base/cc-search/CCSearchShapeUtil'
+import { CCWebBrowserShapeUtil } from './cc-base/cc-web-browser/CCWebBrowserUtil'
 // Define all shape utils in a single object for easy maintenance
 export const ShapeUtils = {
   CCSlideShow: CCSlideShowShapeUtil,
@@ -88,6 +89,8 @@ export const ShapeUtils = {
   CCDepartmentStructureNode: CCDepartmentStructureNodeShapeUtil,
   CCUserTeacherTimetableNode: CCUserTeacherTimetableNodeShapeUtil,
   CCUserTimetableLessonNode: CCUserTimetableLessonNodeShapeUtil,
+  CCSearch: CCSearchShapeUtil,
+  CCWebBrowser: CCWebBrowserShapeUtil,
 }
 
 export const allShapeUtils = Object.values(ShapeUtils)

@@ -70,6 +70,11 @@ export const PANEL_DIMENSIONS = {
     topOffset: '45px',
     bottomOffset: '0px',
   },
+  'search': {
+    width: '300px',
+    topOffset: '45px',
+    bottomOffset: '0px',
+  },
 } as const;
 
 // Z-index constants for panel layering

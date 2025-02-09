@@ -1,5 +1,5 @@
 import { TLRecord, TLShape } from '@tldraw/tldraw'
-import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps, getDefaultCCYoutubeEmbedProps } from './cc-props'
+import { getDefaultCCBaseProps, getDefaultCCCalendarProps, getDefaultCCLiveTranscriptionProps, getDefaultCCSettingsProps, getDefaultCCSlideProps, getDefaultCCSlideShowProps, getDefaultCCSlideLayoutBindingProps, getDefaultCCYoutubeEmbedProps, getDefaultCCSearchProps, getDefaultCCWebBrowserProps } from './cc-props'
 
 // Export both shape and binding migrations
 export const ccBindingMigrations = {
@@ -185,6 +185,54 @@ export const ccShapeMigrations = {
             ...shape,
             props: {
               ...getDefaultCCYoutubeEmbedProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  search: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-search') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCSearchProps(),
+              ...shape.props,
+            },
+          }
+        },
+        down: (record: TLRecord) => {
+          return record
+        },
+      },
+    },
+  },
+
+  webBrowser: {
+    firstVersion: 1,
+    currentVersion: 1,
+    migrators: {
+      1: {
+        up: (record: TLRecord) => {
+          if (record.typeName !== 'shape') return record
+          const shape = record as TLShape
+          if (shape.type !== 'cc-web-browser') return record
+          return {
+            ...shape,
+            props: {
+              ...getDefaultCCWebBrowserProps(),
               ...shape.props,
             },
           }
