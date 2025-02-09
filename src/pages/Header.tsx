@@ -196,6 +196,9 @@ const Header: React.FC = () => {
               <MenuItem onClick={() => handleNavigation('/settings')}>
                 Settings
               </MenuItem>
+              <MenuItem onClick={() => window.open(`${import.meta.env.VITE_SITE_URL}/searxng/`, '_blank')}>
+                Search
+              </MenuItem>
               {/* Admin-only menu items */}
               {isAdmin && [
                 <Divider key="admin-divider" />,

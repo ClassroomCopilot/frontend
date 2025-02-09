@@ -21,7 +21,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 const navigationHandler = createHandlerBoundToURL('/index.html')
 const navigationRoute = new NavigationRoute(navigationHandler, {
   denylist: [
-    /^\/(auth|rest|api|whisperlive|tldraw|searxng)/,
+    /^\/(auth|rest|api|whisperlive|tldraw|searxng|search)/,
     /^\/@.*/,  // Block all /@vite/, /@react-refresh/, etc.
     /^\/src\/.*/  // Block all /src/ paths
   ]
@@ -69,6 +69,40 @@ registerRoute(
   },
   new CacheFirst({
     cacheName: 'static-assets',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [200]
+      }),
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+      })
+    ]
+  })
+)
+
+// Add specific handling for SearXNG
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/searxng') || url.pathname.startsWith('/search'),
+  new NetworkFirst({
+    cacheName: 'searxng',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [200]
+      }),
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 60 * 60 // 1 hour
+      })
+    ]
+  })
+)
+
+// Add specific handling for SearXNG static assets
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/searxng/static'),
+  new CacheFirst({
+    cacheName: 'searxng-static',
     plugins: [
       new CacheableResponsePlugin({
         statuses: [200]
