@@ -18,6 +18,7 @@ import MorphicPage from './pages/morphicPage';
 import NotFound from './pages/user/NotFound';
 import NotFoundPublic from './pages/NotFoundPublic';
 import ShareHandler from './pages/tldraw/ShareHandler';
+import SearxngPage from './pages/searxngPage';
 import { logger } from './debugConfig';
 
 const AppRoutes: React.FC = () => {
@@ -47,6 +48,10 @@ const AppRoutes: React.FC = () => {
           element={user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL ? <AdminDashboard /> : null}
         />
         {/* Authentication only routes */}
+        <Route
+          path="/search"
+          element={user ? <SearxngPage /> : null}
+        />
         <Route
           path="/teacher-planner"
           element={user ? <TeacherPlanner /> : null}
