@@ -38,6 +38,12 @@ export class NodeCanvasService {
     return shapes.filter((shape: TLShape) => shape.id.toString().includes(nodeId));
   }
 
+  private static clearAllShapes(editor: Editor): void {
+    const shapes = editor.getCurrentPageShapes();
+    editor.deleteShapes(shapes.map(shape => shape.id));
+    logger.debug('node-canvas', '🧹 Cleared all shapes from canvas');
+  }
+
   private static handleMultipleNodeInstances(editor: Editor, nodeId: string, shapes: TLShape[]): TLShape | undefined {
     if (shapes.length > 1) {
       logger.warn('node-canvas', '⚠️ Multiple instances of node found', { 
@@ -190,41 +196,27 @@ export class NodeCanvasService {
       this.cancelCurrentAnimation();
 
       const shapes = this.findAllNodeShapes(editor, node.id);
-      
+      let targetShape: TLShape | null = null;
+
       if (shapes.length > 0) {
+        // Use existing shape if found
         const existingShape = this.handleMultipleNodeInstances(editor, node.id, shapes);
         if (existingShape) {
-          // Ensure the shape is actually on the canvas
-          const bounds = editor.getShapePageBounds(existingShape);
-          if (!bounds) {
-            logger.warn('node-canvas', '⚠️ Shape exists but has no bounds', { 
-              nodeId: node.id,
-              shapeId: existingShape.id
-            });
-            return;
-          }
+          targetShape = existingShape;
+        }
+      }
 
-          this.animateViewToShape(editor, existingShape);
-          logger.debug('node-canvas', '🎯 Centered view on existing shape', { 
-            nodeId: node.id,
-            shapeBounds: bounds
-          });
-        }
+      // If no shape found, create a new one at the center
+      if (!targetShape) {
+        targetShape = await this.createNodeShape(editor, node);
+      }
+
+      // Center the shape if we have one
+      if (targetShape) {
+        this.animateViewToShape(editor, targetShape);
+        logger.debug('node-canvas', '✨ Centered shape', { nodeId: node.id });
       } else {
-        // Check if canvas is empty
-        const allShapes = editor.getCurrentPageShapes();
-        if (allShapes.length === 0) {
-          logger.debug('node-canvas', '📝 Canvas is empty, creating node in center');
-        }
-        
-        // Create new shape for the node
-        const newShape = await this.createNodeShape(editor, node);
-        if (newShape) {
-          this.animateViewToShape(editor, newShape);
-          logger.debug('node-canvas', '✨ Created and centered new shape', { nodeId: node.id });
-        } else {
-          logger.warn('node-canvas', '⚠️ Could not create or center node shape', { nodeId: node.id });
-        }
+        logger.warn('node-canvas', '⚠️ Could not find or create shape to center', { nodeId: node.id });
       }
     } catch (error) {
       this.cancelCurrentAnimation();

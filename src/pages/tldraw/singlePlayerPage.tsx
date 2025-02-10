@@ -70,7 +70,11 @@ export default function SinglePlayerPage() {
     const location = useLocation();
 
     // Navigation store
-    const { navigate: navigateNode, context } = useNavigationStore();
+    const { 
+        navigate: navigateNode, 
+        context,
+        isLoading: isNavigating 
+    } = useNavigationStore();
     const currentNode = context.node;
 
     // Refs
@@ -191,11 +195,20 @@ export default function SinglePlayerPage() {
             if (!currentNode?.path || !editorRef.current) return;
 
             try {
+                setLoadingState({ status: 'loading', error: '' });
+                
+                // First clear the canvas
+                const shapes = editorRef.current.getCurrentPageShapes();
+                editorRef.current.deleteShapes(shapes.map(shape => shape.id));
+                
+                // Then load the snapshot
                 await UserNeoDBService.loadSnapshotIntoStore(currentNode.path, setLoadingState);
-                // Center the current node after loading the snapshot
+                
+                // Finally center the node
                 await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode);
-                // Mark initialization as complete after first snapshot load
+                
                 setIsInitialLoad(false);
+                setLoadingState({ status: 'ready', error: '' });
             } catch (error) {
                 logger.error('single-player-page', '❌ Failed to load snapshot', {
                     nodeId: currentNode.id,
@@ -203,11 +216,18 @@ export default function SinglePlayerPage() {
                     error
                 });
                 setIsInitialLoad(false);
+                setLoadingState({ 
+                    status: 'error', 
+                    error: error instanceof Error ? error.message : 'Failed to load snapshot'
+                });
             }
         };
 
-        loadSnapshot();
-    }, [currentNode]);
+        // Only load if we're not in a navigation operation
+        if (!isNavigating) {
+            loadSnapshot();
+        }
+    }, [currentNode, isNavigating]);
 
     // Add autosave when navigating away from current node
     useEffect(() => {
