@@ -5,16 +5,31 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
+  IconButton,
+  Box,
+  useTheme,
   Menu,
   MenuItem,
-  IconButton,
-  Stack,
-  Divider,
-  Box,
-  useTheme
+  ListItemIcon,
+  ListItemText,
+  Divider
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import { 
+  Login as LoginIcon,
+  Logout as LogoutIcon,
+  School as TeacherIcon,
+  Person as StudentIcon,
+  Dashboard as TLDrawDevIcon,
+  Build as DevToolsIcon,
+  Groups as MultiplayerIcon,
+  CalendarToday as CalendarIcon,
+  Assignment as TeacherPlannerIcon,
+  AssignmentTurnedIn as ExamMarkerIcon,
+  Settings as SettingsIcon,
+  Search as SearchIcon,
+  AdminPanelSettings as AdminIcon
+} from '@mui/icons-material';
 import { HEADER_HEIGHT } from './Layout';
 import { logger } from '../debugConfig';
 import { GraphNavigator } from '../components/navigation/GraphNavigator';
@@ -25,7 +40,6 @@ const Header: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [signupAnchorEl, setSignupAnchorEl] = useState<null | HTMLElement>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const isAdmin = user?.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL;
   const showGraphNavigation = location.pathname === '/single-player';
@@ -51,14 +65,6 @@ const Header: React.FC = () => {
     setAnchorEl(null);
   };
 
-  const handleSignupMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setSignupAnchorEl(event.currentTarget);
-  };
-
-  const handleSignupMenuClose = () => {
-    setSignupAnchorEl(null);
-  };
-
   const handleNavigation = (path: string) => {
     navigate(path);
     handleMenuClose();
@@ -66,7 +72,7 @@ const Header: React.FC = () => {
 
   const handleSignupNavigation = (role: 'teacher' | 'student') => {
     navigate('/signup', { state: { role } });
-    handleSignupMenuClose();
+    handleMenuClose();
   };
 
   const handleSignOut = async () => {
@@ -106,19 +112,6 @@ const Header: React.FC = () => {
           gap: 2,
           minWidth: '200px'
         }}>
-          <IconButton
-            color="inherit"
-            onClick={handleMenuOpen}
-            edge="start"
-            sx={{ 
-              display: isAuthenticated ? 'flex' : 'none',
-              '&:hover': {
-                bgcolor: theme.palette.action.hover
-              }
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
           <Typography 
             variant="h6" 
             component="div"
@@ -149,125 +142,138 @@ const Header: React.FC = () => {
           display: 'flex', 
           justifyContent: 'flex-end' 
         }}>
-          {isAuthenticated && (
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              slotProps={{
-                paper: {
-                  elevation: 3,
-                  sx: {
-                    bgcolor: theme.palette.background.paper,
-                    color: theme.palette.text.primary
-                  }
+          <IconButton
+            color="inherit"
+            onClick={handleMenuOpen}
+            edge="end"
+            sx={{ 
+              '&:hover': {
+                bgcolor: theme.palette.action.hover
+              }
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            slotProps={{
+              paper: {
+                elevation: 3,
+                sx: {
+                  bgcolor: theme.palette.background.paper,
+                  color: theme.palette.text.primary,
+                  minWidth: '240px'
                 }
-              }}
-            >
-              <MenuItem onClick={() => handleNavigation('/tldraw-dev')}>
-                TLDraw Dev
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/dev')}>
-                Dev Tools
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/multiplayer')}>
-                Multiplayer
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/calendar')}>
-                Calendar
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/teacher-planner')}>
-                Teacher Planner
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/exam-marker')}>
-                Exam Marker
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/settings')}>
-                Settings
-              </MenuItem>
-              <MenuItem onClick={() => handleNavigation('/search')}>
-                Search
-              </MenuItem>
-              {/* Admin-only menu items */}
-              {isAdmin && [
-                <Divider key="admin-divider" />,
-                <MenuItem key="admin-dashboard" onClick={() => handleNavigation('/admin')}>
-                  Admin Dashboard
+              }
+            }}
+          >
+            {isAuthenticated ? [
+                // Development Tools Section
+                <MenuItem key="tldraw" onClick={() => handleNavigation('/tldraw-dev')}>
+                  <ListItemIcon>
+                    <TLDrawDevIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="TLDraw Dev" />
+                </MenuItem>,
+                <MenuItem key="dev" onClick={() => handleNavigation('/dev')}>
+                  <ListItemIcon>
+                    <DevToolsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Dev Tools" />
+                </MenuItem>,
+                <Divider key="dev-divider" />,
+
+                // Main Features Section
+                <MenuItem key="multiplayer" onClick={() => handleNavigation('/multiplayer')}>
+                  <ListItemIcon>
+                    <MultiplayerIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Multiplayer" />
+                </MenuItem>,
+                <MenuItem key="calendar" onClick={() => handleNavigation('/calendar')}>
+                  <ListItemIcon>
+                    <CalendarIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Calendar" />
+                </MenuItem>,
+                <MenuItem key="planner" onClick={() => handleNavigation('/teacher-planner')}>
+                  <ListItemIcon>
+                    <TeacherPlannerIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Teacher Planner" />
+                </MenuItem>,
+                <MenuItem key="exam" onClick={() => handleNavigation('/exam-marker')}>
+                  <ListItemIcon>
+                    <ExamMarkerIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Exam Marker" />
+                </MenuItem>,
+                <Divider key="features-divider" />,
+
+                // Utilities Section
+                <MenuItem key="settings" onClick={() => handleNavigation('/settings')}>
+                  <ListItemIcon>
+                    <SettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Settings" />
+                </MenuItem>,
+                <MenuItem key="search" onClick={() => handleNavigation('/search')}>
+                  <ListItemIcon>
+                    <SearchIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Search" />
+                </MenuItem>,
+
+                // Admin Section
+                ...(isAdmin ? [
+                  <Divider key="admin-divider" />,
+                  <MenuItem key="admin" onClick={() => handleNavigation('/admin')}>
+                    <ListItemIcon>
+                      <AdminIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Admin Dashboard" />
+                  </MenuItem>
+                ] : []),
+
+                // Authentication Section
+                <Divider key="auth-divider" />,
+                <MenuItem key="signout" onClick={handleSignOut}>
+                  <ListItemIcon>
+                    <LogoutIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Sign Out" />
                 </MenuItem>
-              ]}
-            </Menu>
-          )}
-          {isAuthenticated ? (
-            <Button 
-              variant="outlined"
-              color="error"
-              onClick={handleSignOut}
-              sx={{ 
-                width: '100%',
-                borderColor: theme.palette.error.main,
-                color: theme.palette.error.main,
-                '&:hover': {
-                  backgroundColor: theme.palette.error.main,
-                  color: theme.palette.error.contrastText
-                }
-              }}
-            >
-              Sign Out
-            </Button>
-          ) : (
-            <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
-              <Button 
-                variant="outlined"
-                sx={{ 
-                  flex: 1,
-                  borderColor: theme.palette.primary.main,
-                  color: theme.palette.primary.main,
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.main,
-                    color: theme.palette.primary.contrastText
-                  }
-                }}
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
-              <Button
-                variant="contained"
-                sx={{ 
-                  flex: 1,
-                  bgcolor: theme.palette.primary.main,
-                  color: theme.palette.primary.contrastText,
-                  '&:hover': {
-                    bgcolor: theme.palette.primary.dark
-                  }
-                }}
-                onClick={handleSignupMenuOpen}
-              >
-                Sign Up
-              </Button>
-              <Menu
-                anchorEl={signupAnchorEl}
-                open={Boolean(signupAnchorEl)}
-                onClose={handleSignupMenuClose}
-                slotProps={{
-                  paper: {
-                    elevation: 3,
-                    sx: {
-                      bgcolor: theme.palette.background.paper,
-                      color: theme.palette.text.primary
-                    }
-                  }
-                }}
-              >
-                <MenuItem onClick={() => handleSignupNavigation('teacher')}>
-                  Sign up as Teacher
+            ] : [
+                // Authentication Section for Non-authenticated Users
+                <MenuItem key="signin" onClick={() => handleNavigation('/login')}>
+                  <ListItemIcon>
+                    <LoginIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Sign In" />
+                </MenuItem>,
+                <Divider key="signup-divider" />,
+                <MenuItem key="teacher-signup" onClick={() => handleSignupNavigation('teacher')}>
+                  <ListItemIcon>
+                    <TeacherIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Sign up as Teacher"
+                    secondary="Create a teacher account"
+                  />
+                </MenuItem>,
+                <MenuItem key="student-signup" onClick={() => handleSignupNavigation('student')}>
+                  <ListItemIcon>
+                    <StudentIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Sign up as Student"
+                    secondary="Create a student account"
+                  />
                 </MenuItem>
-                <MenuItem onClick={() => handleSignupNavigation('student')}>
-                  Sign up as Student
-                </MenuItem>
-              </Menu>
-            </Stack>
-          )}
+            ]}
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>
