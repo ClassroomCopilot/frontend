@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, IconButton, Typography, styled, Tabs, Tab } from '@mui/material';
+import { Box, Typography, styled, Tabs, Tab } from '@mui/material';
 import {
     AccountCircle as ProfileIcon,
     Book as JournalIcon,
@@ -21,7 +21,7 @@ interface Props {
 }
 
 export const UserNavigation: React.FC<Props> = ({ activeView, onViewChange }) => {
-    const { currentNode } = useNeoUser();
+    const { currentWorkerNode } = useNeoUser();
 
     return (
         <NavigationContainer>
@@ -50,9 +50,9 @@ export const UserNavigation: React.FC<Props> = ({ activeView, onViewChange }) =>
 
             <Box sx={{ flex: 1 }} />
 
-            {currentNode && (
+            {currentWorkerNode && (
                 <Typography variant="subtitle2" sx={{ px: 2 }}>
-                    {currentNode.label}
+                    {currentWorkerNode.label}
                 </Typography>
             )}
         </NavigationContainer>

@@ -12,7 +12,8 @@ export function SnapshotToolbar({
 }) {
     const editor = useEditor();
     const { addToast } = useToasts();
-    const { currentNode } = useNavigationStore();
+    const { context } = useNavigationStore();
+    const currentNode = context.node;
 
     const save = useCallback(async () => {
         try {

@@ -1,5 +1,7 @@
+import React from 'react';
 import { Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import { ViewColumn, ViewList, ViewModule, ViewQuilt, ViewStream } from '@mui/icons-material';
+import '../panel.css';  // Import the CSS file from parent directory
 
 // Add panel type icons mapping
 const PANEL_TYPE_ICONS = {
@@ -10,21 +12,32 @@ const PANEL_TYPE_ICONS = {
     'stream': <ViewStream />
 };
 
+interface BasePanelProps {
+    title?: string;
+    showTypeSelector?: boolean;
+    type?: keyof typeof PANEL_TYPE_ICONS;
+    handleTypeChange?: (event: SelectChangeEvent) => void;
+    children?: React.ReactNode;
+}
+
 export const BasePanel: React.FC<BasePanelProps> = ({
-    // ... existing props ...
+    title,
+    showTypeSelector = false,
+    type = 'default',
+    handleTypeChange,
+    children
 }) => {
-    // ... existing code ...
-    
     return (
-        <div className={styles.basePanel}>
-            <div className={styles.header}>
-                {title && <div className={styles.title}>{title}</div>}
-                <div className={styles.controls}>
+        <div className="panel-root">
+            <div className="panel-header">
+                {title && <div className="panel-section-title">{title}</div>}
+                <div className="panel-header-actions">
                     {showTypeSelector && (
                         <Select
                             value={type}
                             onChange={handleTypeChange}
                             size="small"
+                            className="panel-type-select"
                             sx={{
                                 '.MuiSelect-select': {
                                     display: 'flex',
@@ -59,11 +72,12 @@ export const BasePanel: React.FC<BasePanelProps> = ({
                             ))}
                         </Select>
                     )}
-                    {/* ... rest of controls ... */}
                 </div>
             </div>
-            {/* ... rest of component ... */}
+            <div className="panel-content">
+                {children}
+            </div>
         </div>
     );
-};
+}; 
 // ... existing code ... 
