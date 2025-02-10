@@ -14,6 +14,7 @@ interface AuthContextType {
   user: CCUser | null;
   userRole: string | null;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   login: (credentials: EmailCredentials) => Promise<LoginResponse>;
   logout: () => Promise<void>;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userRole: null,
   isLoading: true,
+  isInitialized: false,
   error: null,
   login: async () => { throw new Error('Not implemented') },
   logout: async () => { throw new Error('Not implemented') },
@@ -176,6 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       userRole,
       isLoading,
+      isInitialized,
       error,
       login,
       logout,

@@ -1,6 +1,6 @@
 import { Editor, createShapeId, IndexKey } from '@tldraw/tldraw';
 import axios from '../../axiosConfig';
-import { getShapeType, isValidNodeType } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { getShapeType, isValidNodeType, CCNodeTypes } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { AllNodeShapes, NodeShapeType, ShapeUtils } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-shapes';
 import { graphState } from '../../utils/tldraw/cc-base/cc-graph/graphStateUtil';
 import { NodeResponse, ConnectedNodesResponse } from '../../types/api';
@@ -58,7 +58,18 @@ export class GraphNeoDBService {
             // Add connected nodes first
             if (data.connected_nodes) {
                 data.connected_nodes.forEach(connectedNode => {
-                    nodesToProcess.push(connectedNode.node_data);
+                    if (isValidNodeType(connectedNode.type)) {
+                        // Convert the simplified node structure to node_data format
+                        const nodeData = {
+                            unique_id: connectedNode.id,
+                            path: connectedNode.path,
+                            name: connectedNode.label,
+                            __primarylabel__: connectedNode.type as keyof CCNodeTypes,
+                            created: new Date().toISOString(),
+                            merged: new Date().toISOString(),
+                        };
+                        nodesToProcess.push(nodeData);
+                    }
                 });
             }
 

@@ -1,6 +1,6 @@
 import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCBaseShape } from '../cc-types'
-import { NodeProperty } from './cc-graph-shared'
+import { NodeProperty, formatDate, DateValue } from './cc-graph-shared'
 import { ccGraphShapeProps, getDefaultCCCalendarWeekNodeProps } from './cc-graph-props'
 import { getNodeStyles } from './cc-graph-styles'
 import { NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
@@ -34,7 +34,7 @@ export class CCCalendarWeekNodeShapeUtil extends CCBaseShapeUtil<CCCalendarWeekN
       <div style={styles.container}>
         <NodeProperty 
           label="Start Date"
-          value={shape.props.start_date}
+          value={formatDate(shape.props.start_date as DateValue)}
           labelStyle={styles.property.label}
           valueStyle={styles.property.value}
         />

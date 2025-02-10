@@ -10,6 +10,10 @@ import {
 // App context
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
+import { useNeo4j } from '../../contexts/Neo4jContext';
+import { useNeoInstitute } from '../../contexts/NeoInstituteContext';
+import { useUser } from '../../contexts/UserContext';
+import { useNeoUser } from '../../contexts/NeoUserContext';
 // Tldraw services
 import { localStoreService } from '../../services/tldraw/localStoreService';
 import { PresentationService } from '../../services/tldraw/presentationService';
@@ -36,19 +40,38 @@ import { saveNodeSnapshotToDatabase } from '../../services/tldraw/snapshotServic
 import { CircularProgress, Alert, Snackbar } from '@mui/material';
 
 export default function SinglePlayerPage() {
-    // Context hooks
-    const { user } = useAuth();
+    // Context hooks with initialization states
+    const { 
+        user, 
+        isInitialized: isAuthInitialized 
+    } = useAuth();
+    const { 
+        isInitialized: isUserInitialized 
+    } = useUser();
     const { 
         tldrawPreferences, 
         initializePreferences,
         presentationMode,
         setTldrawPreferences
     } = useTLDraw();
-    const navigate = useNavigate();
+    const { 
+        userDbName, 
+        workerDbName, 
+        isLoading: isNeo4jLoading, 
+        isInitialized: isNeo4jInitialized 
+    } = useNeo4j();
+    const { 
+        isInitialized: isInstituteInitialized 
+    } = useNeoInstitute();
+    const {
+        isInitialized: isNeoUserInitialized
+    } = useNeoUser();
+    const routerNavigate = useNavigate();
     const location = useLocation();
 
     // Navigation store
-    const { currentNode, navigateToNode } = useNavigationStore();
+    const { navigate: navigateNode, context } = useNavigationStore();
+    const currentNode = context.node;
 
     // Refs
     const editorRef = useRef<Editor | null>(null);
@@ -62,23 +85,97 @@ export default function SinglePlayerPage() {
     // Add initialization flag
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    // Initialize user nodes
+    // Check if all contexts are initialized
+    const areContextsInitialized = useMemo(() => {
+        const initStates = {
+            auth: isAuthInitialized,
+            user: isUserInitialized,
+            neo4j: isNeo4jInitialized,
+            neoInstitute: isInstituteInitialized,
+            neoUser: isNeoUserInitialized
+        };
+
+        logger.debug('single-player-page', '🔄 Checking context initialization states', initStates);
+
+        return Object.values(initStates).every(state => state);
+    }, [isAuthInitialized, isUserInitialized, isNeo4jInitialized, isInstituteInitialized, isNeoUserInitialized]);
+
+    // Initialize user nodes and navigate to today's node
     useEffect(() => {
         const initializeUserNodes = async () => {
-            if (!user?.email) return;
+            // Wait for all contexts to be ready
+            if (!areContextsInitialized) {
+                logger.debug('single-player-page', '⏳ Waiting for context initialization...', {
+                    isAuthInitialized,
+                    isUserInitialized,
+                    isNeo4jInitialized,
+                    isInstituteInitialized,
+                    isNeoUserInitialized
+                });
+                return;
+            }
+
+            // Check for required data
+            if (!user?.email || !userDbName || isNeo4jLoading) {
+                logger.debug('single-player-page', '⏳ Waiting for required data...', {
+                    hasEmail: !!user?.email,
+                    userDbName,
+                    isNeo4jLoading
+                });
+                return;
+            }
 
             try {
-                const userNodes = await UserNeoDBService.fetchUserNodesData(user.email);
+                setLoadingState({ status: 'loading', error: '' });
+                
+                logger.debug('single-player-page', '🔄 Initializing user nodes', {
+                    email: user.email,
+                    userDbName,
+                    workerDbName
+                });
+
+                // Fetch user nodes data
+                const userNodes = await UserNeoDBService.fetchUserNodesData(
+                    user.email,
+                    userDbName,
+                    workerDbName || undefined
+                );
+
                 if (userNodes?.privateUserNode) {
-                    await navigateToNode(userNodes.privateUserNode.unique_id);
+                    logger.debug('single-player-page', '🔄 Navigating to user node', {
+                        nodeId: userNodes.privateUserNode.unique_id,
+                        dbName: userDbName
+                    });
+                    await navigateNode(userNodes.privateUserNode.unique_id, userDbName);
+                    logger.info('single-player-page', '✅ Successfully navigated to user node');
+                } else {
+                    logger.warn('single-player-page', '⚠️ No private user node found');
                 }
+                
+                setLoadingState({ status: 'ready', error: '' });
             } catch (error) {
-                logger.error('single-player-page', '❌ Failed to initialize user nodes', error);
+                const errorMessage = error instanceof Error ? error.message : 'Failed to initialize user nodes';
+                logger.error('single-player-page', '❌ Failed to initialize user nodes', {
+                    error: errorMessage,
+                    userDbName,
+                    workerDbName
+                });
+                setLoadingState({ 
+                    status: 'error', 
+                    error: errorMessage
+                });
             }
         };
 
         initializeUserNodes();
-    }, [user?.email, navigateToNode]);
+    }, [
+        user?.email, 
+        userDbName, 
+        workerDbName, 
+        isNeo4jLoading, 
+        areContextsInitialized,
+        navigateNode
+    ]);
 
     // Initialize preferences when user is available
     useEffect(() => {
@@ -261,9 +358,9 @@ export default function SinglePlayerPage() {
     useEffect(() => {
         if (!user) {
             logger.info('single-player-page', '🚪 Redirecting to home - no user logged in');
-            navigate('/');
+            routerNavigate('/');
         }
-    }, [user, navigate]);
+    }, [user, routerNavigate]);
 
     // Handle presentation mode
     useEffect(() => {
@@ -298,8 +395,8 @@ export default function SinglePlayerPage() {
             flexDirection: 'column',
             overflow: 'hidden'
         }}>
-            {/* Loading overlay */}
-            {loadingState.status === 'loading' && (
+            {/* Loading overlay - show when loading or contexts not initialized */}
+            {(loadingState.status === 'loading' || !areContextsInitialized) && (
                 <div style={{
                     position: 'absolute',
                     top: 0,

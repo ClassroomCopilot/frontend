@@ -2,149 +2,363 @@ import { create } from 'zustand';
 import { UserNeoDBService } from '../services/graph/userNeoDBService';
 import { logger } from '../debugConfig';
 import { isValidNodeType } from '../utils/tldraw/cc-base/cc-graph/cc-graph-types';
-import { NavigationNode, NavigationStore } from '../types/navigation';
+import { 
+    NavigationStore, 
+    NavigationNode,
+    MainContext,
+    BaseContext,
+    NavigationContextState,
+    isProfileContext,
+    isInstituteContext,
+    getContextDatabase,
+    addToHistory,
+    ExtendedContext
+} from '../types/navigation';
+import { NAVIGATION_CONTEXTS } from '../config/navigationContexts';
 
-const initialState = {
-    currentNode: null,
+const initialState: NavigationContextState = {
+    main: 'profile',
+    base: 'profile',
+    node: null,
     history: {
         nodes: [],
-        currentIndex: -1,
-    },
-    availableRoutes: [],
-    isLoading: false,
-    error: null,
+        currentIndex: -1
+    }
 };
 
+function getDefaultBaseForMain(main: MainContext): BaseContext {
+    return main === 'profile' ? 'profile' : 'school';
+}
+
+function validateContextTransition(
+    current: NavigationContextState,
+    updates: Partial<NavigationContextState>
+): NavigationContextState {
+    const newState = { ...current, ...updates };
+
+    // Validate main context
+    if (updates.main) {
+        newState.base = getDefaultBaseForMain(updates.main);
+    }
+
+    // Validate base context
+    if (updates.base) {
+        // Ensure base context matches main context
+        const isValid = newState.main === 'profile' 
+            ? isProfileContext(updates.base)
+            : isInstituteContext(updates.base);
+
+        if (!isValid) {
+            newState.base = getDefaultBaseForMain(newState.main);
+        }
+    }
+
+    return newState;
+}
+
+export interface NavigationActions {
+  // Context Navigation
+  setMainContext: (context: MainContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+  setBaseContext: (context: BaseContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+  setExtendedContext: (context: ExtendedContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+  
+  // Node Navigation
+  navigate: (nodeId: string, dbName: string) => Promise<void>;
+  navigateToNode: (node: NavigationNode, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+  
+  // History Navigation
+  goBack: () => void;
+  goForward: () => void;
+  
+  // Utility Methods
+  refreshNavigationState: (userDbName: string | null, workerDbName: string | null) => Promise<void>;
+}
+
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
-    ...initialState,
+    context: initialState,
+    isLoading: false,
+    error: null,
+
+    goBack: () => {
+        const currentState = get().context;
+        if (currentState.history.currentIndex > 0) {
+            const newIndex = currentState.history.currentIndex - 1;
+            const previousNode = currentState.history.nodes[newIndex];
+            set({
+                context: {
+                    ...currentState,
+                    node: previousNode,
+                    history: {
+                        ...currentState.history,
+                        currentIndex: newIndex
+                    }
+                }
+            });
+        }
+    },
+
+    goForward: () => {
+        const currentState = get().context;
+        if (currentState.history.currentIndex < currentState.history.nodes.length - 1) {
+            const newIndex = currentState.history.currentIndex + 1;
+            const nextNode = currentState.history.nodes[newIndex];
+            set({
+                context: {
+                    ...currentState,
+                    node: nextNode,
+                    history: {
+                        ...currentState.history,
+                        currentIndex: newIndex
+                    }
+                }
+            });
+        }
+    },
+
+    // Context Navigation
+    setMainContext: async (main: MainContext, userDbName: string | null, workerDbName: string | null) => {
+        try {
+            set({ isLoading: true, error: null });
+            
+            const currentState = get().context;
+            const newState = validateContextTransition(currentState, { main });
+            
+            // Get default node for the new context
+            const contextDef = NAVIGATION_CONTEXTS[newState.base];
+            if (!contextDef) {
+                throw new Error(`Invalid context: ${newState.base}`);
+            }
+
+            const dbName = getContextDatabase(newState, userDbName, workerDbName);
+            logger.debug('navigation', '🔄 Setting main context', {
+                main,
+                base: newState.base,
+                dbName,
+                userDbName,
+                workerDbName
+            });
+
+            const defaultNode = await UserNeoDBService.getDefaultNode(newState.base, dbName);
+            
+            if (!defaultNode) {
+                throw new Error(`No default node for context: ${newState.base}`);
+            }
+
+            // Update history with new node
+            const newHistory = addToHistory(currentState.history, defaultNode);
+
+            set({ 
+                context: { 
+                    ...newState, 
+                    node: defaultNode,
+                    history: newHistory
+                },
+                isLoading: false 
+            });
+
+            // Load node snapshot
+            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
+                set({ isLoading: state.status === 'loading' });
+            });
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to set main context:', error);
+            set({ 
+                error: error instanceof Error ? error.message : 'Failed to set main context',
+                isLoading: false 
+            });
+        }
+    },
+
+    setBaseContext: async (base: BaseContext, userDbName: string | null, workerDbName: string | null) => {
+        try {
+            set({ isLoading: true, error: null });
+            
+            const currentState = get().context;
+            const newState = validateContextTransition(currentState, { base });
+            
+            const contextDef = NAVIGATION_CONTEXTS[base];
+            if (!contextDef) {
+                throw new Error(`Invalid context: ${base}`);
+            }
+
+            // Get the database name for this context
+            const dbName = getContextDatabase(newState, userDbName, workerDbName);
+
+            // Get default node for this context
+            const defaultNode = await UserNeoDBService.getDefaultNode(base, dbName);
+            if (!defaultNode) {
+                throw new Error(`No default node found for context: ${base}`);
+            }
+
+            // Update history with new node
+            const newHistory = addToHistory(currentState.history, defaultNode);
+
+            // Update state with new context and node
+            set({ 
+                context: { 
+                    ...newState,
+                    node: defaultNode,
+                    history: newHistory
+                }
+            });
+
+            // Load node snapshot
+            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
+                set({ isLoading: state.status === 'loading' });
+            });
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to set base context:', error);
+            set({ 
+                error: error instanceof Error ? error.message : 'Failed to set base context',
+                isLoading: false 
+            });
+        }
+    },
+
+    setExtendedContext: async (extended: ExtendedContext, userDbName: string | null, workerDbName: string | null) => {
+        try {
+            set({ isLoading: true, error: null });
+            
+            const currentState = get().context;
+            const contextDef = NAVIGATION_CONTEXTS[currentState.base];
+            if (!contextDef) {
+                throw new Error(`Invalid base context: ${currentState.base}`);
+            }
+
+            // Find the view definition for the extended context
+            const viewDef = contextDef.views.find(view => view.id === extended);
+            if (!viewDef) {
+                throw new Error(`Invalid extended context: ${extended} for base context: ${currentState.base}`);
+            }
+
+            logger.debug('navigation', '🔄 Setting extended context', {
+                base: currentState.base,
+                extended,
+                dbName: getContextDatabase(currentState, userDbName, workerDbName)
+            });
+
+            // Get the default node for this extended context
+            const dbName = getContextDatabase(currentState, userDbName, workerDbName);
+            const defaultNode = await UserNeoDBService.getDefaultNode(extended, dbName);
+            
+            if (!defaultNode) {
+                throw new Error(`No default node for extended context: ${extended}`);
+            }
+
+            // Update history with new node
+            const newHistory = addToHistory(currentState.history, defaultNode);
+
+            set({ 
+                context: { 
+                    ...currentState,
+                    node: defaultNode,
+                    history: newHistory
+                },
+                isLoading: false 
+            });
+
+            // Load node snapshot
+            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
+                set({ isLoading: state.status === 'loading' });
+            });
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to set extended context:', error);
+            set({ 
+                error: error instanceof Error ? error.message : 'Failed to set extended context',
+                isLoading: false 
+            });
+        }
+    },
 
     navigate: async (nodeId: string, dbName: string) => {
         try {
             set({ isLoading: true, error: null });
-            
-            // Check if we're already at this node
-            const { currentNode, history } = get();
-            if (currentNode?.id === nodeId) {
-                set({ isLoading: false });
-                return;
-            }
-            
             const nodeData = await UserNeoDBService.fetchNodeData(nodeId, dbName);
             if (!nodeData) {
-                logger.error('navigation', '❌ Failed to fetch node data');
-                return;
-            }
-
-            const { node_type, node_data } = nodeData;
-            if (!node_type || !isValidNodeType(node_type)) {
-                logger.error('navigation', '❌ Invalid node type:', node_type);
-                return;
+                throw new Error(`Node not found: ${nodeId}`);
             }
 
             const node: NavigationNode = {
                 id: nodeId,
-                path: node_data.path || '',
-                label: node_data.title || node_data.name || nodeId,
-                type: node_type
+                path: nodeData.node_data.path || '',
+                label: nodeData.node_data.title || nodeData.node_data.user_name || nodeId,
+                type: nodeData.node_type
             };
 
-            // Update history - prevent duplicate nodes
-            const newHistory = {
-                nodes: [...history.nodes.slice(0, history.currentIndex + 1)],
-                currentIndex: history.currentIndex
-            };
-
-            // Only add the node if it's different from the last node
-            if (newHistory.nodes.length === 0 || newHistory.nodes[newHistory.currentIndex]?.id !== nodeId) {
-                newHistory.nodes.push(node);
-                newHistory.currentIndex++;
-            }
+            const currentState = get().context;
+            const newHistory = addToHistory(currentState.history, node);
 
             set({
-                currentNode: node,
-                history: newHistory,
-                isLoading: false,
+                context: {
+                    ...currentState,
+                    node,
+                    history: newHistory
+                },
+                isLoading: false
             });
 
-            // Fetch and update available routes
-            const connectedNodes = await UserNeoDBService.fetchConnectedNodes(nodeId, dbName);
-            set({ availableRoutes: connectedNodes });
-
-            logger.info('navigation', '🧭 Navigated to node', { 
-                nodeId, 
-                type: node.type,
-                availableRoutes: connectedNodes.length 
+            await UserNeoDBService.loadSnapshotIntoStore(node.path, (state) => {
+                set({ isLoading: state.status === 'loading' });
             });
         } catch (error) {
             logger.error('navigation', '❌ Failed to navigate:', error);
-            set({ 
-                error: error instanceof Error ? error.message : 'Navigation failed',
-                isLoading: false 
+            set({
+                error: error instanceof Error ? error.message : 'Failed to navigate',
+                isLoading: false
             });
         }
     },
 
-    navigateToNode: async (nodeId: string) => {
+    navigateToNode: async (node: NavigationNode, userDbName: string | null, workerDbName: string | null) => {
         try {
             set({ isLoading: true, error: null });
+            
+            if (!isValidNodeType(node.type)) {
+                throw new Error(`Invalid node type: ${node.type}`);
+            }
 
-            // Get the formatted email from the nodeId
-            const formattedEmail = nodeId.replace('User_', '');
-            const dbName = `cc.ccusers.${formattedEmail}`;
-
-            // Reuse the navigate function to avoid code duplication
-            await get().navigate(nodeId, dbName);
+            const dbName = getContextDatabase(get().context, userDbName, workerDbName);
+            await get().navigate(node.id, dbName);
         } catch (error) {
             logger.error('navigation', '❌ Failed to navigate to node:', error);
-            set({ 
-                error: error instanceof Error ? error.message : 'Navigation failed',
-                isLoading: false 
-            });
-        }
-    },
-
-    back: () => {
-        const { history } = get();
-        if (history.currentIndex > 0) {
-            const newIndex = history.currentIndex - 1;
-            const prevNode = history.nodes[newIndex];
             set({
-                currentNode: prevNode,
-                history: { ...history, currentIndex: newIndex },
-            });
-            
-            logger.info('navigation', '⬅️ Navigated back', { 
-                to: prevNode.id,
-                historyIndex: newIndex 
+                error: error instanceof Error ? error.message : 'Failed to navigate to node',
+                isLoading: false
             });
         }
     },
 
-    forward: () => {
-        const { history } = get();
-        if (history.currentIndex < history.nodes.length - 1) {
-            const newIndex = history.currentIndex + 1;
-            const nextNode = history.nodes[newIndex];
+    refreshNavigationState: async (userDbName: string | null, workerDbName: string | null) => {
+        try {
+            set({ isLoading: true, error: null });
+            const currentState = get().context;
+            
+            if (currentState.node) {
+                const dbName = getContextDatabase(currentState, userDbName, workerDbName);
+                const nodeData = await UserNeoDBService.fetchNodeData(currentState.node.id, dbName);
+                if (nodeData) {
+                    const node: NavigationNode = {
+                        id: currentState.node.id,
+                        path: nodeData.node_data.path || '',
+                        label: nodeData.node_data.title || nodeData.node_data.user_name || currentState.node.id,
+                        type: nodeData.node_type
+                    };
+                    set({
+                        context: {
+                            ...currentState,
+                            node
+                        }
+                    });
+                }
+            }
+            
+            set({ isLoading: false });
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to refresh navigation state:', error);
             set({
-                currentNode: nextNode,
-                history: { ...history, currentIndex: newIndex },
-            });
-            
-            logger.info('navigation', '➡️ Navigated forward', { 
-                to: nextNode.id,
-                historyIndex: newIndex 
+                error: error instanceof Error ? error.message : 'Failed to refresh navigation state',
+                isLoading: false
             });
         }
-    },
-
-    addAvailableRoute: (node: NavigationNode) => {
-        const { availableRoutes } = get();
-        set({
-            availableRoutes: [...availableRoutes, node],
-        });
-    },
-
-    setError: (error: string | null) => set({ error }),
-
-    clearHistory: () => set(initialState),
+    }
 })); 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
     Tldraw,
     Editor,
@@ -43,7 +43,12 @@ export default function TldrawMultiUser() {
         presentationMode
     } = useTLDraw();
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
     const editorRef = useRef<Editor | null>(null);
+
+    // Get room ID from URL params
+    const roomId = searchParams.get('room') || 'multiplayer';
 
     // Memoize user information to ensure consistency
     const userInfo = useMemo(() => ({
@@ -70,8 +75,9 @@ export default function TldrawMultiUser() {
         userId: userInfo.id,
         displayName: userInfo.name,
         color: userInfo.color,
+        roomId,
         baseUrl: SYNC_WORKER_URL
-    }), [userInfo]);
+    }), [userInfo, roomId]);
 
     const store = useSync({
         ...connectionOptions,
@@ -132,7 +138,26 @@ export default function TldrawMultiUser() {
     }
 
     if (store.status !== 'synced-remote') {
-        return <div>Connecting...</div>;
+        return (
+            <div style={{
+                position: 'fixed',
+                inset: 0,
+                top: `${HEADER_HEIGHT}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.1)'
+            }}>
+                <div style={{
+                    padding: '20px',
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}>
+                    Connecting to room: {roomId}...
+                </div>
+            </div>
+        );
     }
 
     return (

@@ -5,12 +5,12 @@ import { RegularHelperButtons } from './regular/helperButton';
 // import { RegularHelpMenu } from './regular/helpMenu';
 // import { RegularMainMenu } from './regular/mainMenu';
 import { RegularNavigationPanel } from './regular/navigationPanel';
-import { RegularPageMenu } from './regular/pageMenu';
-import { RegularQuickActions } from './regular/quickActions';
+// import { RegularPageMenu } from './regular/pageMenu';
+// import { RegularQuickActions } from './regular/quickActions';
 import { RegularStylePanel } from './regular/stylePanel';
 import { RegularZoomMenu } from './regular/zoomMenu';
 import { RegularKeyboardShortcutsDialog } from './regular/keyboardShortcutsDialog';
-import { RegularActionsMenu } from './regular/actionsMenu';
+// import { RegularActionsMenu } from './regular/actionsMenu';
 import { RegularContextMenu } from './regular/contextMenu';
 import { RegularDebugMenu } from './regular/debugMenu';
 
@@ -19,7 +19,7 @@ import { PresentationHelperButtons } from './presentation/helperButton';
 // import { PresentationHelpMenu } from './presentation/helpMenu';
 // import { PresentationMainMenu } from './presentation/mainMenu';
 import { PresentationNavigationPanel } from './presentation/navigationPanel';
-import { PresentationPageMenu } from './presentation/pageMenu';
+// import { PresentationPageMenu } from './presentation/pageMenu';
 import { PresentationQuickActions } from './presentation/quickActions';
 import { PresentationStylePanel } from './presentation/stylePanel';
 import { PresentationZoomMenu } from './presentation/zoomMenu';
@@ -36,12 +36,12 @@ export const regularComponentsIndex: TLComponents = {
     // HelpMenu: RegularHelpMenu,
     // MainMenu: RegularMainMenu,
     NavigationPanel: RegularNavigationPanel,
-    PageMenu: RegularPageMenu,
-    QuickActions: RegularQuickActions,
+    // PageMenu: RegularPageMenu,
+    // QuickActions: RegularQuickActions,
     StylePanel: RegularStylePanel,
     ZoomMenu: RegularZoomMenu,
     KeyboardShortcutsDialog: RegularKeyboardShortcutsDialog,
-    ActionsMenu: RegularActionsMenu,
+    // ActionsMenu: RegularActionsMenu,
     ContextMenu: RegularContextMenu,
     DebugMenu: RegularDebugMenu,
 };
@@ -53,7 +53,7 @@ export const presentationComponentsIndex: TLComponents = {
     // HelpMenu: PresentationHelpMenu,
     // MainMenu: PresentationMainMenu,
     NavigationPanel: PresentationNavigationPanel,
-    PageMenu: PresentationPageMenu,
+    // PageMenu: PresentationPageMenu,
     QuickActions: PresentationQuickActions,
     StylePanel: PresentationStylePanel,
     ZoomMenu: PresentationZoomMenu,

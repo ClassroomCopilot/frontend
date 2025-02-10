@@ -1,6 +1,6 @@
 import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCBaseShape } from '../cc-types'
-import { NodeProperty } from './cc-graph-shared'
+import { NodeProperty, formatDate } from './cc-graph-shared'
 import { ccGraphShapeProps, getDefaultCCUserTimetableLessonNodeProps } from './cc-graph-props'
 import { getNodeStyles } from './cc-graph-styles'
 import { NODE_THEMES, NODE_TYPE_THEMES } from './cc-graph-styles'
@@ -40,19 +40,19 @@ export class CCUserTimetableLessonNodeShapeUtil extends CCBaseShapeUtil<CCUserTi
         />
         <NodeProperty 
           label="Date"
-          value={shape.props.date}
+          value={formatDate(shape.props.date)}
           labelStyle={styles.property.label}
           valueStyle={styles.property.value}
         />
         <NodeProperty 
           label="Start Time"
-          value={shape.props.start_time}
+          value={formatDate(shape.props.start_time)}
           labelStyle={styles.property.label}
           valueStyle={styles.property.value}
         />
         <NodeProperty 
           label="End Time"
-          value={shape.props.end_time}
+          value={formatDate(shape.props.end_time)}
           labelStyle={styles.property.label}
           valueStyle={styles.property.value}
         />

@@ -5,6 +5,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { Neo4jProvider } from './contexts/Neo4jContext';
 import { TLDrawProvider } from './contexts/TLDrawContext';
 import { UserProvider } from './contexts/UserContext';
+import { NeoUserProvider } from './contexts/NeoUserContext';
+import { NeoInstituteProvider } from './contexts/NeoInstituteContext';
 import AppRoutes from './AppRoutes';
 import React from 'react';
 
@@ -15,9 +17,13 @@ const App = React.memo(() => (
       <AuthProvider>
         <UserProvider>
           <Neo4jProvider>
-            <TLDrawProvider>
-              <AppRoutes />
-            </TLDrawProvider>
+            <NeoUserProvider>
+              <NeoInstituteProvider>
+                <TLDrawProvider>
+                  <AppRoutes />
+                </TLDrawProvider>
+              </NeoInstituteProvider>
+            </NeoUserProvider>
           </Neo4jProvider>
         </UserProvider>
       </AuthProvider>

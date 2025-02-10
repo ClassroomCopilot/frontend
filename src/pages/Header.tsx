@@ -83,17 +83,6 @@ const Header: React.FC = () => {
     }
   };
 
-  // Debug log for rendering
-  logger.debug('user-context', '🔄 Header rendering', {
-    hasUser: !!user,
-    isAuthenticated,
-    userId: user?.id,
-    userEmail: user?.email,
-    showingSignOut: isAuthenticated,
-    showingSignIn: !isAuthenticated,
-    isAdmin
-  });
-
   return (
     <AppBar 
       position="fixed" 

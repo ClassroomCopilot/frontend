@@ -1,16 +1,37 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { styled } from '@mui/material/styles';
-import { IconButton, Tooltip, Box, Typography, Popover } from '@mui/material';
+import React, { useState, useCallback } from 'react';
+import { 
+    IconButton, 
+    Tooltip, 
+    Box, 
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
+    Button,
+    styled
+} from '@mui/material';
 import { 
     ArrowBack as ArrowBackIcon,
     ArrowForward as ArrowForwardIcon,
-    Map as MapIcon,
-    Home as HomeIcon,
-    Search as SearchIcon
+    History as HistoryIcon,
+    School as SchoolIcon,
+    Person as PersonIcon,
+    AccountCircle as AccountCircleIcon,
+    CalendarToday as CalendarIcon,
+    School as TeachingIcon,
+    Business as BusinessIcon,
+    AccountTree as DepartmentIcon,
+    Class as ClassIcon,
+    ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { useNavigationStore } from '../../stores/navigationStore';
+import { useNeo4j } from '../../contexts/Neo4jContext';
+import { NAVIGATION_CONTEXTS } from '../../config/navigationContexts';
+import { 
+    MainContext,
+    BaseContext
+} from '../../types/navigation';
 import { logger } from '../../debugConfig';
-import { UserNeoDBService } from '../../services/graph/userNeoDBService';
 
 const NavigationRoot = styled(Box)`
   display: flex;
@@ -21,269 +42,280 @@ const NavigationRoot = styled(Box)`
   overflow: hidden;
 `;
 
-const BreadcrumbContainer = styled(Box)`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  overflow: hidden;
-  white-space: nowrap;
-`;
-
-const NodeLabel = styled('span')`
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-  &:hover {
-    background-color: ${props => props.theme.palette.action.hover};
-    cursor: pointer;
-  }
-`;
-
-const Separator = styled('span')`
-  color: ${props => props.theme.palette.text.secondary};
-`;
-
 const NavigationControls = styled(Box)`
   display: flex;
   align-items: center;
   gap: 4px;
 `;
 
-const MenuItem = styled(Box)`
-  padding: 8px 16px;
-  &:hover {
-    background-color: ${props => props.theme.palette.action.hover};
-    cursor: pointer;
-  }
-`;
+const ContextToggleContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: theme.palette.action.hover,
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(0.5),
+    gap: theme.spacing(0.5),
+}));
+
+const ContextToggleButton = styled(Button, {
+    shouldForwardProp: (prop) => prop !== 'active'
+})<{ active?: boolean }>(({ theme, active }) => ({
+    minWidth: 0,
+    padding: theme.spacing(0.5, 1.5),
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: active ? theme.palette.primary.main : 'transparent',
+    color: active ? theme.palette.primary.contrastText : theme.palette.text.primary,
+    textTransform: 'none',
+    transition: theme.transitions.create(['background-color', 'color'], {
+        duration: theme.transitions.duration.shorter,
+    }),
+    '&:hover': {
+        backgroundColor: active ? theme.palette.primary.dark : theme.palette.action.hover,
+    },
+}));
+
+const ContextButton = styled(Button)(({ theme }) => ({
+    textTransform: 'none',
+    padding: theme.spacing(0.5, 1),
+    gap: theme.spacing(0.5),
+    minWidth: 0,
+    color: theme.palette.text.primary,
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+    },
+}));
 
 export const GraphNavigator: React.FC = () => {
-  const {
-    history,
-    availableRoutes,
-    back,
-    forward,
-    navigate,
-    navigateToNode,
-    isLoading
-  } = useNavigationStore();
+    const {
+        context,
+        setMainContext,
+        setBaseContext,
+        setExtendedContext,
+        goBack,
+        goForward,
+        isLoading
+    } = useNavigationStore();
 
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+    const { userDbName, workerDbName, isInitialized: isNeo4jInitialized } = useNeo4j();
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-    logger.debug('navigation', '🗺️ Routes menu clicked', { 
-      availableRoutes: availableRoutes.map(r => ({ id: r.id, label: r.label, type: r.type }))
-    });
-  };
+    const [contextMenuAnchor, setContextMenuAnchor] = useState<null | HTMLElement>(null);
+    const [historyMenuAnchor, setHistoryMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    logger.debug('navigation', '🗺️ Routes menu closed');
-  };
-
-  const handleNodeClick = async (nodeId: string) => {
-    try {
-      if (nodeId.startsWith('User_')) {
-        await navigateToNode(nodeId);
-      } else {
-        // Get the database name from the current node's path
-        const currentNode = history.nodes[history.currentIndex];
-        const dbName = currentNode ? UserNeoDBService.getNodeDatabaseName(currentNode) : undefined;
-        
-        if (!dbName) {
-          logger.error('navigation', '❌ Failed to determine database name');
-          return;
-        }
-
-        await navigate(nodeId, dbName);
-      }
-      handleMenuClose();
-    } catch (error) {
-      logger.error('navigation', '❌ Failed to navigate', { nodeId, error });
-    }
-  };
-
-  const canGoBack = history.currentIndex > 0;
-  const canGoForward = history.currentIndex < history.nodes.length - 1;
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle if Alt key is pressed
-      if (!event.altKey) return;
-
-      switch (event.key) {
-        case 'ArrowLeft':
-          if (canGoBack && !isLoading) {
-            event.preventDefault();
-            back();
-          }
-          break;
-        case 'ArrowRight':
-          if (canGoForward && !isLoading) {
-            event.preventDefault();
-            forward();
-          }
-          break;
-        case 'Home':
-          if (history.nodes.length && !isLoading) {
-            event.preventDefault();
-            handleNodeClick(history.nodes[0].id);
-          }
-          break;
-        case 'm':
-          // Toggle routes menu
-          if (availableRoutes.length > 0) {
-            event.preventDefault();
-            if (buttonRef.current) {
-              if (anchorEl) {
-                handleMenuClose();
-              } else {
-                handleMenuOpen({ currentTarget: buttonRef.current } as React.MouseEvent<HTMLButtonElement>);
-              }
-            }
-          }
-          break;
-      }
+    const handleHistoryClick = (event: React.MouseEvent<HTMLElement>) => {
+        setHistoryMenuAnchor(event.currentTarget);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canGoBack, canGoForward, history.nodes, isLoading, back, forward, availableRoutes.length, anchorEl]);
+    const handleHistoryClose = () => {
+        setHistoryMenuAnchor(null);
+    };
 
-  return (
-    <NavigationRoot>
-      <NavigationControls>
-        <Tooltip title="Home (Alt+Home)">
-          <span>
-            <IconButton
-              onClick={() => handleNodeClick(history.nodes[0]?.id)}
-              disabled={!history.nodes.length || isLoading}
-              size="small"
+    const handleHistoryItemClick = (index: number) => {
+        const currentIndex = context.history.currentIndex;
+        const steps = index - currentIndex;
+        
+        if (steps < 0) {
+            for (let i = 0; i < -steps; i++) {
+                goBack();
+            }
+        } else if (steps > 0) {
+            for (let i = 0; i < steps; i++) {
+                goForward();
+            }
+        }
+        
+        handleHistoryClose();
+    };
+
+    const handleMainContextChange = useCallback(async (main: MainContext) => {
+        try {
+            if (main === 'institute' && !workerDbName) {
+                logger.error('navigation', '❌ Cannot switch to institute context: missing worker database');
+                return;
+            }
+            if (main === 'profile' && !userDbName) {
+                logger.error('navigation', '❌ Cannot switch to profile context: missing user database');
+                return;
+            }
+
+            logger.debug('navigation', '🔄 Changing main context', {
+                from: context.main,
+                to: main,
+                userDbName,
+                workerDbName
+            });
+
+            await setMainContext(main, userDbName, workerDbName);
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to change main context:', error);
+        }
+    }, [context.main, setMainContext, userDbName, workerDbName]);
+
+    const handleContextMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setContextMenuAnchor(event.currentTarget);
+    };
+
+    const handleContextSelect = useCallback(async (context: BaseContext) => {
+        setContextMenuAnchor(null);
+        try {
+            await setBaseContext(context, userDbName, workerDbName);
+            
+            const contextDef = NAVIGATION_CONTEXTS[context];
+            if (contextDef && contextDef.views.length > 0) {
+                await setExtendedContext(contextDef.views[0].id, userDbName, workerDbName);
+            }
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to select context:', error);
+        }
+    }, [setBaseContext, setExtendedContext, userDbName, workerDbName]);
+
+    const getContextItems = useCallback(() => {
+        if (context.main === 'profile') {
+            return [
+                { id: 'profile', label: 'Profile', icon: AccountCircleIcon },
+                { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
+                { id: 'teaching', label: 'Teaching', icon: TeachingIcon },
+            ];
+        } else {
+            return [
+                { id: 'school', label: 'School', icon: BusinessIcon },
+                { id: 'department', label: 'Department', icon: DepartmentIcon },
+                { id: 'class', label: 'Class', icon: ClassIcon },
+            ];
+        }
+    }, [context.main]);
+
+    const getContextIcon = useCallback((contextType: string) => {
+        switch (contextType) {
+            case 'profile':
+                return <AccountCircleIcon />;
+            case 'calendar':
+                return <CalendarIcon />;
+            case 'teaching':
+                return <TeachingIcon />;
+            case 'school':
+                return <BusinessIcon />;
+            case 'department':
+                return <DepartmentIcon />;
+            case 'class':
+                return <ClassIcon />;
+            default:
+                return <AccountCircleIcon />;
+        }
+    }, []);
+
+    const isDisabled = !isNeo4jInitialized || isLoading;
+    const { history } = context;
+    const canGoBack = history.currentIndex > 0;
+    const canGoForward = history.currentIndex < history.nodes.length - 1;
+
+    return (
+        <NavigationRoot>
+            <NavigationControls>
+                <Tooltip title="Back">
+                    <span>
+                        <IconButton onClick={goBack} disabled={!canGoBack || isDisabled} size="small">
+                            <ArrowBackIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </Tooltip>
+
+                <Tooltip title="History">
+                    <span>
+                        <IconButton 
+                            onClick={handleHistoryClick} 
+                            disabled={!history.nodes.length || isDisabled} 
+                            size="small"
+                        >
+                            <HistoryIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </Tooltip>
+
+                <Menu
+                    anchorEl={historyMenuAnchor}
+                    open={Boolean(historyMenuAnchor)}
+                    onClose={handleHistoryClose}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'center',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'center',
+                    }}
+                >
+                    {history.nodes.map((node, index) => (
+                        <MenuItem
+                            key={`${node.id}-${index}`}
+                            onClick={() => handleHistoryItemClick(index)}
+                            selected={index === history.currentIndex}
+                        >
+                            <ListItemIcon>
+                                {getContextIcon(node.type)}
+                            </ListItemIcon>
+                            <ListItemText 
+                                primary={node.label || node.id}
+                                secondary={node.type}
+                            />
+                        </MenuItem>
+                    ))}
+                </Menu>
+
+                <Tooltip title="Forward">
+                    <span>
+                        <IconButton onClick={goForward} disabled={!canGoForward || isDisabled} size="small">
+                            <ArrowForwardIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </Tooltip>
+            </NavigationControls>
+
+            <ContextToggleContainer>
+                <ContextToggleButton
+                    active={context.main === 'profile'}
+                    onClick={() => handleMainContextChange('profile')}
+                    startIcon={<PersonIcon />}
+                    disabled={isDisabled || !userDbName}
+                >
+                    Profile
+                </ContextToggleButton>
+                <ContextToggleButton
+                    active={context.main === 'institute'}
+                    onClick={() => handleMainContextChange('institute')}
+                    startIcon={<SchoolIcon />}
+                    disabled={isDisabled || !workerDbName}
+                >
+                    Institute
+                </ContextToggleButton>
+            </ContextToggleContainer>
+
+            <ContextButton
+                onClick={handleContextMenu}
+                endIcon={<ExpandMoreIcon />}
+                startIcon={getContextIcon(context.base)}
+                disabled={isDisabled}
             >
-              <HomeIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
+                {context.base}
+            </ContextButton>
 
-        <Tooltip title="Back (Alt+←)">
-          <span>
-            <IconButton 
-              onClick={back}
-              disabled={!canGoBack || isLoading}
-              size="small"
+            <Menu
+                anchorEl={contextMenuAnchor}
+                open={Boolean(contextMenuAnchor)}
+                onClose={() => setContextMenuAnchor(null)}
             >
-              <ArrowBackIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-
-        <Tooltip title="Forward (Alt+→)">
-          <span>
-            <IconButton
-              onClick={forward}
-              disabled={!canGoForward || isLoading}
-              size="small"
-            >
-              <ArrowForwardIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-
-        <Tooltip title="Search (Alt+/)">
-          <span>
-            <IconButton
-              onClick={() => {
-                // TODO: Implement search
-                logger.debug('navigation', '🔍 Search clicked');
-              }}
-              size="small"
-            >
-              <SearchIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </NavigationControls>
-
-      <BreadcrumbContainer>
-        {history.nodes.slice(0, history.currentIndex + 1).map((node, index) => (
-          <React.Fragment key={node.id}>
-            {index > 0 && <Separator>/</Separator>}
-            <Tooltip title={`Type: ${node.type}`}>
-              <NodeLabel
-                onClick={() => handleNodeClick(node.id)}
-                style={{
-                  fontWeight: index === history.currentIndex ? 'bold' : 'normal',
-                }}
-              >
-                {node.label}
-              </NodeLabel>
-            </Tooltip>
-          </React.Fragment>
-        ))}
-      </BreadcrumbContainer>
-
-      {availableRoutes.length > 0 && (
-        <Box>
-          <Tooltip title="Available routes (Alt+M)">
-            <IconButton 
-              ref={buttonRef}
-              size="small"
-              onClick={handleMenuOpen}
-              sx={{
-                backgroundColor: anchorEl ? 'action.selected' : 'transparent'
-              }}
-            >
-              <MapIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-
-          <Popover
-            open={Boolean(anchorEl)}
-            anchorEl={anchorEl}
-            onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            sx={{
-              '& .MuiPaper-root': {
-                minWidth: 200,
-                maxWidth: 300,
-                maxHeight: 400,
-                overflow: 'auto',
-              }
-            }}
-          >
-            {availableRoutes.map(route => (
-              <MenuItem
-                key={route.id}
-                onClick={() => {
-                  logger.debug('navigation', '🗺️ Route clicked', { route });
-                  handleNodeClick(route.id);
-                }}
-              >
-                <Typography variant="body2" noWrap>
-                  {route.label}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {route.type}
-                </Typography>
-              </MenuItem>
-            ))}
-          </Popover>
-        </Box>
-      )}
-    </NavigationRoot>
-  );
+                {getContextItems().map(item => (
+                    <MenuItem 
+                        key={item.id} 
+                        onClick={() => handleContextSelect(item.id as BaseContext)}
+                        disabled={isDisabled}
+                    >
+                        <ListItemIcon>
+                            <item.icon />
+                        </ListItemIcon>
+                        <ListItemText primary={item.label} />
+                    </MenuItem>
+                ))}
+            </Menu>
+        </NavigationRoot>
+    );
 }; 

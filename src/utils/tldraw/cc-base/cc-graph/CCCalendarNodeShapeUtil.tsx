@@ -1,6 +1,6 @@
 import { CCBaseShapeUtil } from '../CCBaseShapeUtil'
 import { CCBaseShape } from '../cc-types'
-import { NodeProperty } from './cc-graph-shared'
+import { NodeProperty, formatDate } from './cc-graph-shared'
 import { ccGraphShapeProps, getDefaultCCCalendarNodeProps } from './cc-graph-props'
 import { CCCalendarNodeProps } from './cc-graph-types'
 import { getNodeStyles } from './cc-graph-styles'
@@ -46,13 +46,13 @@ export class CCCalendarNodeShapeUtil extends CCBaseShapeUtil<CCCalendarNodeShape
         />
         <NodeProperty 
           label="Start Date"
-          value={shape.props.start_date}
+          value={formatDate(shape.props.start_date)}
           labelStyle={styles.property.label}
           valueStyle={styles.property.value}
         />
         <NodeProperty 
           label="End Date"
-          value={shape.props.end_date}
+          value={formatDate(shape.props.end_date)}
           labelStyle={styles.property.label}
           valueStyle={styles.property.value}
         />

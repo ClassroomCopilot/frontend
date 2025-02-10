@@ -42,6 +42,29 @@ export class SchoolNeoDBService {
             throw error;
         }
     }
+
+    static async getSchoolNode(schoolDbName: string): Promise<CCSchoolNodeProps | null> {
+        logger.debug('school-service', '🔄 Fetching school node', { schoolDbName });
+        
+        try {
+            const response = await axiosInstance.get(`/api/database/tools/get-default-node/school?db_name=${schoolDbName}`);
+            
+            if (response.data?.status === 'success' && response.data.node) {
+                logger.info('school-service', '✅ School node fetched successfully');
+                return response.data.node;
+            }
+            
+            logger.warn('school-service', '⚠️ No school node found');
+            return null;
+        } catch (error) {
+            if (error instanceof AxiosError && error.response?.status === 404) {
+                logger.warn('school-service', '⚠️ School node not found (404)', { schoolDbName });
+                return null;
+            }
+            logger.error('school-service', '❌ Failed to fetch school node:', error);
+            throw error;
+        }
+    }
 }
 
 export async function fetchSchoolNode(schoolUuid: string): Promise<CCSchoolNodeProps> {

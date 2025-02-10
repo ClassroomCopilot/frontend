@@ -15,12 +15,10 @@ export interface NodeResponse {
 
 
 export interface ConnectedNodeResponse {
-    node_type: keyof CCNodeTypes;
-    node_data: NodeResponse['node_data'];
-    relationship_type: string;
-    relationship_properties: {
-        [key: string]: unknown;
-    };
+    id: string;
+    path: string;
+    label: string;
+    type: string;
 }
 
 export interface RelationshipData {

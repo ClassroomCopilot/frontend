@@ -20,6 +20,9 @@ import { CCExamMarkerPanel } from './CCExamMarkerPanel';
 import { CCSearchPanel } from './CCSearchPanel'
 import { PANEL_DIMENSIONS, Z_INDICES } from './panel-styles';
 import './panel.css';
+import { CCNavigationPanel } from './navigation/CCNavigationPanel';
+import { BaseContext, ViewContext } from '../../../../../types/navigation';
+import { CCNodeSnapshotPanel } from './navigation/CCNodeSnapshotPanel';
 
 export const PANEL_TYPES = {
   default: [
@@ -28,6 +31,8 @@ export const PANEL_TYPES = {
     { id: 'youtube', label: 'YouTube' },
     { id: 'graph', label: 'Graph' },
     { id: 'search', label: 'Search' },
+    { id: 'navigation', label: 'Navigation' },
+    { id: 'node-snapshot', label: 'Node' },
     { id: 'cc-graph-school-calendar', label: 'Calendar' },
     { id: 'cc-graph-school-timetable', label: 'Timetable' },
     { id: 'cc-graph-school-curriculum', label: 'Curriculum' },
@@ -52,6 +57,10 @@ interface BasePanelProps {
   isPinned?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   onPinnedChange?: (pinned: boolean) => void;
+  currentContext?: BaseContext;
+  onContextChange?: (context: BaseContext) => void;
+  currentExtendedContext?: ViewContext;
+  onExtendedContextChange?: (context: ViewContext) => void;
 }
 
 export const BasePanel: React.FC<BasePanelProps> = ({
@@ -61,6 +70,10 @@ export const BasePanel: React.FC<BasePanelProps> = ({
   isPinned: controlledIsPinned,
   onExpandedChange,
   onPinnedChange,
+  currentContext = 'profile',
+  onContextChange = () => {},
+  currentExtendedContext,
+  onExtendedContextChange = () => {},
 }) => {
   const location = useLocation();
   const isExamMarkerRoute = location.pathname === '/exam-marker';
@@ -134,6 +147,15 @@ export const BasePanel: React.FC<BasePanelProps> = ({
         return <CCGraphPanel />;
       case 'search':
         return <CCSearchPanel />;
+      case 'navigation':
+        return <CCNavigationPanel 
+          currentContext={currentContext}
+          onContextChange={onContextChange}
+          currentExtendedContext={currentExtendedContext}
+          onExtendedContextChange={onExtendedContextChange}
+        />;
+      case 'node-snapshot':
+        return <CCNodeSnapshotPanel />;
       case 'cc-graph-school-calendar':
         return <CCGraphSchoolCalendarPanel />;
       case 'cc-graph-school-timetable':

@@ -23,12 +23,16 @@ export function createSyncConnectionOptions(options: SyncConnectionOptions) {
         displayName,
         roomId = 'multiplayer',
         baseUrl
+
     } = options;
 
     // Ensure we have valid user info
     if (!userId || !displayName) {
         logger.warn('sync-service', 'Missing user information', { userId, displayName });
     }
+
+    // Create a unique room ID if not provided
+    const effectiveRoomId = roomId || `room-${uniqueId()}`;
 
     const multiplayerAssets: TLAssetStore = {
         async upload(_asset: unknown, file: File) {
@@ -62,9 +66,16 @@ export function createSyncConnectionOptions(options: SyncConnectionOptions) {
         }
     };
 
+    logger.info('sync-service', '🔄 Creating sync connection', { 
+        userId, 
+        displayName, 
+        roomId: effectiveRoomId 
+    });
+
     return {
-        uri: `${baseUrl}/connect/${roomId}`,
-        assets: multiplayerAssets
+        uri: `${baseUrl}/connect/${effectiveRoomId}`,
+        assets: multiplayerAssets,
+        roomId: effectiveRoomId
     };
 }
 
@@ -96,5 +107,11 @@ export async function handleExternalAsset(baseUrl: string, url: string): Promise
     }
 
     return asset;
+}
+
+export function generateSharedRoomId(path: string): string {
+    // Create a deterministic room ID based on the path
+    const sanitizedPath = path.replace(/[^a-zA-Z0-9]/g, '-');
+    return `shared-${sanitizedPath}`;
 }
 
