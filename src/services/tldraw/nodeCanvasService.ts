@@ -63,6 +63,19 @@ export class NodeCanvasService {
     // Cancel any existing animation
     this.cancelCurrentAnimation();
 
+    // Safety check - ensure editor is ready
+    try {
+      // If we can get viewport bounds, the editor is ready
+      const viewportBounds = editor.getViewportPageBounds();
+      if (!viewportBounds) {
+        logger.warn('node-canvas', '⚠️ Editor not ready for animation');
+        return;
+      }
+    } catch (error) {
+      logger.warn('node-canvas', '⚠️ Editor not ready for animation');
+      return;
+    }
+
     const bounds = editor.getShapePageBounds(shape);
     if (!bounds) {
       logger.warn('node-canvas', '⚠️ Could not get shape bounds', { shapeId: shape.id });
@@ -71,8 +84,10 @@ export class NodeCanvasService {
 
     // Get the current viewport and camera state
     const viewportBounds = editor.getViewportPageBounds();
-    const camera = editor.getCamera();
-    const currentPage = editor.getCurrentPage();
+    if (!viewportBounds) {
+      logger.warn('node-canvas', '⚠️ Could not get viewport bounds');
+      return;
+    }
 
     // Calculate the center point of the shape in page coordinates
     const shapeCenterX = bounds.x + bounds.w / 2;
@@ -91,12 +106,12 @@ export class NodeCanvasService {
     // Log the current state for debugging
     logger.debug('node-canvas', '📊 Current canvas state', {
       page: {
-        id: currentPage.id,
-        name: currentPage.name,
+        id: editor.getCurrentPage().id,
+        name: editor.getCurrentPage().name,
         shapes: editor.getCurrentPageShapes().length
       },
       camera: {
-        current: camera,
+        current: editor.getCamera(),
         viewport: viewportBounds
       },
       shape: {
@@ -115,11 +130,11 @@ export class NodeCanvasService {
     }
 
     // Calculate the target camera position to center the shape
-    const targetX = camera.x + (currentViewportCenterX - shapeCenterX);
-    const targetY = camera.y + (currentViewportCenterY - shapeCenterY);
+    const targetX = editor.getCamera().x + (currentViewportCenterX - shapeCenterX);
+    const targetY = editor.getCamera().y + (currentViewportCenterY - shapeCenterY);
 
-    const startX = camera.x;
-    const startY = camera.y;
+    const startX = editor.getCamera().x;
+    const startY = editor.getCamera().y;
 
     // Log the animation parameters for debugging
     logger.debug('node-canvas', '🎯 Starting shape centering animation', {
@@ -136,16 +151,16 @@ export class NodeCanvasService {
       viewport: {
         w: viewportBounds.w,
         h: viewportBounds.h,
-        zoom: camera.z
+        zoom: editor.getCamera().z
       },
       camera: {
-        start: { x: startX, y: startY, z: camera.z },
+        start: { x: startX, y: startY, z: editor.getCamera().z },
         target: { x: targetX, y: targetY }
       }
     });
 
     // Force the camera to maintain its current zoom level
-    const currentZoom = camera.z;
+    const currentZoom = editor.getCamera().z;
 
     // Animate the camera position
     const startTime = Date.now();
@@ -162,7 +177,7 @@ export class NodeCanvasService {
       const y = startY + (targetY - startY) * eased;
 
       editor.setCamera({
-        ...camera,
+        ...editor.getCamera(),
         x,
         y,
         z: currentZoom // Maintain zoom level
@@ -210,16 +225,21 @@ export class NodeCanvasService {
 
   static async centerCurrentNode(editor: Editor, node: NavigationNode): Promise<void> {
     try {
-      // If this is a different node from the current one, clear the canvas
-      if (this.currentNodeId && this.currentNodeId !== node.id) {
-        this.clearCanvas(editor);
-      }
-      
-      // Update current node reference
-      this.currentNodeId = node.id;
-
       // Cancel any existing animation before starting
       this.cancelCurrentAnimation();
+
+      // Safety check - ensure editor is ready
+      try {
+        // If we can get viewport bounds, the editor is ready
+        const viewportBounds = editor.getViewportPageBounds();
+        if (!viewportBounds) {
+          logger.warn('node-canvas', '⚠️ Editor not ready for centering');
+          return;
+        }
+      } catch (error) {
+        logger.warn('node-canvas', '⚠️ Editor not ready for centering');
+        return;
+      }
 
       const shapes = this.findAllNodeShapes(editor, node.id);
       
@@ -243,7 +263,7 @@ export class NodeCanvasService {
           });
         }
       } else {
-        // Create new shape for the node
+        // Create new shape for the node since it doesn't exist
         const newShape = await this.createNodeShape(editor, node);
         if (newShape) {
           this.animateViewToShape(editor, newShape);
@@ -252,6 +272,9 @@ export class NodeCanvasService {
           logger.warn('node-canvas', '⚠️ Could not create or center node shape', { nodeId: node.id });
         }
       }
+
+      // Update current node reference
+      this.currentNodeId = node.id;
     } catch (error) {
       this.cancelCurrentAnimation();
       logger.error('node-canvas', '❌ Failed to center node', { 

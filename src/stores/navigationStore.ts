@@ -146,10 +146,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 isLoading: false 
             });
 
-            // Load node snapshot
+            // Load node snapshot without clearing canvas
             await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
                 set({ isLoading: state.status === 'loading' });
-            });
+            }, false);
         } catch (error) {
             logger.error('navigation', '❌ Failed to set main context:', error);
             set({ 
@@ -214,10 +214,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 isLoading: false
             });
 
-            // Load node snapshot only once
+            // Load node snapshot without clearing canvas
             await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
                 set({ isLoading: state.status === 'loading' });
-            });
+            }, false);
         } catch (error) {
             logger.error('navigation', '❌ Failed to set base context:', error);
             set({ 

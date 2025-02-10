@@ -609,12 +609,13 @@ export class UserNeoDBService {
 
     static async loadSnapshotIntoStore(
         path: string, 
-        setLoadingState: (state: LoadingState) => void
+        setLoadingState: (state: LoadingState) => void,
+        shouldClearCanvas: boolean = false
     ): Promise<void> {
         try {
             const snapshot = await this.loadNodeSnapshot(path);
             if (snapshot) {
-                await localStoreService.loadSnapshot(snapshot, setLoadingState);
+                await localStoreService.loadSnapshot(snapshot, setLoadingState, shouldClearCanvas);
                 logger.info('neo4j-service', '✅ Loaded snapshot into store', { path });
             } else {
                 setLoadingState({ status: 'error', error: 'No snapshot found' });

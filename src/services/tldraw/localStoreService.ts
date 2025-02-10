@@ -44,14 +44,23 @@ class LocalStoreService {
 
     public async loadSnapshot(
         snapshot: Partial<TLEditorSnapshot>, 
-        setLoadingState: (state: LoadingState) => void
+        setLoadingState: (state: LoadingState) => void,
+        shouldClearCanvas: boolean = false
     ): Promise<void> {
         try {
             if (!this.store) {
                 throw new Error('Store not initialized');
             }
 
-            logger.debug('system', '📥 Loading snapshot into store');
+            logger.debug('system', '📥 Loading snapshot into store', {
+                shouldClearCanvas
+            });
+
+            if (shouldClearCanvas) {
+                this.store.clear();
+                logger.debug('system', '🧹 Cleared store before loading snapshot');
+            }
+
             loadSnapshot(this.store, snapshot);
             setLoadingState({ status: 'ready', error: '' });
         } catch (error) {
