@@ -10,72 +10,27 @@ export const PANEL_DIMENSIONS = {
     bottomOffset: '0px',
   },
   'cc-shapes': {
-    width: '150px',
+    width: '300px',
     topOffset: `0px`,
     bottomOffset: '0px',
   },
   'slides': {
-    width: '200px',
+    width: '300px',
     topOffset: `0px`,
     bottomOffset: '0px',
   },
   'youtube': {
-    width: '200px',
+    width: '300px',
     topOffset: `0px`,
     bottomOffset: '0px',
   },
   'graph': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-school-calendar': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-school-timetable': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-school-curriculum': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-teacher-calendar': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-teacher-timetable': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-teacher-curriculum': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-student-calendar': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-student-timetable': {
-    width: '200px',
-    topOffset: `0px`,
-    bottomOffset: '0px',
-  },
-  'cc-graph-student-curriculum': {
-    width: '200px',
+    width: '300px',
     topOffset: `0px`,
     bottomOffset: '0px',
   },
   'exam-marker': {
-    width: '200px',
+    width: '300px',
     topOffset: `0px`,
     bottomOffset: '0px',
   },

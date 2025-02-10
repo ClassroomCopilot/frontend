@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, IconButton, Button, Typography, styled } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Box, IconButton, Button, Typography, styled, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
 import {
     NavigateBefore as NavigateBeforeIcon,
     NavigateNext as NavigateNextIcon,
@@ -13,77 +13,102 @@ import { CalendarExtendedContext } from '../../../types/navigation';
 import { logger } from '../../../debugConfig';
 import { useTLDraw } from '../../../contexts/TLDrawContext';
 
-const NavigationContainer = styled(Box)(({ theme }) => ({
+const NavigationContainer = styled(Box)(() => ({
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing(1),
-    padding: theme.spacing(0, 2),
+    gap: '8px',
+    padding: '0 8px',
+    minHeight: '48px',
+    width: '100%',
+    overflow: 'hidden',
+    '@media (max-width: 600px)': {
+        flexWrap: 'wrap',
+        padding: '4px',
+        gap: '4px',
+    },
 }));
 
-const ViewControls = styled(Box)(({ theme }) => ({
+const ViewControls = styled(Box)(() => ({
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing(0.5),
+    gap: '4px',
+    flexShrink: 0,
 }));
 
-const StyledIconButton = styled(IconButton, {
-    shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
-    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
-    transition: theme.transitions.create(['background-color', 'color', 'transform'], {
-        duration: theme.transitions.duration.shorter,
-    }),
+const NavigationSection = styled(Box)(() => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+    flex: 1,
+    minWidth: 0, // Allows the container to shrink below its content size
+    '@media (max-width: 600px)': {
+        order: -1,
+        flex: '1 1 100%',
+        justifyContent: 'space-between',
+    },
+}));
+
+const TitleTypography = styled(Typography)(() => ({
+    color: 'var(--color-text)',
+    fontWeight: 500,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    margin: '0 8px',
+}));
+
+const ActionButtonContainer = styled(Box)(() => ({
+    flexShrink: 0,
+    '@media (max-width: 600px)': {
+        width: 'auto',
+    },
+}));
+
+const StyledIconButton = styled(IconButton)(() => ({
+    color: 'var(--color-text)',
+    transition: 'background-color 200ms ease, color 200ms ease, transform 200ms ease',
     '&:hover': {
-        backgroundColor: theme.palette.action.hover,
+        backgroundColor: 'var(--color-hover)',
         transform: 'scale(1.05)',
     },
     '&.Mui-disabled': {
-        color: theme.palette.action.disabled,
+        color: 'var(--color-text-disabled)',
     },
     '&.active': {
-        color: theme.palette.primary.main,
-        backgroundColor: theme.palette.action.selected,
+        color: 'var(--color-selected)',
+        backgroundColor: 'var(--color-selected-background)',
         '&:hover': {
-            backgroundColor: theme.palette.action.selected,
+            backgroundColor: 'var(--color-selected-hover)',
             transform: 'scale(1.05)',
         }
     },
     '& .MuiSvgIcon-root': {
         fontSize: '1.25rem',
-        transition: theme.transitions.create('transform', {
-            duration: theme.transitions.duration.shortest,
-        }),
+        transition: 'transform 150ms ease',
     },
 }));
 
-const ActionButton = styled(Button, {
-    shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
+const ActionButton = styled(Button)(() => ({
     textTransform: 'none',
-    padding: theme.spacing(0.75, 2),
-    gap: theme.spacing(1),
-    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
-    transition: theme.transitions.create(['background-color', 'transform', 'box-shadow'], {
-        duration: theme.transitions.duration.shorter,
-    }),
+    padding: '6px 16px',
+    gap: '8px',
+    color: 'var(--color-text)',
+    transition: 'background-color 200ms ease, transform 200ms ease, box-shadow 200ms ease',
     '&:hover': {
-        backgroundColor: theme.palette.action.hover,
+        backgroundColor: 'var(--color-hover)',
         transform: 'translateY(-1px)',
-        boxShadow: theme.shadows[2],
     },
     '&:active': {
         transform: 'translateY(0)',
-        boxShadow: theme.shadows[1],
     },
     '&.Mui-disabled': {
-        color: theme.palette.action.disabled,
+        color: 'var(--color-text-disabled)',
     },
     '& .MuiSvgIcon-root': {
         fontSize: '1.25rem',
         color: 'inherit',
-        transition: theme.transitions.create('transform', {
-            duration: theme.transitions.duration.shortest,
-        }),
+        transition: 'transform 150ms ease',
     },
 }));
 
@@ -94,7 +119,27 @@ interface Props {
 
 export const CalendarNavigation: React.FC<Props> = ({ activeView, onViewChange }) => {
     const { tldrawPreferences } = useTLDraw();
-    const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
+    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+    
+    // Create a dynamic theme based on TLDraw preferences
+    const theme = useMemo(() => {
+        let mode: 'light' | 'dark';
+        
+        // Determine mode based on TLDraw preferences
+        if (tldrawPreferences?.colorScheme === 'system') {
+            mode = prefersDarkMode ? 'dark' : 'light';
+        } else {
+            mode = tldrawPreferences?.colorScheme === 'dark' ? 'dark' : 'light';
+        }
+
+        return createTheme({
+            palette: {
+                mode,
+                divider: 'var(--color-divider)',
+            },
+        });
+    }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
+
     const { 
         navigateToDay,
         navigateToWeek,
@@ -251,85 +296,76 @@ export const CalendarNavigation: React.FC<Props> = ({ activeView, onViewChange }
     };
 
     return (
-        <NavigationContainer>
-            <ViewControls>
-                <StyledIconButton 
-                    size="small" 
-                    onClick={() => onViewChange('day')}
-                    className={activeView === 'day' ? 'active' : ''}
-                    isDarkMode={isDarkMode}
-                >
-                    <TodayIcon />
-                </StyledIconButton>
-                <StyledIconButton 
-                    size="small" 
-                    onClick={() => onViewChange('week')}
-                    className={activeView === 'week' ? 'active' : ''}
-                    isDarkMode={isDarkMode}
-                >
-                    <ViewWeekIcon />
-                </StyledIconButton>
-                <StyledIconButton 
-                    size="small" 
-                    onClick={() => onViewChange('month')}
-                    className={activeView === 'month' ? 'active' : ''}
-                    isDarkMode={isDarkMode}
-                >
-                    <DateRangeIcon />
-                </StyledIconButton>
-                <StyledIconButton 
-                    size="small" 
-                    onClick={() => onViewChange('year')}
-                    className={activeView === 'year' ? 'active' : ''}
-                    isDarkMode={isDarkMode}
-                >
-                    <EventIcon />
-                </StyledIconButton>
-            </ViewControls>
-
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <StyledIconButton 
-                    size="small" 
-                    onClick={handlePrevious}
-                    disabled={!currentCalendarNode || !calendarStructure}
-                    isDarkMode={isDarkMode}
-                >
-                    <NavigateBeforeIcon />
-                </StyledIconButton>
-
-                {currentCalendarNode && (
-                    <Typography 
-                        variant="subtitle2" 
-                        component="span" 
-                        sx={{ 
-                            mx: 2,
-                            color: 'text.primary',
-                            fontWeight: 500
-                        }}
+        <ThemeProvider theme={theme}>
+            <NavigationContainer>
+                <NavigationSection>
+                    <StyledIconButton 
+                        size="small" 
+                        onClick={handlePrevious}
+                        disabled={!currentCalendarNode || !calendarStructure}
                     >
-                        {currentCalendarNode.title}
-                    </Typography>
-                )}
+                        <NavigateBeforeIcon />
+                    </StyledIconButton>
 
-                <StyledIconButton 
-                    size="small" 
-                    onClick={handleNext}
-                    disabled={!currentCalendarNode || !calendarStructure}
-                    isDarkMode={isDarkMode}
-                >
-                    <NavigateNextIcon />
-                </StyledIconButton>
-            </Box>
+                    {currentCalendarNode && (
+                        <TitleTypography 
+                            variant="subtitle2"
+                        >
+                            {currentCalendarNode.title}
+                        </TitleTypography>
+                    )}
 
-            <ActionButton 
-                size="small" 
-                startIcon={<TodayIcon />}
-                onClick={handleToday}
-                disabled={!calendarStructure}
-                isDarkMode={isDarkMode}
-            >
-                Today
-            </ActionButton>
-        </NavigationContainer>
+                    <StyledIconButton 
+                        size="small" 
+                        onClick={handleNext}
+                        disabled={!currentCalendarNode || !calendarStructure}
+                    >
+                        <NavigateNextIcon />
+                    </StyledIconButton>
+                </NavigationSection>
+
+                <ViewControls>
+                    <StyledIconButton 
+                        size="small" 
+                        onClick={() => onViewChange('day')}
+                        className={activeView === 'day' ? 'active' : ''}
+                    >
+                        <TodayIcon />
+                    </StyledIconButton>
+                    <StyledIconButton 
+                        size="small" 
+                        onClick={() => onViewChange('week')}
+                        className={activeView === 'week' ? 'active' : ''}
+                    >
+                        <ViewWeekIcon />
+                    </StyledIconButton>
+                    <StyledIconButton 
+                        size="small" 
+                        onClick={() => onViewChange('month')}
+                        className={activeView === 'month' ? 'active' : ''}
+                    >
+                        <DateRangeIcon />
+                    </StyledIconButton>
+                    <StyledIconButton 
+                        size="small" 
+                        onClick={() => onViewChange('year')}
+                        className={activeView === 'year' ? 'active' : ''}
+                    >
+                        <EventIcon />
+                    </StyledIconButton>
+                </ViewControls>
+
+                <ActionButtonContainer>
+                    <ActionButton 
+                        size="small" 
+                        startIcon={<TodayIcon />}
+                        onClick={handleToday}
+                        disabled={!calendarStructure}
+                    >
+                        Today
+                    </ActionButton>
+                </ActionButtonContainer>
+            </NavigationContainer>
+        </ThemeProvider>
     );
 }; 

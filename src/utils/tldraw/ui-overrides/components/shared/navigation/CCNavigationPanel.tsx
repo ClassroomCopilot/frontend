@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Box, Typography, ListItemText, ListItemIcon, styled, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import React, { useEffect, useMemo } from 'react';
+import { Box, Typography, ListItemText, ListItemIcon, styled, Select, MenuItem, FormControl, InputLabel, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
 import {
   AccountCircle as AccountCircleIcon,
   CalendarToday as CalendarIcon,
@@ -21,7 +21,6 @@ import {
   School as TeachersIcon,
   MenuBook as SubjectsIcon,
 } from '@mui/icons-material';
-import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
 import {
   BaseContext,
   ExtendedContext,
@@ -35,80 +34,27 @@ import { useNavigationStore } from '../../../../../../stores/navigationStore';
 import { useNeo4j } from '../../../../../../contexts/Neo4jContext';
 import { CalendarNavigation } from '../../../../../../components/navigation/extended/CalendarNavigation';
 import { TeacherNavigation } from '../../../../../../components/navigation/extended/TeacherNavigation';
+import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
 
-const PanelContainer = styled(Box)(({ theme }) => ({
+const PanelContainer = styled(Box)(() => ({
   display: 'flex',
   flexDirection: 'column',
   height: '100%',
-  padding: theme.spacing(2),
-  gap: theme.spacing(2),
+  padding: '16px',
+  gap: '16px',
   overflow: 'auto',
-  transition: theme.transitions.create('background-color', {
-    duration: theme.transitions.duration.standard,
-  }),
+  color: 'var(--color-text)',
 }));
 
-const StyledSelect = styled(Select)(({ theme }) => ({
-  '& .MuiSelect-select': {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-    transition: theme.transitions.create(['background-color', 'box-shadow'], {
-      duration: theme.transitions.duration.shorter,
-    }),
-  },
-  '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: theme.palette.primary.main,
-  },
-  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: theme.palette.primary.main,
-  },
-  '& .MuiSvgIcon-root': {
-    transition: theme.transitions.create('transform', {
-      duration: theme.transitions.duration.shortest,
-    }),
-  },
-  '&:hover .MuiSvgIcon-root': {
-    transform: 'scale(1.1)',
-  },
-}));
-
-const StyledMenuItem = styled(MenuItem, {
-  shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
-  gap: theme.spacing(1),
-  transition: theme.transitions.create(['background-color', 'color'], {
-    duration: theme.transitions.duration.shortest,
-  }),
-  '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-    '& .MuiListItemIcon-root': {
-      color: theme.palette.primary.main,
-      transform: 'scale(1.1)',
-    },
-    '& .MuiSvgIcon-root': {
-      transform: 'scale(1.1)',
+const menuProps = {
+  PaperProps: {
+    elevation: 8,
+    sx: {
+      border: '1px solid var(--color-divider)',
+      boxShadow: 'var(--shadow-popup)',
     },
   },
-  '& .MuiListItemIcon-root': {
-    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
-    minWidth: '40px',
-    '& .MuiSvgIcon-root': {
-      fontSize: '1.25rem',
-      transition: theme.transitions.create('transform', {
-        duration: theme.transitions.duration.shortest,
-      }),
-    },
-  },
-  '&.Mui-selected': {
-    '& .MuiListItemIcon-root': {
-      color: theme.palette.primary.main,
-    },
-    '&:hover': {
-      backgroundColor: theme.palette.action.selected,
-    },
-  },
-}));
+};
 
 interface CCNavigationPanelProps {
   currentContext: BaseContext;
@@ -123,9 +69,6 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
   currentExtendedContext,
   onExtendedContextChange,
 }) => {
-  const { tldrawPreferences } = useTLDraw();
-  const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
-
   const {
     context: navigationContext,
     setBaseContext,
@@ -135,6 +78,27 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
   } = useNavigationStore();
 
   const { userDbName, workerDbName } = useNeo4j();
+  const { tldrawPreferences } = useTLDraw();
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  
+  // Create a dynamic theme based on TLDraw preferences
+  const theme = useMemo(() => {
+    let mode: 'light' | 'dark';
+    
+    // Determine mode based on TLDraw preferences
+    if (tldrawPreferences?.colorScheme === 'system') {
+      mode = prefersDarkMode ? 'dark' : 'light';
+    } else {
+      mode = tldrawPreferences?.colorScheme === 'dark' ? 'dark' : 'light';
+    }
+
+    return createTheme({
+      palette: {
+        mode,
+        divider: 'var(--color-divider)',
+      },
+    });
+  }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
 
   const getDefaultViewForContext = (context: BaseContext): ViewContext => {
     switch (context) {
@@ -247,47 +211,53 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
   };
 
   const getContextIcon = (contextType: string) => {
+    const iconProps = { 
+      sx: { 
+        color: 'var(--color-text)',
+      } 
+    };
+    
     switch (contextType) {
       case 'profile':
-        return <AccountCircleIcon />;
+        return <AccountCircleIcon {...iconProps} />;
       case 'calendar':
-        return <CalendarIcon />;
+        return <CalendarIcon {...iconProps} />;
       case 'teaching':
-        return <TeachingIcon />;
+        return <TeachingIcon {...iconProps} />;
       case 'school':
-        return <BusinessIcon />;
+        return <BusinessIcon {...iconProps} />;
       case 'department':
-        return <DepartmentIcon />;
+        return <DepartmentIcon {...iconProps} />;
       case 'class':
-        return <ClassIcon />;
+        return <ClassIcon {...iconProps} />;
       case 'overview':
-        return <DashboardIcon />;
+        return <DashboardIcon {...iconProps} />;
       case 'settings':
-        return <SettingsIcon />;
+        return <SettingsIcon {...iconProps} />;
       case 'history':
-        return <HistoryIcon />;
+        return <HistoryIcon {...iconProps} />;
       case 'journal':
-        return <JournalIcon />;
+        return <JournalIcon {...iconProps} />;
       case 'planner':
-        return <PlannerIcon />;
+        return <PlannerIcon {...iconProps} />;
       case 'day':
-        return <DayIcon />;
+        return <DayIcon {...iconProps} />;
       case 'week':
-        return <WeekIcon />;
+        return <WeekIcon {...iconProps} />;
       case 'month':
-        return <MonthIcon />;
+        return <MonthIcon {...iconProps} />;
       case 'year':
-        return <YearIcon />;
+        return <YearIcon {...iconProps} />;
       case 'timetable':
-        return <TimetableIcon />;
+        return <TimetableIcon {...iconProps} />;
       case 'staff':
-        return <StaffIcon />;
+        return <StaffIcon {...iconProps} />;
       case 'teachers':
-        return <TeachersIcon />;
+        return <TeachersIcon {...iconProps} />;
       case 'subjects':
-        return <SubjectsIcon />;
+        return <SubjectsIcon {...iconProps} />;
       default:
-        return <AccountCircleIcon />;
+        return <AccountCircleIcon {...iconProps} />;
     }
   };
 
@@ -303,23 +273,26 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
     ];
 
     return (
-      <FormControl fullWidth variant="outlined" size="small">
-        <InputLabel>Context</InputLabel>
-        <StyledSelect
-          value={currentContext}
-          onChange={(e) => handleContextChange(e.target.value as BaseContext)}
-          label="Context"
-        >
-          {items.map(item => (
-            <StyledMenuItem key={item.id} value={item.id} isDarkMode={isDarkMode}>
-              <ListItemIcon>
-                {getContextIcon(item.id)}
-              </ListItemIcon>
-              <ListItemText primary={item.label} />
-            </StyledMenuItem>
-          ))}
-        </StyledSelect>
-      </FormControl>
+      <ThemeProvider theme={theme}>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>Context</InputLabel>
+          <Select
+            value={currentContext}
+            onChange={(e) => handleContextChange(e.target.value as BaseContext)}
+            label="Context"
+            MenuProps={menuProps}
+          >
+            {items.map(item => (
+              <MenuItem key={item.id} value={item.id}>
+                <ListItemIcon>
+                  {getContextIcon(item.id)}
+                </ListItemIcon>
+                <ListItemText primary={item.label} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </ThemeProvider>
     );
   };
 
@@ -328,26 +301,29 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
     if (!contextDef?.views?.length) return null;
 
     return (
-      <FormControl fullWidth variant="outlined" size="small">
-        <InputLabel>View</InputLabel>
-        <StyledSelect
-          value={currentExtendedContext || contextDef.views[0].id}
-          onChange={(e) => handleExtendedContextChange(e.target.value as ViewContext)}
-          label="View"
-        >
-          {contextDef.views.map((view: ViewDefinition) => (
-            <StyledMenuItem key={view.id} value={view.id} isDarkMode={isDarkMode}>
-              <ListItemIcon>
-                {getContextIcon(view.id)}
-              </ListItemIcon>
-              <ListItemText 
-                primary={view.label}
-                secondary={view.description}
-              />
-            </StyledMenuItem>
-          ))}
-        </StyledSelect>
-      </FormControl>
+      <ThemeProvider theme={theme}>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>View</InputLabel>
+          <Select
+            value={currentExtendedContext || contextDef.views[0].id}
+            onChange={(e) => handleExtendedContextChange(e.target.value as ViewContext)}
+            label="View"
+            MenuProps={menuProps}
+          >
+            {contextDef.views.map((view: ViewDefinition) => (
+              <MenuItem key={view.id} value={view.id}>
+                <ListItemIcon>
+                  {getContextIcon(view.id)}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={view.label}
+                  secondary={view.description}
+                />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </ThemeProvider>
     );
   };
 
@@ -375,22 +351,36 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
   };
 
   return (
-    <PanelContainer>
-      {renderContextDropdown()}
-      {renderExtendedContextDropdown()}
-      {renderContextSpecificNavigation()}
-      
-      {error && (
-        <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-          {error}
-        </Typography>
-      )}
-      
-      {isLoading && (
-        <Typography variant="body2" sx={{ mt: 2 }}>
-          Loading...
-        </Typography>
-      )}
-    </PanelContainer>
+    <ThemeProvider theme={theme}>
+      <PanelContainer>
+        {renderContextDropdown()}
+        {renderExtendedContextDropdown()}
+        {renderContextSpecificNavigation()}
+        
+        {error && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              mt: 2,
+              color: 'var(--color-error)'
+            }}
+          >
+            {error}
+          </Typography>
+        )}
+        
+        {isLoading && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              mt: 2,
+              color: 'var(--color-text-secondary)'
+            }}
+          >
+            Loading...
+          </Typography>
+        )}
+      </PanelContainer>
+    </ThemeProvider>
   );
 };

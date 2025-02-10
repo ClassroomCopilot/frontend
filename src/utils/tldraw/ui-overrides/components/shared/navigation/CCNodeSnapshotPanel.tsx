@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import { Box, Typography, styled, Button } from '@mui/material';
+import React, { useCallback, useMemo } from 'react';
+import { Box, Typography, styled, Button, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { useEditor, useToasts } from '@tldraw/tldraw';
 import { useNavigationStore } from '../../../../../../stores/navigationStore';
@@ -8,56 +8,50 @@ import { PageComponent } from '../components/pageComponent';
 import { logger } from '../../../../../../debugConfig';
 import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
 
-const CurrentNodeSection = styled(Box, {
-  shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
-  padding: theme.spacing(1),
-  backgroundColor: isDarkMode ? theme.palette.background.default : theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  transition: theme.transitions.create(['box-shadow', 'transform', 'background-color'], {
-    duration: theme.transitions.duration.shorter,
-  }),
+const CurrentNodeSection = styled(Box)(() => ({
+  padding: '8px',
+  backgroundColor: 'var(--color-panel)',
+  borderRadius: '4px',
+  marginBottom: '8px',
   '&:hover': {
-    backgroundColor: isDarkMode ? theme.palette.action.hover : theme.palette.background.default,
-    boxShadow: theme.shadows[2],
-    transform: 'translateY(-2px)',
+    backgroundColor: 'var(--color-hover)',
   }
 }));
 
-const ActionButton = styled(Button, {
-  shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
-  marginTop: theme.spacing(1),
+const NodeInfoContainer = styled(Box)(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+  marginBottom: '12px'
+}));
+
+const ActionButton = styled(Button)(() => ({
   textTransform: 'none',
-  padding: theme.spacing(0.75, 2),
-  gap: theme.spacing(1),
-  backgroundColor: isDarkMode ? theme.palette.primary.dark : theme.palette.primary.main,
-  color: theme.palette.primary.contrastText,
-  transition: theme.transitions.create(['background-color', 'transform', 'box-shadow'], {
-    duration: theme.transitions.duration.shorter,
-  }),
+  padding: '6px 16px',
+  gap: '8px',
+  backgroundColor: 'var(--color-panel)',
+  color: 'var(--color-text)',
+  border: '1px solid transparent',
+  transition: 'border-color 200ms ease',
   '&:hover': {
-    backgroundColor: isDarkMode ? theme.palette.primary.main : theme.palette.primary.dark,
-    transform: 'translateY(-1px)',
-    boxShadow: theme.shadows[4],
+    backgroundColor: 'var(--color-panel)',
+    borderColor: 'var(--color-text)',
   },
   '&:active': {
-    transform: 'translateY(0)',
-    boxShadow: theme.shadows[2],
+    backgroundColor: 'var(--color-panel)',
   },
   '& .MuiSvgIcon-root': {
     fontSize: '1.25rem',
     color: 'inherit',
-    transition: theme.transitions.create('transform', {
-      duration: theme.transitions.duration.shortest,
-    }),
+    transition: 'transform 200ms ease',
   },
   '&:hover .MuiSvgIcon-root': {
     transform: 'scale(1.1) rotate(-10deg)',
   },
   '&.Mui-disabled': {
-    backgroundColor: theme.palette.action.disabledBackground,
-    color: theme.palette.action.disabled,
+    backgroundColor: 'var(--color-muted)',
+    color: 'var(--color-text-disabled)',
+    borderColor: 'transparent',
   }
 }));
 
@@ -66,7 +60,26 @@ export const CCNodeSnapshotPanel: React.FC = () => {
   const { addToast } = useToasts();
   const { context: navigationContext, isLoading, error } = useNavigationStore();
   const { tldrawPreferences } = useTLDraw();
-  const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+
+  // Create a dynamic theme based on TLDraw preferences
+  const theme = useMemo(() => {
+    let mode: 'light' | 'dark';
+    
+    // Determine mode based on TLDraw preferences
+    if (tldrawPreferences?.colorScheme === 'system') {
+      mode = prefersDarkMode ? 'dark' : 'light';
+    } else {
+      mode = tldrawPreferences?.colorScheme === 'dark' ? 'dark' : 'light';
+    }
+
+    return createTheme({
+      palette: {
+        mode,
+        divider: 'var(--color-divider)',
+      },
+    });
+  }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
 
   const handleSaveSnapshot = useCallback(async () => {
     try {
@@ -111,16 +124,18 @@ export const CCNodeSnapshotPanel: React.FC = () => {
     if (!navigationContext.node) return null;
 
     return (
-      <CurrentNodeSection isDarkMode={isDarkMode}>
-        <Typography variant="subtitle2" color="text.secondary">
-          Current Node
-        </Typography>
-        <Typography variant="body1">
-          {navigationContext.node.label || navigationContext.node.id}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {navigationContext.node.type}
-        </Typography>
+      <CurrentNodeSection>
+        <NodeInfoContainer>
+          <Typography variant="subtitle2" sx={{ color: 'var(--color-text-secondary)' }}>
+            Current Node
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'var(--color-text)' }}>
+            {navigationContext.node.label || navigationContext.node.id}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'var(--color-text-secondary)' }}>
+            {navigationContext.node.type}
+          </Typography>
+        </NodeInfoContainer>
         <ActionButton
           variant="contained"
           size="small"
@@ -128,7 +143,6 @@ export const CCNodeSnapshotPanel: React.FC = () => {
           onClick={handleSaveSnapshot}
           disabled={isLoading}
           fullWidth
-          isDarkMode={isDarkMode}
         >
           Save Snapshot
         </ActionButton>
@@ -137,21 +151,35 @@ export const CCNodeSnapshotPanel: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {renderCurrentNode()}
-      <PageComponent />
-      
-      {error && (
-        <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-          {error}
-        </Typography>
-      )}
-      
-      {isLoading && (
-        <Typography variant="body2" sx={{ mt: 2 }}>
-          Loading...
-        </Typography>
-      )}
-    </Box>
+    <ThemeProvider theme={theme}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {renderCurrentNode()}
+        <PageComponent />
+        
+        {error && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              mt: 2,
+              color: 'var(--color-error)'
+            }}
+          >
+            {error}
+          </Typography>
+        )}
+        
+        {isLoading && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              mt: 2,
+              color: 'var(--color-text-secondary)'
+            }}
+          >
+            Loading...
+          </Typography>
+        )}
+      </Box>
+    </ThemeProvider>
   );
 };

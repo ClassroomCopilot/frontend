@@ -1,6 +1,20 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useEditor } from '@tldraw/tldraw'
-import { TextField, IconButton, List, ListItem, ListItemText, Paper, Button, Tabs, Tab } from '@mui/material'
+import { 
+  TextField, 
+  IconButton, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  Paper, 
+  Button, 
+  Tabs, 
+  Tab,
+  ThemeProvider,
+  createTheme,
+  useMediaQuery,
+  styled
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AddBoxIcon from '@mui/icons-material/AddBox'
 import LanguageIcon from '@mui/icons-material/Language'
@@ -9,14 +23,106 @@ import { createSearchShape } from '../../../cc-base/shape-helpers/search-helpers
 import { createWebBrowserShape } from '../../../cc-base/shape-helpers/web-browser-helpers'
 import { SearchService } from '../../../../../services/tldraw/searchService'
 import { CCWebBrowserShapeUtil } from '../../../cc-base/cc-web-browser/CCWebBrowserUtil'
+import { useTLDraw } from '../../../../../contexts/TLDrawContext'
+
+const StyledTextField = styled(TextField)(() => ({
+  '& .MuiInputBase-root': {
+    backgroundColor: 'var(--color-panel)',
+    color: 'var(--color-text)',
+    '& fieldset': {
+      borderColor: 'var(--color-divider)',
+    },
+    '&:hover fieldset': {
+      borderColor: 'var(--color-text)',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: 'var(--color-selected)',
+    },
+  },
+  '& .MuiInputBase-input': {
+    '&::placeholder': {
+      color: 'var(--color-text-secondary)',
+      opacity: 1,
+    },
+  },
+}));
+
+const StyledButton = styled(Button)(() => ({
+  textTransform: 'none',
+  backgroundColor: 'var(--color-panel)',
+  color: 'var(--color-text)',
+  border: '1px solid var(--color-divider)',
+  '&:hover': {
+    backgroundColor: 'var(--color-hover)',
+    borderColor: 'var(--color-text)',
+  },
+  '&.Mui-disabled': {
+    backgroundColor: 'var(--color-muted)',
+    color: 'var(--color-text-disabled)',
+    borderColor: 'var(--color-divider)',
+  },
+}));
+
+const StyledIconButton = styled(IconButton)(() => ({
+  color: 'var(--color-text)',
+  '&:hover': {
+    backgroundColor: 'var(--color-hover)',
+  },
+  '&.Mui-disabled': {
+    color: 'var(--color-text-disabled)',
+  },
+}));
+
+const StyledPaper = styled(Paper)(() => ({
+  backgroundColor: 'var(--color-panel)',
+  border: '1px solid var(--color-divider)',
+  '& .MuiListItem-root': {
+    borderBottom: '1px solid var(--color-divider)',
+    '&:last-child': {
+      borderBottom: 'none',
+    },
+  },
+}));
+
+const StyledTabs = styled(Tabs)(() => ({
+  '& .MuiTab-root': {
+    color: 'var(--color-text-secondary)',
+    textTransform: 'none',
+    '&.Mui-selected': {
+      color: 'var(--color-selected)',
+    },
+  },
+  '& .MuiTabs-indicator': {
+    backgroundColor: 'var(--color-selected)',
+  },
+}));
 
 export const CCSearchPanel: React.FC = () => {
   const editor = useEditor()
+  const { tldrawPreferences } = useTLDraw()
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
   const [query, setQuery] = useState('')
   const [url, setUrl] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [results, setResults] = useState<SearchResult[]>([])
   const [activeTab, setActiveTab] = useState(0)
+
+  const theme = useMemo(() => {
+    let mode: 'light' | 'dark';
+    
+    if (tldrawPreferences?.colorScheme === 'system') {
+      mode = prefersDarkMode ? 'dark' : 'light';
+    } else {
+      mode = tldrawPreferences?.colorScheme === 'dark' ? 'dark' : 'light';
+    }
+
+    return createTheme({
+      palette: {
+        mode,
+        divider: 'var(--color-divider)',
+      },
+    });
+  }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return
@@ -75,128 +181,120 @@ export const CCSearchPanel: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px' }}>
-      <Tabs 
-        value={activeTab} 
-        onChange={(_, newValue) => setActiveTab(newValue)}
-        style={{ marginBottom: '8px' }}
-      >
-        <Tab label="Search" />
-        <Tab label="Browser" />
-      </Tabs>
+    <ThemeProvider theme={theme}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px', gap: '8px' }}>
+        <StyledTabs 
+          value={activeTab} 
+          onChange={(_, newValue) => setActiveTab(newValue)}
+        >
+          <Tab label="Search" />
+          <Tab label="Browser" />
+        </StyledTabs>
 
-      {activeTab === 0 ? (
-        <>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <TextField
+        {activeTab === 0 ? (
+          <>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <StyledTextField
+                fullWidth
+                size="small"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Search..."
+                disabled={isSearching}
+              />
+              <StyledIconButton 
+                onClick={handleSearch}
+                disabled={isSearching || !query.trim()}
+              >
+                <SearchIcon />
+              </StyledIconButton>
+            </div>
+
+            <StyledButton
+              startIcon={<AddBoxIcon />}
+              onClick={handleCreateSearchShape}
               fullWidth
-              size="small"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Search..."
-              disabled={isSearching}
-            />
-            <IconButton 
-              onClick={handleSearch}
-              disabled={isSearching || !query.trim()}
-              color="primary"
             >
-              <SearchIcon />
-            </IconButton>
-          </div>
+              Add Search Box
+            </StyledButton>
 
-          <Button
-            startIcon={<AddBoxIcon />}
-            variant="outlined"
-            onClick={handleCreateSearchShape}
-            style={{ marginBottom: '8px' }}
-          >
-            Add Search Box
-          </Button>
-
-          <Paper 
-            style={{ 
-              flex: 1,
-              overflow: 'auto',
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            }}
-          >
-            <List>
-              {results.map((result, index) => (
-                <ListItem 
-                  key={index}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'stretch',
-                    gap: 1,
-                  }}
-                >
-                  <ListItemText
-                    primary={result.title}
-                    secondary={result.content}
-                    primaryTypographyProps={{
-                      style: { 
-                        fontWeight: 'bold',
-                        fontSize: '0.9rem',
-                        color: '#1a73e8'
-                      }
+            <StyledPaper sx={{ flex: 1, overflow: 'auto' }}>
+              <List>
+                {results.map((result, index) => (
+                  <ListItem 
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                      gap: 1,
+                      padding: '12px',
                     }}
-                    secondaryTypographyProps={{
-                      style: { 
-                        fontSize: '0.8rem',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                    <Button
+                  >
+                    <ListItemText
+                      primary={result.title}
+                      secondary={result.content}
+                      primaryTypographyProps={{
+                        sx: { 
+                          fontWeight: 'bold',
+                          fontSize: '0.9rem',
+                          color: 'var(--color-selected)',
+                          mb: 0.5
+                        }
+                      }}
+                      secondaryTypographyProps={{
+                        sx: { 
+                          fontSize: '0.8rem',
+                          color: 'var(--color-text)',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }
+                      }}
+                    />
+                    <StyledButton
                       size="small"
-                      variant="outlined"
                       onClick={() => handleCreateFromResult(result)}
-                      sx={{ flex: 1 }}
+                      fullWidth
                     >
                       Open in Browser
-                    </Button>
-                  </div>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <TextField
-              fullWidth
-              size="small"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter URL..."
-            />
-            <IconButton 
+                    </StyledButton>
+                  </ListItem>
+                ))}
+              </List>
+            </StyledPaper>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <StyledTextField
+                fullWidth
+                size="small"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Enter URL..."
+              />
+              <StyledIconButton 
+                onClick={handleCreateBrowserShape}
+                disabled={!url.trim()}
+              >
+                <LanguageIcon />
+              </StyledIconButton>
+            </div>
+            <StyledButton
+              startIcon={<AddBoxIcon />}
               onClick={handleCreateBrowserShape}
               disabled={!url.trim()}
-              color="primary"
+              fullWidth
             >
-              <LanguageIcon />
-            </IconButton>
+              Add Web Browser
+            </StyledButton>
           </div>
-          <Button
-            startIcon={<AddBoxIcon />}
-            variant="outlined"
-            onClick={handleCreateBrowserShape}
-            disabled={!url.trim()}
-          >
-            Add Web Browser
-          </Button>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </ThemeProvider>
   )
 }

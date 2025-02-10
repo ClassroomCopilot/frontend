@@ -1,21 +1,34 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { TldrawUiButton } from '@tldraw/tldraw';
-import PushPinIcon from '@mui/icons-material/PushPin';
-import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
+import { 
+  Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  styled,
+  ThemeProvider,
+  createTheme,
+  useMediaQuery
+} from '@mui/material';
+import {
+  PushPin as PushPinIcon,
+  PushPinOutlined as PushPinOutlinedIcon,
+  ExpandMore as ExpandMoreIcon,
+  Category as ShapesIcon,
+  Slideshow as SlidesIcon,
+  YouTube as YouTubeIcon,
+  AccountTree as GraphIcon,
+  Search as SearchIcon,
+  Navigation as NavigationIcon,
+  Save as NodeIcon,
+  Assignment as ExamIcon
+} from '@mui/icons-material';
 import { CCShapesPanel } from './CCShapesPanel';
 import { CCSlidesPanel } from './CCSlidesPanel';
 import { CCYoutubePanel } from './CCYoutubePanel';
 import { CCGraphPanel } from './CCGraphPanel';
-import { CCGraphSchoolCalendarPanel } from './CCGraphSchoolCalendarPanel';
-import { CCGraphSchoolTimetablePanel } from './CCGraphSchoolTimetablePanel';
-import { CCGraphSchoolCurriculumPanel } from './CCGraphSchoolCurriculumPanel';
-import { CCGraphTeacherCalendarPanel } from './CCGraphTeacherCalendarPanel';
-import { CCGraphTeacherTimetablePanel } from './CCGraphTeacherTimetablePanel';
-import { CCGraphTeacherCurriculumPanel } from './CCGraphTeacherCurriculumPanel';
-import { CCGraphStudentCalendarPanel } from './CCGraphStudentCalendarPanel';
-import { CCGraphStudentTimetablePanel } from './CCGraphStudentTimetablePanel';
-import { CCGraphStudentCurriculumPanel } from './CCGraphStudentCurriculumPanel';
 import { CCExamMarkerPanel } from './CCExamMarkerPanel';
 import { CCSearchPanel } from './CCSearchPanel'
 import { PANEL_DIMENSIONS, Z_INDICES } from './panel-styles';
@@ -23,28 +36,20 @@ import './panel.css';
 import { CCNavigationPanel } from './navigation/CCNavigationPanel';
 import { BaseContext, ViewContext } from '../../../../../types/navigation';
 import { CCNodeSnapshotPanel } from './navigation/CCNodeSnapshotPanel';
+import { useTLDraw } from '../../../../../contexts/TLDrawContext';
 
 export const PANEL_TYPES = {
   default: [
-    { id: 'cc-shapes', label: 'Shapes' },
-    { id: 'slides', label: 'Slides' },
-    { id: 'youtube', label: 'YouTube' },
-    { id: 'graph', label: 'Graph' },
-    { id: 'search', label: 'Search' },
-    { id: 'navigation', label: 'Navigation' },
-    { id: 'node-snapshot', label: 'Node' },
-    { id: 'cc-graph-school-calendar', label: 'Calendar' },
-    { id: 'cc-graph-school-timetable', label: 'Timetable' },
-    { id: 'cc-graph-school-curriculum', label: 'Curriculum' },
-    { id: 'cc-graph-teacher-calendar', label: 'Teacher Calendar' },
-    { id: 'cc-graph-teacher-timetable', label: 'Teacher Timetable' },
-    { id: 'cc-graph-teacher-curriculum', label: 'Teacher Curriculum' },
-    { id: 'cc-graph-student-calendar', label: 'Student Calendar' },
-    { id: 'cc-graph-student-timetable', label: 'Student Timetable' },
-    { id: 'cc-graph-student-curriculum', label: 'Student Curriculum' },
+    { id: 'navigation', label: 'Navigation', order: 10 },
+    { id: 'node-snapshot', label: 'Node', order: 20 },
+    { id: 'cc-shapes', label: 'Shapes', order: 30 },
+    { id: 'slides', label: 'Slides', order: 40 },
+    { id: 'youtube', label: 'YouTube', order: 50 },
+    { id: 'graph', label: 'Graph', order: 60 },
+    { id: 'search', label: 'Search', order: 70 },
   ],
   examMarker: [
-    { id: 'exam-marker', label: 'Exam Marker' },
+    { id: 'exam-marker', label: 'Exam Marker', order: 10 },
   ],
 } as const;
 
@@ -61,7 +66,49 @@ interface BasePanelProps {
   onContextChange?: (context: BaseContext) => void;
   currentExtendedContext?: ViewContext;
   onExtendedContextChange?: (context: ViewContext) => void;
+  isMenuOpen?: boolean;
+  onMenuOpenChange?: (open: boolean) => void;
 }
+
+const PanelTypeButton = styled(Button)(() => ({
+  textTransform: 'none',
+  padding: '6px 12px',
+  gap: '8px',
+  backgroundColor: 'var(--color-panel)',
+  color: 'var(--color-text)',
+  border: '1px solid transparent',
+  transition: 'border-color 200ms ease',
+  justifyContent: 'space-between',
+  minWidth: '200px',
+  '&:hover': {
+    backgroundColor: 'var(--color-panel)',
+    borderColor: 'var(--color-text)',
+  },
+  '& .MuiSvgIcon-root': {
+    fontSize: '1.25rem',
+    color: 'inherit',
+  }
+}));
+
+const StyledMenuItem = styled(MenuItem)(() => ({
+  gap: '8px',
+  padding: '8px 16px',
+  transition: 'background-color 200ms ease',
+  '&:hover': {
+    backgroundColor: 'var(--color-hover)',
+    '& .MuiListItemIcon-root': {
+      color: 'var(--color-selected)',
+    }
+  },
+  '& .MuiListItemIcon-root': {
+    color: 'var(--color-text)',
+    minWidth: '32px',
+    transition: 'color 200ms ease',
+    '& .MuiSvgIcon-root': {
+      fontSize: '1.25rem',
+    }
+  }
+}));
 
 export const BasePanel: React.FC<BasePanelProps> = ({
   initialPanelType = 'cc-shapes',
@@ -74,8 +121,32 @@ export const BasePanel: React.FC<BasePanelProps> = ({
   onContextChange = () => {},
   currentExtendedContext,
   onExtendedContextChange = () => {},
+  isMenuOpen = false,
+  onMenuOpenChange = () => {},
 }) => {
   const location = useLocation();
+  const { tldrawPreferences } = useTLDraw();
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+  
+  // Create a dynamic theme based on TLDraw preferences
+  const theme = useMemo(() => {
+    let mode: 'light' | 'dark';
+    
+    if (tldrawPreferences?.colorScheme === 'system') {
+      mode = prefersDarkMode ? 'dark' : 'light';
+    } else {
+      mode = tldrawPreferences?.colorScheme === 'dark' ? 'dark' : 'light';
+    }
+
+    return createTheme({
+      palette: {
+        mode,
+        divider: 'var(--color-divider)',
+      },
+    });
+  }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
+
   const isExamMarkerRoute = location.pathname === '/exam-marker';
   const availablePanels = isExamMarkerRoute ? PANEL_TYPES.examMarker : PANEL_TYPES.default;
   
@@ -131,6 +202,52 @@ export const BasePanel: React.FC<BasePanelProps> = ({
     };
   }, [isExpanded, isPinned]);
 
+  const getIconForPanel = (panelId: PanelType) => {
+    switch (panelId) {
+      case 'cc-shapes':
+        return <ShapesIcon />;
+      case 'slides':
+        return <SlidesIcon />;
+      case 'youtube':
+        return <YouTubeIcon />;
+      case 'graph':
+        return <GraphIcon />;
+      case 'search':
+        return <SearchIcon />;
+      case 'navigation':
+        return <NavigationIcon />;
+      case 'node-snapshot':
+        return <NodeIcon />;
+      case 'exam-marker':
+        return <ExamIcon />;
+      default:
+        return <ShapesIcon />;
+    }
+  };
+
+  const getDescriptionForPanel = (panelId: PanelType) => {
+    switch (panelId) {
+      case 'cc-shapes':
+        return 'Add shapes and elements to your canvas';
+      case 'slides':
+        return 'Manage presentation slides';
+      case 'youtube':
+        return 'Embed YouTube videos';
+      case 'graph':
+        return 'View and manage graph connections';
+      case 'search':
+        return 'Search through your content';
+      case 'navigation':
+        return 'Navigate through different contexts';
+      case 'node-snapshot':
+        return 'Manage node snapshots';
+      case 'exam-marker':
+        return 'Mark and grade exams';
+      default:
+        return '';
+    }
+  };
+
   const renderCurrentPanel = () => {
     if (isExamMarkerRoute && currentPanelType === 'exam-marker') {
       return examMarkerProps ? <CCExamMarkerPanel {...examMarkerProps} /> : null;
@@ -156,27 +273,21 @@ export const BasePanel: React.FC<BasePanelProps> = ({
         />;
       case 'node-snapshot':
         return <CCNodeSnapshotPanel />;
-      case 'cc-graph-school-calendar':
-        return <CCGraphSchoolCalendarPanel />;
-      case 'cc-graph-school-timetable':
-        return <CCGraphSchoolTimetablePanel />;
-      case 'cc-graph-school-curriculum':
-        return <CCGraphSchoolCurriculumPanel />;
-      case 'cc-graph-teacher-calendar':
-        return <CCGraphTeacherCalendarPanel />;
-      case 'cc-graph-teacher-timetable':
-        return <CCGraphTeacherTimetablePanel />;
-      case 'cc-graph-teacher-curriculum':
-        return <CCGraphTeacherCurriculumPanel />;
-      case 'cc-graph-student-calendar':
-        return <CCGraphStudentCalendarPanel />;
-      case 'cc-graph-student-timetable':
-        return <CCGraphStudentTimetablePanel />;
-      case 'cc-graph-student-curriculum':
-        return <CCGraphStudentCurriculumPanel />;
       default:
         return null;
     }
+  };
+
+  // Handle menu button click
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+    onMenuOpenChange(true);
+  };
+
+  // Handle menu close
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    onMenuOpenChange(false);
   };
 
   return (
@@ -206,22 +317,56 @@ export const BasePanel: React.FC<BasePanelProps> = ({
           }}
         >
           <div className="panel-header">
-            <select 
-              value={currentPanelType}
-              onChange={(e) => setCurrentPanelType(e.target.value as PanelType)}
-              className="panel-type-select"
-            >
-              {availablePanels.map(type => (
-                <option 
-                  key={type.id} 
-                  value={type.id}
-                  className="panel-type-option"
-                >
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            
+            <ThemeProvider theme={theme}>
+              <PanelTypeButton
+                onClick={handleMenuClick}
+                endIcon={<ExpandMoreIcon />}
+                startIcon={getIconForPanel(currentPanelType)}
+              >
+                {availablePanels.find(p => p.id === currentPanelType)?.label}
+              </PanelTypeButton>
+
+              <Menu
+                anchorEl={menuAnchorEl}
+                open={isMenuOpen}
+                onClose={handleMenuClose}
+                PaperProps={{
+                  elevation: 8,
+                  sx: {
+                    border: '1px solid var(--color-divider)',
+                    boxShadow: 'var(--shadow-popup)',
+                  }
+                }}
+              >
+                {[...availablePanels]
+                  .sort((a, b) => a.order - b.order)
+                  .map(type => (
+                  <StyledMenuItem
+                    key={type.id}
+                    onClick={() => {
+                      setCurrentPanelType(type.id as PanelType);
+                      handleMenuClose();
+                    }}
+                    selected={currentPanelType === type.id}
+                  >
+                    <ListItemIcon>
+                      {getIconForPanel(type.id as PanelType)}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={type.label}
+                      secondary={getDescriptionForPanel(type.id as PanelType)}
+                      primaryTypographyProps={{
+                        sx: { color: 'var(--color-text)' }
+                      }}
+                      secondaryTypographyProps={{
+                        sx: { color: 'var(--color-text-secondary)' }
+                      }}
+                    />
+                  </StyledMenuItem>
+                ))}
+              </Menu>
+            </ThemeProvider>
+
             <div className="panel-header-actions">
               <TldrawUiButton
                 type="icon"

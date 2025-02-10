@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useEditor, TLPageId, useValue } from '@tldraw/tldraw';
 import { 
   Box, 
@@ -10,7 +10,10 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  styled 
+  styled,
+  ThemeProvider,
+  createTheme,
+  useMediaQuery
 } from '@mui/material';
 import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
 import {
@@ -22,29 +25,24 @@ import {
   FileCopy as FileCopyIcon
 } from '@mui/icons-material';
 
-const PageSection = styled(Box)(({ theme }) => ({
+const PageSection = styled(Box)(() => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(1),
-  transition: theme.transitions.create('background-color', {
-    duration: theme.transitions.duration.standard,
-  }),
+  gap: '8px',
+  color: 'var(--color-text)',
 }));
 
 const PageListItem = styled(ListItem, {
-  shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isSelected?: boolean; isDarkMode?: boolean }>(({ theme, isSelected, isDarkMode }) => ({
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: isSelected ? theme.palette.action.selected : 'transparent',
-  transition: theme.transitions.create(['background-color', 'transform', 'box-shadow'], {
-    duration: theme.transitions.duration.shorter,
-  }),
+  shouldForwardProp: (prop) => prop !== 'isSelected',
+})<{ isSelected?: boolean }>(({ isSelected }) => ({
+  borderRadius: '4px',
+  backgroundColor: isSelected ? 'var(--color-selected-background)' : 'transparent',
+  transition: 'background-color 200ms ease, transform 200ms ease, box-shadow 200ms ease',
   '&:hover': {
-    backgroundColor: isSelected ? theme.palette.action.selected : theme.palette.action.hover,
+    backgroundColor: isSelected ? 'var(--color-selected-hover)' : 'var(--color-hover)',
     transform: 'translateX(4px)',
-    boxShadow: theme.shadows[1],
     '& .MuiListItemIcon-root': {
-      color: theme.palette.primary.main,
+      color: 'var(--color-selected)',
       transform: 'scale(1.1)',
     },
     '& .MuiIconButton-root': {
@@ -54,10 +52,8 @@ const PageListItem = styled(ListItem, {
   },
   cursor: 'pointer',
   '& .MuiListItemIcon-root': {
-    color: isSelected ? theme.palette.primary.main : (isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary),
-    transition: theme.transitions.create(['color', 'transform'], {
-      duration: theme.transitions.duration.shortest,
-    }),
+    color: isSelected ? 'var(--color-selected)' : 'var(--color-text)',
+    transition: 'color 200ms ease, transform 200ms ease',
     '& .MuiSvgIcon-root': {
       fontSize: '1.25rem',
     },
@@ -65,26 +61,20 @@ const PageListItem = styled(ListItem, {
   '& .MuiIconButton-root': {
     opacity: 0,
     transform: 'scale(0.8)',
-    transition: theme.transitions.create(['opacity', 'transform', 'background-color'], {
-      duration: theme.transitions.duration.shortest,
-    }),
+    transition: 'opacity 200ms ease, transform 200ms ease, background-color 200ms ease',
     '&:hover': {
-      backgroundColor: theme.palette.action.hover,
+      backgroundColor: 'var(--color-hover)',
       transform: 'scale(1.1)',
     },
   },
 }));
 
-const StyledIconButton = styled(IconButton, {
-  shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
-  color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
-  transition: theme.transitions.create(['background-color', 'transform', 'color'], {
-    duration: theme.transitions.duration.shorter,
-  }),
+const StyledIconButton = styled(IconButton)(() => ({
+  color: 'var(--color-text)',
+  transition: 'background-color 200ms ease, transform 200ms ease, color 200ms ease',
   '&:hover': {
-    color: theme.palette.primary.main,
-    backgroundColor: theme.palette.action.hover,
+    color: 'var(--color-selected)',
+    backgroundColor: 'var(--color-hover)',
     transform: 'scale(1.1)',
   },
   '& .MuiSvgIcon-root': {
@@ -92,33 +82,27 @@ const StyledIconButton = styled(IconButton, {
   },
 }));
 
-const StyledMenuItem = styled(MenuItem, {
-  shouldForwardProp: prop => prop !== 'isDarkMode'
-})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
-  gap: theme.spacing(1),
-  transition: theme.transitions.create(['background-color', 'color'], {
-    duration: theme.transitions.duration.shortest,
-  }),
+const StyledMenuItem = styled(MenuItem)(() => ({
+  gap: '8px',
+  transition: 'background-color 200ms ease, color 200ms ease',
   '&:hover': {
-    backgroundColor: theme.palette.action.hover,
+    backgroundColor: 'var(--color-hover)',
     '& .MuiListItemIcon-root': {
-      color: theme.palette.primary.main,
+      color: 'var(--color-selected)',
       transform: 'scale(1.1)',
     },
   },
   '& .MuiListItemIcon-root': {
-    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
+    color: 'var(--color-text)',
     minWidth: '32px',
-    transition: theme.transitions.create(['color', 'transform'], {
-      duration: theme.transitions.duration.shortest,
-    }),
+    transition: 'color 200ms ease, transform 200ms ease',
     '& .MuiSvgIcon-root': {
       fontSize: '1.25rem',
     },
   },
   '&.Mui-disabled': {
     '& .MuiListItemIcon-root': {
-      color: theme.palette.action.disabled,
+      color: 'var(--color-text-disabled)',
     },
   },
 }));
@@ -126,8 +110,27 @@ const StyledMenuItem = styled(MenuItem, {
 export const PageComponent = () => {
   const editor = useEditor();
   const { tldrawPreferences } = useTLDraw();
-  const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const [menuAnchor, setMenuAnchor] = React.useState<null | { element: HTMLElement; pageId: TLPageId }>(null);
+
+  // Create a dynamic theme based on TLDraw preferences
+  const theme = useMemo(() => {
+    let mode: 'light' | 'dark';
+    
+    // Determine mode based on TLDraw preferences
+    if (tldrawPreferences?.colorScheme === 'system') {
+      mode = prefersDarkMode ? 'dark' : 'light';
+    } else {
+      mode = tldrawPreferences?.colorScheme === 'dark' ? 'dark' : 'light';
+    }
+
+    return createTheme({
+      palette: {
+        mode,
+        divider: 'var(--color-divider)',
+      },
+    });
+  }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
 
   // Subscribe to page changes using useValue
   const pages = useValue('pages', () => editor.getPages(), [editor]);
@@ -184,71 +187,78 @@ export const PageComponent = () => {
   }, [editor, menuAnchor, pages.length]);
 
   return (
-    <PageSection>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2" color="text.secondary">Pages</Typography>
-        <StyledIconButton size="small" onClick={handleCreatePage} isDarkMode={isDarkMode}>
-          <AddIcon fontSize="small" />
-        </StyledIconButton>
-      </Box>
+    <ThemeProvider theme={theme}>
+      <PageSection>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="subtitle2" sx={{ color: 'var(--color-text-secondary)' }}>Pages</Typography>
+          <StyledIconButton size="small" onClick={handleCreatePage}>
+            <AddIcon fontSize="small" />
+          </StyledIconButton>
+        </Box>
 
-      <List dense>
-        {pages.map((page) => (
-          <PageListItem
-            key={page.id}
-            isSelected={page.id === currentPageId}
-            isDarkMode={isDarkMode}
-            onClick={() => handlePageSelect(page.id)}
+        <List dense>
+          {pages.map((page) => (
+            <PageListItem
+              key={page.id}
+              isSelected={page.id === currentPageId}
+              onClick={() => handlePageSelect(page.id)}
+            >
+              <ListItemIcon>
+                <PageIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText 
+                primary={page.name}
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  noWrap: true,
+                  sx: { color: 'var(--color-text)' }
+                }}
+              />
+              <StyledIconButton 
+                size="small" 
+                onClick={(e) => handlePageMenuOpen(e, page.id)}
+              >
+                <MoreVertIcon fontSize="small" />
+              </StyledIconButton>
+            </PageListItem>
+          ))}
+        </List>
+
+        <Menu
+          anchorEl={menuAnchor?.element}
+          open={Boolean(menuAnchor)}
+          onClose={handlePageMenuClose}
+          PaperProps={{
+            elevation: 8,
+            sx: {
+              border: '1px solid var(--color-divider)',
+              boxShadow: 'var(--shadow-popup)',
+            },
+          }}
+        >
+          <StyledMenuItem onClick={handleRenamePage}>
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Rename</ListItemText>
+          </StyledMenuItem>
+          <StyledMenuItem onClick={handleDuplicatePage}>
+            <ListItemIcon>
+              <FileCopyIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Duplicate</ListItemText>
+          </StyledMenuItem>
+          <StyledMenuItem 
+            onClick={handleDeletePage}
+            disabled={pages.length <= 1}
           >
             <ListItemIcon>
-              <PageIcon fontSize="small" />
+              <DeleteIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText 
-              primary={page.name}
-              primaryTypographyProps={{
-                variant: 'body2',
-                noWrap: true
-              }}
-            />
-            <StyledIconButton 
-              size="small" 
-              onClick={(e) => handlePageMenuOpen(e, page.id)}
-              isDarkMode={isDarkMode}
-            >
-              <MoreVertIcon fontSize="small" />
-            </StyledIconButton>
-          </PageListItem>
-        ))}
-      </List>
-
-      <Menu
-        anchorEl={menuAnchor?.element}
-        open={Boolean(menuAnchor)}
-        onClose={handlePageMenuClose}
-      >
-        <StyledMenuItem onClick={handleRenamePage} isDarkMode={isDarkMode}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Rename</ListItemText>
-        </StyledMenuItem>
-        <StyledMenuItem onClick={handleDuplicatePage} isDarkMode={isDarkMode}>
-          <ListItemIcon>
-            <FileCopyIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Duplicate</ListItemText>
-        </StyledMenuItem>
-        <StyledMenuItem 
-          onClick={handleDeletePage}
-          disabled={pages.length <= 1}
-          isDarkMode={isDarkMode}
-        >
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </StyledMenuItem>
-      </Menu>
-    </PageSection>
+            <ListItemText>Delete</ListItemText>
+          </StyledMenuItem>
+        </Menu>
+      </PageSection>
+    </ThemeProvider>
   );
 };
