@@ -38,20 +38,6 @@ export class NodeCanvasService {
     return shapes.filter((shape: TLShape) => shape.id.toString().includes(nodeId));
   }
 
-  private static clearAllNodeShapes(editor: Editor): void {
-    const shapes = editor.getCurrentPageShapes();
-    const nodeShapes = shapes.filter((shape: TLShape) => 
-      // Only clear shapes that are graph nodes (have a unique_id prop)
-      shape.props && 'unique_id' in shape.props
-    );
-    if (nodeShapes.length > 0) {
-      editor.deleteShapes(nodeShapes.map(shape => shape.id));
-      logger.debug('node-canvas', '🧹 Cleared all node shapes from canvas', {
-        count: nodeShapes.length
-      });
-    }
-  }
-
   private static handleMultipleNodeInstances(editor: Editor, nodeId: string, shapes: TLShape[]): TLShape | undefined {
     if (shapes.length > 1) {
       logger.warn('node-canvas', '⚠️ Multiple instances of node found', { 
@@ -203,41 +189,42 @@ export class NodeCanvasService {
       // Cancel any existing animation before starting
       this.cancelCurrentAnimation();
 
-      // First find if the target node shape already exists
       const shapes = this.findAllNodeShapes(editor, node.id);
-      let targetShape: TLShape | null = null;
-
+      
       if (shapes.length > 0) {
-        // Use existing shape if found
         const existingShape = this.handleMultipleNodeInstances(editor, node.id, shapes);
         if (existingShape) {
-          targetShape = existingShape;
-          // Clear all other node shapes except this one
-          const otherShapes = editor.getCurrentPageShapes().filter(shape => 
-            shape.props && 
-            'unique_id' in shape.props && 
-            shape.id !== existingShape.id
-          );
-          if (otherShapes.length > 0) {
-            editor.deleteShapes(otherShapes.map(shape => shape.id));
-            logger.debug('node-canvas', '🧹 Cleared other node shapes', {
-              keptNodeId: node.id,
-              removedCount: otherShapes.length
+          // Ensure the shape is actually on the canvas
+          const bounds = editor.getShapePageBounds(existingShape);
+          if (!bounds) {
+            logger.warn('node-canvas', '⚠️ Shape exists but has no bounds', { 
+              nodeId: node.id,
+              shapeId: existingShape.id
             });
+            return;
           }
+
+          this.animateViewToShape(editor, existingShape);
+          logger.debug('node-canvas', '🎯 Centered view on existing shape', { 
+            nodeId: node.id,
+            shapeBounds: bounds
+          });
         }
       } else {
-        // If target shape not found, clear all node shapes before creating new one
-        this.clearAllNodeShapes(editor);
-        targetShape = await this.createNodeShape(editor, node);
-      }
-
-      // Center the shape if we have one
-      if (targetShape) {
-        this.animateViewToShape(editor, targetShape);
-        logger.debug('node-canvas', '✨ Centered shape', { nodeId: node.id });
-      } else {
-        logger.warn('node-canvas', '⚠️ Could not find or create shape to center', { nodeId: node.id });
+        // Check if canvas is empty
+        const allShapes = editor.getCurrentPageShapes();
+        if (allShapes.length === 0) {
+          logger.debug('node-canvas', '📝 Canvas is empty, creating node in center');
+        }
+        
+        // Create new shape for the node
+        const newShape = await this.createNodeShape(editor, node);
+        if (newShape) {
+          this.animateViewToShape(editor, newShape);
+          logger.debug('node-canvas', '✨ Created and centered new shape', { nodeId: node.id });
+        } else {
+          logger.warn('node-canvas', '⚠️ Could not create or center node shape', { nodeId: node.id });
+        }
       }
     } catch (error) {
       this.cancelCurrentAnimation();
