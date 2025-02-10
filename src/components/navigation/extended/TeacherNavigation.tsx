@@ -13,19 +13,84 @@ import {
 import { useNeoUser } from '../../../contexts/NeoUserContext';
 import { TeacherExtendedContext } from '../../../types/navigation';
 import { logger } from '../../../debugConfig';
+import { useTLDraw } from '../../../contexts/TLDrawContext';
 
-const NavigationContainer = styled(Box)`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px;
-`;
+const NavigationContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    padding: theme.spacing(0, 2),
+}));
 
-const ViewControls = styled(Box)`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-`;
+const ViewControls = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+}));
+
+const StyledIconButton = styled(IconButton, {
+    shouldForwardProp: prop => prop !== 'isDarkMode'
+})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
+    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
+    transition: theme.transitions.create(['background-color', 'color', 'transform'], {
+        duration: theme.transitions.duration.shorter,
+    }),
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+        transform: 'scale(1.05)',
+    },
+    '&.Mui-disabled': {
+        color: theme.palette.action.disabled,
+    },
+    '& .MuiSvgIcon-root': {
+        fontSize: '1.25rem',
+        transition: theme.transitions.create('transform', {
+            duration: theme.transitions.duration.shortest,
+        }),
+    },
+}));
+
+const StyledTabs = styled(Tabs, {
+    shouldForwardProp: prop => prop !== 'isDarkMode'
+})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
+    minHeight: 'unset',
+    '& .MuiTab-root': {
+        minHeight: 'unset',
+        padding: theme.spacing(1),
+        textTransform: 'none',
+        fontSize: '0.875rem',
+        color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
+        transition: theme.transitions.create(['color', 'background-color', 'box-shadow'], {
+            duration: theme.transitions.duration.shorter,
+        }),
+        '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+            color: theme.palette.primary.main,
+        },
+        '&.Mui-selected': {
+            color: theme.palette.primary.main,
+            '&:hover': {
+                backgroundColor: theme.palette.action.selected,
+            },
+        },
+        '& .MuiSvgIcon-root': {
+            fontSize: '1.25rem',
+            marginBottom: theme.spacing(0.5),
+            transition: theme.transitions.create('transform', {
+                duration: theme.transitions.duration.shortest,
+            }),
+        },
+        '&:hover .MuiSvgIcon-root': {
+            transform: 'scale(1.1)',
+        },
+    },
+    '& .MuiTabs-indicator': {
+        transition: theme.transitions.create(['width', 'left'], {
+            duration: theme.transitions.duration.standard,
+            easing: theme.transitions.easing.easeInOut,
+        }),
+    },
+}));
 
 interface Props {
     activeView: TeacherExtendedContext;
@@ -33,6 +98,8 @@ interface Props {
 }
 
 export const TeacherNavigation: React.FC<Props> = ({ activeView, onViewChange }) => {
+    const { tldrawPreferences } = useTLDraw();
+    const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
     const { 
         navigateToTimetable,
         navigateToClass,
@@ -215,11 +282,12 @@ export const TeacherNavigation: React.FC<Props> = ({ activeView, onViewChange })
 
     return (
         <NavigationContainer>
-            <Tabs 
+            <StyledTabs 
                 value={activeView} 
                 onChange={(_, value) => onViewChange(value as TeacherExtendedContext)}
                 variant="scrollable"
                 scrollButtons="auto"
+                isDarkMode={isDarkMode}
             >
                 <Tab 
                     value="overview"
@@ -251,32 +319,42 @@ export const TeacherNavigation: React.FC<Props> = ({ activeView, onViewChange })
                     icon={<PlannerIcon />}
                     label="Planner"
                 />
-            </Tabs>
+            </StyledTabs>
 
             <Box sx={{ flex: 1 }} />
 
             <ViewControls>
-                <IconButton 
+                <StyledIconButton 
                     size="small" 
                     onClick={handlePrevious}
                     disabled={!currentWorkerNode || !workerStructure}
+                    isDarkMode={isDarkMode}
                 >
                     <NavigateBeforeIcon />
-                </IconButton>
+                </StyledIconButton>
 
                 {currentWorkerNode && (
-                    <Typography variant="subtitle2" component="span" sx={{ mx: 2 }}>
+                    <Typography 
+                        variant="subtitle2" 
+                        component="span" 
+                        sx={{ 
+                            mx: 2,
+                            color: 'text.primary',
+                            fontWeight: 500
+                        }}
+                    >
                         {currentWorkerNode.title}
                     </Typography>
                 )}
 
-                <IconButton 
+                <StyledIconButton 
                     size="small" 
                     onClick={handleNext}
                     disabled={!currentWorkerNode || !workerStructure}
+                    isDarkMode={isDarkMode}
                 >
                     <NavigateNextIcon />
-                </IconButton>
+                </StyledIconButton>
             </ViewControls>
         </NavigationContainer>
     );

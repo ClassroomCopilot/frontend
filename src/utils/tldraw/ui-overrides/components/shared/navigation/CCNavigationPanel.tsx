@@ -21,6 +21,7 @@ import {
   School as TeachersIcon,
   MenuBook as SubjectsIcon,
 } from '@mui/icons-material';
+import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
 import {
   BaseContext,
   ExtendedContext,
@@ -42,6 +43,71 @@ const PanelContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
   gap: theme.spacing(2),
   overflow: 'auto',
+  transition: theme.transitions.create('background-color', {
+    duration: theme.transitions.duration.standard,
+  }),
+}));
+
+const StyledSelect = styled(Select)(({ theme }) => ({
+  '& .MuiSelect-select': {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    transition: theme.transitions.create(['background-color', 'box-shadow'], {
+      duration: theme.transitions.duration.shorter,
+    }),
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: theme.palette.primary.main,
+  },
+  '& .MuiSvgIcon-root': {
+    transition: theme.transitions.create('transform', {
+      duration: theme.transitions.duration.shortest,
+    }),
+  },
+  '&:hover .MuiSvgIcon-root': {
+    transform: 'scale(1.1)',
+  },
+}));
+
+const StyledMenuItem = styled(MenuItem, {
+  shouldForwardProp: prop => prop !== 'isDarkMode'
+})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
+  gap: theme.spacing(1),
+  transition: theme.transitions.create(['background-color', 'color'], {
+    duration: theme.transitions.duration.shortest,
+  }),
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+    '& .MuiListItemIcon-root': {
+      color: theme.palette.primary.main,
+      transform: 'scale(1.1)',
+    },
+    '& .MuiSvgIcon-root': {
+      transform: 'scale(1.1)',
+    },
+  },
+  '& .MuiListItemIcon-root': {
+    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
+    minWidth: '40px',
+    '& .MuiSvgIcon-root': {
+      fontSize: '1.25rem',
+      transition: theme.transitions.create('transform', {
+        duration: theme.transitions.duration.shortest,
+      }),
+    },
+  },
+  '&.Mui-selected': {
+    '& .MuiListItemIcon-root': {
+      color: theme.palette.primary.main,
+    },
+    '&:hover': {
+      backgroundColor: theme.palette.action.selected,
+    },
+  },
 }));
 
 interface CCNavigationPanelProps {
@@ -57,6 +123,9 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
   currentExtendedContext,
   onExtendedContextChange,
 }) => {
+  const { tldrawPreferences } = useTLDraw();
+  const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
+
   const {
     context: navigationContext,
     setBaseContext,
@@ -236,20 +305,20 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
     return (
       <FormControl fullWidth variant="outlined" size="small">
         <InputLabel>Context</InputLabel>
-        <Select
+        <StyledSelect
           value={currentContext}
           onChange={(e) => handleContextChange(e.target.value as BaseContext)}
           label="Context"
         >
           {items.map(item => (
-            <MenuItem key={item.id} value={item.id}>
+            <StyledMenuItem key={item.id} value={item.id} isDarkMode={isDarkMode}>
               <ListItemIcon>
                 {getContextIcon(item.id)}
               </ListItemIcon>
               <ListItemText primary={item.label} />
-            </MenuItem>
+            </StyledMenuItem>
           ))}
-        </Select>
+        </StyledSelect>
       </FormControl>
     );
   };
@@ -261,13 +330,13 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
     return (
       <FormControl fullWidth variant="outlined" size="small">
         <InputLabel>View</InputLabel>
-        <Select
+        <StyledSelect
           value={currentExtendedContext || contextDef.views[0].id}
           onChange={(e) => handleExtendedContextChange(e.target.value as ViewContext)}
           label="View"
         >
           {contextDef.views.map((view: ViewDefinition) => (
-            <MenuItem key={view.id} value={view.id}>
+            <StyledMenuItem key={view.id} value={view.id} isDarkMode={isDarkMode}>
               <ListItemIcon>
                 {getContextIcon(view.id)}
               </ListItemIcon>
@@ -275,9 +344,9 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
                 primary={view.label}
                 secondary={view.description}
               />
-            </MenuItem>
+            </StyledMenuItem>
           ))}
-        </Select>
+        </StyledSelect>
       </FormControl>
     );
   };

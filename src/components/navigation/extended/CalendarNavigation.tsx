@@ -11,19 +11,81 @@ import {
 import { useNeoUser } from '../../../contexts/NeoUserContext';
 import { CalendarExtendedContext } from '../../../types/navigation';
 import { logger } from '../../../debugConfig';
+import { useTLDraw } from '../../../contexts/TLDrawContext';
 
-const NavigationContainer = styled(Box)`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px;
-`;
+const NavigationContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    padding: theme.spacing(0, 2),
+}));
 
-const ViewControls = styled(Box)`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-`;
+const ViewControls = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+}));
+
+const StyledIconButton = styled(IconButton, {
+    shouldForwardProp: prop => prop !== 'isDarkMode'
+})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
+    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
+    transition: theme.transitions.create(['background-color', 'color', 'transform'], {
+        duration: theme.transitions.duration.shorter,
+    }),
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+        transform: 'scale(1.05)',
+    },
+    '&.Mui-disabled': {
+        color: theme.palette.action.disabled,
+    },
+    '&.active': {
+        color: theme.palette.primary.main,
+        backgroundColor: theme.palette.action.selected,
+        '&:hover': {
+            backgroundColor: theme.palette.action.selected,
+            transform: 'scale(1.05)',
+        }
+    },
+    '& .MuiSvgIcon-root': {
+        fontSize: '1.25rem',
+        transition: theme.transitions.create('transform', {
+            duration: theme.transitions.duration.shortest,
+        }),
+    },
+}));
+
+const ActionButton = styled(Button, {
+    shouldForwardProp: prop => prop !== 'isDarkMode'
+})<{ isDarkMode?: boolean }>(({ theme, isDarkMode }) => ({
+    textTransform: 'none',
+    padding: theme.spacing(0.75, 2),
+    gap: theme.spacing(1),
+    color: isDarkMode ? theme.palette.text.primary : theme.palette.text.secondary,
+    transition: theme.transitions.create(['background-color', 'transform', 'box-shadow'], {
+        duration: theme.transitions.duration.shorter,
+    }),
+    '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+        transform: 'translateY(-1px)',
+        boxShadow: theme.shadows[2],
+    },
+    '&:active': {
+        transform: 'translateY(0)',
+        boxShadow: theme.shadows[1],
+    },
+    '&.Mui-disabled': {
+        color: theme.palette.action.disabled,
+    },
+    '& .MuiSvgIcon-root': {
+        fontSize: '1.25rem',
+        color: 'inherit',
+        transition: theme.transitions.create('transform', {
+            duration: theme.transitions.duration.shortest,
+        }),
+    },
+}));
 
 interface Props {
     activeView: CalendarExtendedContext;
@@ -31,6 +93,8 @@ interface Props {
 }
 
 export const CalendarNavigation: React.FC<Props> = ({ activeView, onViewChange }) => {
+    const { tldrawPreferences } = useTLDraw();
+    const isDarkMode = tldrawPreferences?.colorScheme === 'dark';
     const { 
         navigateToDay,
         navigateToWeek,
@@ -189,68 +253,83 @@ export const CalendarNavigation: React.FC<Props> = ({ activeView, onViewChange }
     return (
         <NavigationContainer>
             <ViewControls>
-                <IconButton 
+                <StyledIconButton 
                     size="small" 
                     onClick={() => onViewChange('day')}
-                    color={activeView === 'day' ? 'primary' : 'default'}
+                    className={activeView === 'day' ? 'active' : ''}
+                    isDarkMode={isDarkMode}
                 >
                     <TodayIcon />
-                </IconButton>
-                <IconButton 
+                </StyledIconButton>
+                <StyledIconButton 
                     size="small" 
                     onClick={() => onViewChange('week')}
-                    color={activeView === 'week' ? 'primary' : 'default'}
+                    className={activeView === 'week' ? 'active' : ''}
+                    isDarkMode={isDarkMode}
                 >
                     <ViewWeekIcon />
-                </IconButton>
-                <IconButton 
+                </StyledIconButton>
+                <StyledIconButton 
                     size="small" 
                     onClick={() => onViewChange('month')}
-                    color={activeView === 'month' ? 'primary' : 'default'}
+                    className={activeView === 'month' ? 'active' : ''}
+                    isDarkMode={isDarkMode}
                 >
                     <DateRangeIcon />
-                </IconButton>
-                <IconButton 
+                </StyledIconButton>
+                <StyledIconButton 
                     size="small" 
                     onClick={() => onViewChange('year')}
-                    color={activeView === 'year' ? 'primary' : 'default'}
+                    className={activeView === 'year' ? 'active' : ''}
+                    isDarkMode={isDarkMode}
                 >
                     <EventIcon />
-                </IconButton>
+                </StyledIconButton>
             </ViewControls>
 
-            <Box sx={{ width: 1, px: 2 }}>
-                <IconButton 
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <StyledIconButton 
                     size="small" 
                     onClick={handlePrevious}
                     disabled={!currentCalendarNode || !calendarStructure}
+                    isDarkMode={isDarkMode}
                 >
                     <NavigateBeforeIcon />
-                </IconButton>
+                </StyledIconButton>
 
                 {currentCalendarNode && (
-                    <Typography variant="subtitle2" component="span" sx={{ mx: 2 }}>
+                    <Typography 
+                        variant="subtitle2" 
+                        component="span" 
+                        sx={{ 
+                            mx: 2,
+                            color: 'text.primary',
+                            fontWeight: 500
+                        }}
+                    >
                         {currentCalendarNode.title}
                     </Typography>
                 )}
 
-                <IconButton 
+                <StyledIconButton 
                     size="small" 
                     onClick={handleNext}
                     disabled={!currentCalendarNode || !calendarStructure}
+                    isDarkMode={isDarkMode}
                 >
                     <NavigateNextIcon />
-                </IconButton>
+                </StyledIconButton>
             </Box>
 
-            <Button 
+            <ActionButton 
                 size="small" 
                 startIcon={<TodayIcon />}
                 onClick={handleToday}
                 disabled={!calendarStructure}
+                isDarkMode={isDarkMode}
             >
                 Today
-            </Button>
+            </ActionButton>
         </NavigationContainer>
     );
 }; 
