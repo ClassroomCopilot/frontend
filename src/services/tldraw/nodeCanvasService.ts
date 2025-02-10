@@ -32,6 +32,7 @@ export class NodeCanvasService {
   private static readonly CANVAS_PADDING = 100;
   private static readonly ANIMATION_DURATION = 500;
   private static currentAnimation: number | null = null;
+  private static currentNodeId: string | null = null;
 
   private static findAllNodeShapes(editor: Editor, nodeId: string): TLShape[] {
     const shapes = editor.getCurrentPageShapes();
@@ -184,8 +185,39 @@ export class NodeCanvasService {
     this.currentAnimation = requestAnimationFrame(animate);
   }
 
+  static clearCanvas(editor: Editor): void {
+    try {
+      // Cancel any ongoing animations
+      this.cancelCurrentAnimation();
+      
+      // Clear the current node reference
+      this.currentNodeId = null;
+      
+      // Remove all shapes from the current page
+      const shapes = editor.getCurrentPageShapes();
+      if (shapes.length > 0) {
+        editor.deleteShapes(shapes.map(shape => shape.id));
+        logger.debug('node-canvas', '🧹 Cleared canvas shapes', { 
+          count: shapes.length 
+        });
+      }
+    } catch (error) {
+      logger.error('node-canvas', '❌ Failed to clear canvas', { 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  }
+
   static async centerCurrentNode(editor: Editor, node: NavigationNode): Promise<void> {
     try {
+      // If this is a different node from the current one, clear the canvas
+      if (this.currentNodeId && this.currentNodeId !== node.id) {
+        this.clearCanvas(editor);
+      }
+      
+      // Update current node reference
+      this.currentNodeId = node.id;
+
       // Cancel any existing animation before starting
       this.cancelCurrentAnimation();
 
@@ -211,12 +243,6 @@ export class NodeCanvasService {
           });
         }
       } else {
-        // Check if canvas is empty
-        const allShapes = editor.getCurrentPageShapes();
-        if (allShapes.length === 0) {
-          logger.debug('node-canvas', '📝 Canvas is empty, creating node in center');
-        }
-        
         // Create new shape for the node
         const newShape = await this.createNodeShape(editor, node);
         if (newShape) {
