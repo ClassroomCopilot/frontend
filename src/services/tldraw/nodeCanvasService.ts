@@ -241,7 +241,31 @@ export class NodeCanvasService {
         return;
       }
 
-      // First check if we already have the shape we want
+      // Always save current state first if we have shapes
+      const currentNodeId = this.currentNodeId;
+      if (currentNodeId) {
+        const currentShapes = editor.getCurrentPageShapes();
+        if (currentShapes.length > 0) {
+          try {
+            // Get the current node's path from one of its shapes
+            const currentShape = currentShapes.find(shape => shape.id.toString().includes(currentNodeId));
+            if (currentShape && 'path' in currentShape.props) {
+              const path = currentShape.props.path as string;
+              const snapshot = editor.getSnapshot();
+              logger.debug('node-canvas', '💾 Saving current node state before switching', { 
+                nodeId: currentNodeId,
+                path,
+                shapeCount: currentShapes.length 
+              });
+              await UserNeoDBService.saveNodeSnapshot(path, snapshot);
+            }
+          } catch (error) {
+            logger.error('node-canvas', '❌ Failed to save current node state:', error);
+          }
+        }
+      }
+
+      // Now check if we already have the shape we want
       const existingShapes = this.findAllNodeShapes(editor, node.id);
       
       if (existingShapes.length > 0) {
@@ -266,30 +290,6 @@ export class NodeCanvasService {
           // Update current node reference
           this.currentNodeId = node.id;
           return;
-        }
-      }
-
-      // If we get here, we need to save current state (if any) and create a new shape
-      const currentNodeId = this.currentNodeId;
-      if (currentNodeId) {
-        const currentShapes = editor.getCurrentPageShapes();
-        if (currentShapes.length > 0) {
-          try {
-            // Get the current node's path from one of its shapes
-            const currentShape = currentShapes.find(shape => shape.id.toString().includes(currentNodeId));
-            if (currentShape && 'path' in currentShape.props) {
-              const path = currentShape.props.path as string;
-              const snapshot = editor.getSnapshot();
-              logger.debug('node-canvas', '💾 Saving current node state before switching', { 
-                nodeId: currentNodeId,
-                path,
-                shapeCount: currentShapes.length 
-              });
-              await UserNeoDBService.saveNodeSnapshot(path, snapshot);
-            }
-          } catch (error) {
-            logger.error('node-canvas', '❌ Failed to save current node state:', error);
-          }
         }
       }
 
