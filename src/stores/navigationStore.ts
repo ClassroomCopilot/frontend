@@ -12,7 +12,8 @@ import {
     isInstituteContext,
     getContextDatabase,
     addToHistory,
-    ExtendedContext
+    ExtendedContext,
+    NavigationHistory
 } from '../types/navigation';
 import { NAVIGATION_CONTEXTS } from '../config/navigationContexts';
 import { NavigationQueueService } from '../services/navigation/navigationQueueService';
@@ -296,7 +297,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 const newNode: NavigationNode = {
                     id: nodeId,
                     type: nodeData.node_data.__primarylabel__,
-                    label: nodeData.node_data.title || nodeData.node_data.name || nodeId,
+                    label: nodeData.node_data.title || nodeData.node_data.user_name || nodeId,
                     path: nodeData.node_data.path
                 };
 
@@ -383,4 +384,4 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             });
         }
     }
-})); 
+}));
