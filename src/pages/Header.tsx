@@ -104,23 +104,26 @@ const Header: React.FC = () => {
         justifyContent: 'space-between',
         minHeight: `${HEADER_HEIGHT}px !important`,
         height: `${HEADER_HEIGHT}px`,
-        gap: 2
+        gap: 2,
+        px: { xs: 1, sm: 2 }
       }}>
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: 2,
-          minWidth: '200px'
+          minWidth: { xs: 'auto', sm: '200px' }
         }}>
           <Typography 
             variant="h6" 
             component="div"
+            className="app-title"
             sx={{ 
               cursor: 'pointer',
               color: theme.palette.text.primary,
               '&:hover': {
                 color: theme.palette.primary.main
-              }
+              },
+              fontSize: { xs: '1rem', sm: '1.25rem' }
             }}
             onClick={() => navigate(isAuthenticated ? '/single-player' : '/')}
           >
@@ -129,20 +132,39 @@ const Header: React.FC = () => {
         </Box>
 
         <Box sx={{ 
-          flex: 1, 
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex', 
           justifyContent: 'center',
-          visibility: showGraphNavigation ? 'visible' : 'hidden'
+          visibility: showGraphNavigation ? 'visible' : 'hidden',
+          width: { 
+            xs: 'calc(100% - 160px)', // More space for menu and title
+            sm: 'calc(100% - 200px)',  // Standard spacing
+            md: 'auto'                 // Full width on medium and up
+          },
+          maxWidth: '800px',
+          '& .navigation-controls': {
+            display: { xs: 'none', sm: 'flex' }
+          },
+          '& .context-section': {
+            display: { xs: 'none', md: 'flex' }
+          },
+          '& .context-toggle': {
+            display: 'flex'  // Always show the profile/institute toggle
+          }
         }}>
           <GraphNavigator />
         </Box>
 
         <Box sx={{ 
-          minWidth: '200px', 
           display: 'flex', 
-          justifyContent: 'flex-end' 
+          justifyContent: 'flex-end',
+          minWidth: { xs: 'auto', sm: '200px' },
+          ml: 'auto'
         }}>
           <IconButton
+            className="menu-button"
             color="inherit"
             onClick={handleMenuOpen}
             edge="end"

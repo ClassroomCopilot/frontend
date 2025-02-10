@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { 
     IconButton, 
     Tooltip, 
@@ -38,7 +38,6 @@ const NavigationRoot = styled(Box)`
   align-items: center;
   gap: 8px;
   height: 100%;
-  max-width: 800px;
   overflow: hidden;
 `;
 
@@ -55,6 +54,11 @@ const ContextToggleContainer = styled(Box)(({ theme }) => ({
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(0.5),
     gap: theme.spacing(0.5),
+    '& .button-label': {
+        '@media (max-width: 500px)': {
+            display: 'none'
+        }
+    }
 }));
 
 const ContextToggleButton = styled(Button, {
@@ -72,17 +76,9 @@ const ContextToggleButton = styled(Button, {
     '&:hover': {
         backgroundColor: active ? theme.palette.primary.dark : theme.palette.action.hover,
     },
-}));
-
-const ContextButton = styled(Button)(({ theme }) => ({
-    textTransform: 'none',
-    padding: theme.spacing(0.5, 1),
-    gap: theme.spacing(0.5),
-    minWidth: 0,
-    color: theme.palette.text.primary,
-    '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-    },
+    '@media (max-width: 500px)': {
+        padding: theme.spacing(0.5),
+    }
 }));
 
 export const GraphNavigator: React.FC = () => {
@@ -100,6 +96,90 @@ export const GraphNavigator: React.FC = () => {
 
     const [contextMenuAnchor, setContextMenuAnchor] = useState<null | HTMLElement>(null);
     const [historyMenuAnchor, setHistoryMenuAnchor] = useState<null | HTMLElement>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const [availableWidth, setAvailableWidth] = useState<number>(0);
+
+    useEffect(() => {
+        const calculateAvailableSpace = () => {
+            if (!rootRef.current) return;
+            
+            // Get the header element
+            const header = rootRef.current.closest('.MuiToolbar-root');
+            if (!header) return;
+
+            // Get the title and menu elements
+            const title = header.querySelector('.app-title');
+            const menu = header.querySelector('.menu-button');
+            
+            if (!title || !menu) return;
+
+            // Calculate available width
+            const headerWidth = header.clientWidth;
+            const titleWidth = title.clientWidth;
+            const menuWidth = menu.clientWidth;
+            const padding = 48; // Increased buffer space
+            
+            const newAvailableWidth = headerWidth - titleWidth - menuWidth - padding;
+            console.log('Available width:', newAvailableWidth); // Debug log
+            setAvailableWidth(newAvailableWidth);
+        };
+
+        // Set up ResizeObserver
+        const resizeObserver = new ResizeObserver(() => {
+            // Use requestAnimationFrame to debounce calculations
+            window.requestAnimationFrame(calculateAvailableSpace);
+        });
+
+        // Observe both the root element and the header
+        if (rootRef.current) {
+            const header = rootRef.current.closest('.MuiToolbar-root');
+            if (header) {
+                resizeObserver.observe(header);
+                resizeObserver.observe(rootRef.current);
+            }
+        }
+
+        // Initial calculation
+        calculateAvailableSpace();
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, []);
+
+    // Helper function to determine what should be visible
+    const getVisibility = () => {
+        // Adjusted thresholds and collapse order:
+        // 1. Navigation controls (back/forward/history) collapse first
+        // 2. Toggle labels collapse second
+        // 3. Context label collapses last
+        if (availableWidth < 300) {
+            return {
+                navigation: false,
+                contextLabel: true,  // Keep context label visible longer
+                toggleLabels: false
+            };
+        } else if (availableWidth < 450) {
+            return {
+                navigation: false,
+                contextLabel: true,  // Keep context label visible
+                toggleLabels: true
+            };
+        } else if (availableWidth < 600) {
+            return {
+                navigation: true,
+                contextLabel: true,
+                toggleLabels: true
+            };
+        }
+        return {
+            navigation: true,
+            contextLabel: true,
+            toggleLabels: true
+        };
+    };
+
+    const visibility = getVisibility();
 
     const handleHistoryClick = (event: React.MouseEvent<HTMLElement>) => {
         setHistoryMenuAnchor(event.currentTarget);
@@ -209,11 +289,15 @@ export const GraphNavigator: React.FC = () => {
     const canGoForward = history.currentIndex < history.nodes.length - 1;
 
     return (
-        <NavigationRoot>
-            <NavigationControls>
+        <NavigationRoot ref={rootRef}>
+            <NavigationControls sx={{ display: visibility.navigation ? 'flex' : 'none' }}>
                 <Tooltip title="Back">
                     <span>
-                        <IconButton onClick={goBack} disabled={!canGoBack || isDisabled} size="small">
+                        <IconButton 
+                            onClick={goBack} 
+                            disabled={!canGoBack || isDisabled} 
+                            size="small"
+                        >
                             <ArrowBackIcon fontSize="small" />
                         </IconButton>
                     </span>
@@ -231,44 +315,49 @@ export const GraphNavigator: React.FC = () => {
                     </span>
                 </Tooltip>
 
-                <Menu
-                    anchorEl={historyMenuAnchor}
-                    open={Boolean(historyMenuAnchor)}
-                    onClose={handleHistoryClose}
-                    anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'center',
-                    }}
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'center',
-                    }}
-                >
-                    {history.nodes.map((node, index) => (
-                        <MenuItem
-                            key={`${node.id}-${index}`}
-                            onClick={() => handleHistoryItemClick(index)}
-                            selected={index === history.currentIndex}
-                        >
-                            <ListItemIcon>
-                                {getContextIcon(node.type)}
-                            </ListItemIcon>
-                            <ListItemText 
-                                primary={node.label || node.id}
-                                secondary={node.type}
-                            />
-                        </MenuItem>
-                    ))}
-                </Menu>
-
                 <Tooltip title="Forward">
                     <span>
-                        <IconButton onClick={goForward} disabled={!canGoForward || isDisabled} size="small">
+                        <IconButton 
+                            onClick={goForward} 
+                            disabled={!canGoForward || isDisabled} 
+                            size="small"
+                        >
                             <ArrowForwardIcon fontSize="small" />
                         </IconButton>
                     </span>
                 </Tooltip>
             </NavigationControls>
+
+            {/* History Menu */}
+            <Menu
+                anchorEl={historyMenuAnchor}
+                open={Boolean(historyMenuAnchor)}
+                onClose={handleHistoryClose}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center',
+                }}
+            >
+                {history.nodes.map((node, index) => (
+                    <MenuItem
+                        key={`${node.id}-${index}`}
+                        onClick={() => handleHistoryItemClick(index)}
+                        selected={index === history.currentIndex}
+                    >
+                        <ListItemIcon>
+                            {getContextIcon(node.type)}
+                        </ListItemIcon>
+                        <ListItemText 
+                            primary={node.label || node.id}
+                            secondary={node.type}
+                        />
+                    </MenuItem>
+                ))}
+            </Menu>
 
             <ContextToggleContainer>
                 <ContextToggleButton
@@ -277,7 +366,7 @@ export const GraphNavigator: React.FC = () => {
                     startIcon={<PersonIcon />}
                     disabled={isDisabled || !userDbName}
                 >
-                    Profile
+                    {visibility.toggleLabels && <span className="button-label">Profile</span>}
                 </ContextToggleButton>
                 <ContextToggleButton
                     active={context.main === 'institute'}
@@ -285,18 +374,36 @@ export const GraphNavigator: React.FC = () => {
                     startIcon={<SchoolIcon />}
                     disabled={isDisabled || !workerDbName}
                 >
-                    Institute
+                    {visibility.toggleLabels && <span className="button-label">Institute</span>}
                 </ContextToggleButton>
             </ContextToggleContainer>
 
-            <ContextButton
-                onClick={handleContextMenu}
-                endIcon={<ExpandMoreIcon />}
-                startIcon={getContextIcon(context.base)}
-                disabled={isDisabled}
-            >
-                {context.base}
-            </ContextButton>
+            <Box>
+                <Tooltip title={context.base}>
+                    <span>
+                        <Button
+                            onClick={handleContextMenu}
+                            disabled={isDisabled}
+                            sx={{
+                                minWidth: 0,
+                                p: 0.5,
+                                color: 'text.primary',
+                                '&:hover': {
+                                    bgcolor: 'action.hover'
+                                }
+                            }}
+                        >
+                            {getContextIcon(context.base)}
+                            {visibility.contextLabel && (
+                                <Box sx={{ ml: 1 }}>
+                                    {context.base}
+                                </Box>
+                            )}
+                            <ExpandMoreIcon sx={{ ml: visibility.contextLabel ? 0.5 : 0 }} />
+                        </Button>
+                    </span>
+                </Tooltip>
+            </Box>
 
             <Menu
                 anchorEl={contextMenuAnchor}
