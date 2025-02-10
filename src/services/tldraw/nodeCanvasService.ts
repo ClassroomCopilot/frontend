@@ -241,7 +241,35 @@ export class NodeCanvasService {
         return;
       }
 
-      // Save current state if there are shapes on the canvas and we have a current node
+      // First check if we already have the shape we want
+      const existingShapes = this.findAllNodeShapes(editor, node.id);
+      
+      if (existingShapes.length > 0) {
+        // We already have the shape(s) we want, just center it
+        const existingShape = this.handleMultipleNodeInstances(editor, node.id, existingShapes);
+        if (existingShape) {
+          const bounds = editor.getShapePageBounds(existingShape);
+          if (!bounds) {
+            logger.warn('node-canvas', '⚠️ Shape exists but has no bounds', { 
+              nodeId: node.id,
+              shapeId: existingShape.id
+            });
+            return;
+          }
+
+          this.animateViewToShape(editor, existingShape);
+          logger.debug('node-canvas', '🎯 Centered view on existing shape', { 
+            nodeId: node.id,
+            shapeBounds: bounds
+          });
+          
+          // Update current node reference
+          this.currentNodeId = node.id;
+          return;
+        }
+      }
+
+      // If we get here, we need to save current state (if any) and create a new shape
       const currentNodeId = this.currentNodeId;
       if (currentNodeId) {
         const currentShapes = editor.getCurrentPageShapes();
@@ -265,41 +293,17 @@ export class NodeCanvasService {
         }
       }
 
-      // Clear the canvas before loading new node
+      // Clear the canvas before creating new shape
       this.clearCanvas(editor);
       logger.debug('node-canvas', '🧹 Cleared canvas before loading new node');
 
-      // Now proceed with loading and centering the new node
-      const shapes = this.findAllNodeShapes(editor, node.id);
-      
-      if (shapes.length > 0) {
-        const existingShape = this.handleMultipleNodeInstances(editor, node.id, shapes);
-        if (existingShape) {
-          // Ensure the shape is actually on the canvas
-          const bounds = editor.getShapePageBounds(existingShape);
-          if (!bounds) {
-            logger.warn('node-canvas', '⚠️ Shape exists but has no bounds', { 
-              nodeId: node.id,
-              shapeId: existingShape.id
-            });
-            return;
-          }
-
-          this.animateViewToShape(editor, existingShape);
-          logger.debug('node-canvas', '🎯 Centered view on existing shape', { 
-            nodeId: node.id,
-            shapeBounds: bounds
-          });
-        }
+      // Create new shape for the node
+      const newShape = await this.createNodeShape(editor, node);
+      if (newShape) {
+        this.animateViewToShape(editor, newShape);
+        logger.debug('node-canvas', '✨ Created and centered new shape', { nodeId: node.id });
       } else {
-        // Create new shape for the node since it doesn't exist
-        const newShape = await this.createNodeShape(editor, node);
-        if (newShape) {
-          this.animateViewToShape(editor, newShape);
-          logger.debug('node-canvas', '✨ Created and centered new shape', { nodeId: node.id });
-        } else {
-          logger.warn('node-canvas', '⚠️ Could not create or center node shape', { nodeId: node.id });
-        }
+        logger.warn('node-canvas', '⚠️ Could not create or center node shape', { nodeId: node.id });
       }
 
       // Update current node reference
