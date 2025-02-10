@@ -241,31 +241,31 @@ export class NodeCanvasService {
         return;
       }
 
-      // Save current state if there are shapes on the canvas
-      const currentShapes = editor.getCurrentPageShapes();
-      if (currentShapes.length > 0) {
-        try {
-          const snapshot = editor.getSnapshot();
-          const currentNode = this.currentNodeId;
-          if (currentNode) {
+      // Save current state if there are shapes on the canvas and we have a current node
+      const currentNodeId = this.currentNodeId;
+      if (currentNodeId) {
+        const currentShapes = editor.getCurrentPageShapes();
+        if (currentShapes.length > 0) {
+          try {
             // Get the current node's path from one of its shapes
-            const currentShape = currentShapes.find(shape => shape.id.toString().includes(currentNode));
+            const currentShape = currentShapes.find(shape => shape.id.toString().includes(currentNodeId));
             if (currentShape && 'path' in currentShape.props) {
               const path = currentShape.props.path as string;
-              await UserNeoDBService.saveNodeSnapshot(path, snapshot);
-              logger.debug('node-canvas', '💾 Saved current canvas state', { 
-                nodeId: currentNode,
+              const snapshot = editor.getSnapshot();
+              logger.debug('node-canvas', '💾 Saving current node state before switching', { 
+                nodeId: currentNodeId,
                 path,
                 shapeCount: currentShapes.length 
               });
+              await UserNeoDBService.saveNodeSnapshot(path, snapshot);
             }
+          } catch (error) {
+            logger.error('node-canvas', '❌ Failed to save current node state:', error);
           }
-        } catch (error) {
-          logger.error('node-canvas', '❌ Failed to save current canvas state:', error);
         }
       }
 
-      // Clear the canvas
+      // Clear the canvas before loading new node
       this.clearCanvas(editor);
       logger.debug('node-canvas', '🧹 Cleared canvas before loading new node');
 
