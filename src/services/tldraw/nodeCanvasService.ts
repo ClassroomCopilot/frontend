@@ -38,10 +38,18 @@ export class NodeCanvasService {
     return shapes.filter((shape: TLShape) => shape.id.toString().includes(nodeId));
   }
 
-  private static clearAllShapes(editor: Editor): void {
+  private static clearAllNodeShapes(editor: Editor): void {
     const shapes = editor.getCurrentPageShapes();
-    editor.deleteShapes(shapes.map(shape => shape.id));
-    logger.debug('node-canvas', '🧹 Cleared all shapes from canvas');
+    const nodeShapes = shapes.filter((shape: TLShape) => 
+      // Only clear shapes that are graph nodes (have a unique_id prop)
+      shape.props && 'unique_id' in shape.props
+    );
+    if (nodeShapes.length > 0) {
+      editor.deleteShapes(nodeShapes.map(shape => shape.id));
+      logger.debug('node-canvas', '🧹 Cleared all node shapes from canvas', {
+        count: nodeShapes.length
+      });
+    }
   }
 
   private static handleMultipleNodeInstances(editor: Editor, nodeId: string, shapes: TLShape[]): TLShape | undefined {
@@ -195,6 +203,7 @@ export class NodeCanvasService {
       // Cancel any existing animation before starting
       this.cancelCurrentAnimation();
 
+      // First find if the target node shape already exists
       const shapes = this.findAllNodeShapes(editor, node.id);
       let targetShape: TLShape | null = null;
 
@@ -203,11 +212,23 @@ export class NodeCanvasService {
         const existingShape = this.handleMultipleNodeInstances(editor, node.id, shapes);
         if (existingShape) {
           targetShape = existingShape;
+          // Clear all other node shapes except this one
+          const otherShapes = editor.getCurrentPageShapes().filter(shape => 
+            shape.props && 
+            'unique_id' in shape.props && 
+            shape.id !== existingShape.id
+          );
+          if (otherShapes.length > 0) {
+            editor.deleteShapes(otherShapes.map(shape => shape.id));
+            logger.debug('node-canvas', '🧹 Cleared other node shapes', {
+              keptNodeId: node.id,
+              removedCount: otherShapes.length
+            });
+          }
         }
-      }
-
-      // If no shape found, create a new one at the center
-      if (!targetShape) {
+      } else {
+        // If target shape not found, clear all node shapes before creating new one
+        this.clearAllNodeShapes(editor);
         targetShape = await this.createNodeShape(editor, node);
       }
 
