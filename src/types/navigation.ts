@@ -73,6 +73,37 @@ export interface NavigationHistory {
   currentIndex: number;
 }
 
+// Helper function to get current node from history
+export const getCurrentHistoryNode = (history: NavigationHistory): NavigationNode | null => {
+    if (history.currentIndex === -1 || !history.nodes.length) return null;
+    return history.nodes[history.currentIndex];
+};
+
+// Helper function to add node to history
+export const addToHistory = (
+    history: NavigationHistory, 
+    node: NavigationNode
+): NavigationHistory => {
+    // Remove any forward history if we're not at the end
+    const newNodes = [...history.nodes.slice(0, history.currentIndex + 1), node];
+    return {
+        nodes: newNodes,
+        currentIndex: newNodes.length - 1
+    };
+};
+
+// Helper function to navigate history
+export const navigateHistory = (
+    history: NavigationHistory,
+    index: number
+): NavigationHistory => {
+    if (index < 0 || index >= history.nodes.length) return history;
+    return {
+        nodes: history.nodes,
+        currentIndex: index
+    };
+};
+
 // Context State Interface
 export interface NavigationContextState {
   main: MainContext;
@@ -114,18 +145,6 @@ export const getContextDatabase = (context: NavigationContextState, userDbName: 
     logger.debug('navigation', '✅ Using worker database', { dbName: workerDbName });
     return workerDbName;
   }
-};
-
-// History utility functions
-export const addToHistory = (
-  history: NavigationHistory, 
-  node: NavigationNode
-): NavigationHistory => {
-  const newNodes = [...history.nodes.slice(0, history.currentIndex + 1), node];
-  return {
-    nodes: newNodes,
-    currentIndex: newNodes.length - 1
-  };
 };
 
 // Context Definition Types

@@ -191,9 +191,33 @@ export default function SinglePlayerPage() {
             if (!currentNode?.path || !editorRef.current) return;
 
             try {
+                logger.debug('single-player-page', '🔄 Loading snapshot for node', {
+                    nodeId: currentNode.id,
+                    path: currentNode.path,
+                    isInitialLoad
+                });
+
                 await UserNeoDBService.loadSnapshotIntoStore(currentNode.path, setLoadingState);
-                // Center the current node after loading the snapshot
-                await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode);
+                
+                // After loading snapshot, check if we need to center the node
+                const shapes = editorRef.current.getCurrentPageShapes();
+                const nodeShapes = shapes.filter(s => s.id.toString().includes(currentNode.id));
+                
+                if (nodeShapes.length > 0) {
+                    // Node shape exists, just center it
+                    logger.debug('single-player-page', '🎯 Centering existing node shape', {
+                        nodeId: currentNode.id,
+                        shapeCount: nodeShapes.length
+                    });
+                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode);
+                } else {
+                    // No node shape found, create and center it
+                    logger.debug('single-player-page', '✨ Creating and centering new node shape', {
+                        nodeId: currentNode.id
+                    });
+                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode);
+                }
+
                 // Mark initialization as complete after first snapshot load
                 setIsInitialLoad(false);
             } catch (error) {
@@ -207,7 +231,7 @@ export default function SinglePlayerPage() {
         };
 
         loadSnapshot();
-    }, [currentNode]);
+    }, [currentNode, isInitialLoad]);
 
     // Add autosave when navigating away from current node
     useEffect(() => {

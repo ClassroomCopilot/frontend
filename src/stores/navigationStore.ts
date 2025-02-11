@@ -12,6 +12,8 @@ import {
     isInstituteContext,
     getContextDatabase,
     addToHistory,
+    navigateHistory,
+    getCurrentHistoryNode,
     ExtendedContext,
     UnifiedContextSwitch
 } from '../types/navigation';
@@ -209,16 +211,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     goBack: () => {
         const currentState = get().context;
         if (currentState.history.currentIndex > 0) {
-            const newIndex = currentState.history.currentIndex - 1;
-            const previousNode = currentState.history.nodes[newIndex];
+            const newHistory = navigateHistory(currentState.history, currentState.history.currentIndex - 1);
+            const node = getCurrentHistoryNode(newHistory);
             set({
                 context: {
                     ...currentState,
-                    node: previousNode,
-                    history: {
-                        ...currentState.history,
-                        currentIndex: newIndex
-                    }
+                    node,
+                    history: newHistory
                 }
             });
         }
@@ -227,16 +226,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     goForward: () => {
         const currentState = get().context;
         if (currentState.history.currentIndex < currentState.history.nodes.length - 1) {
-            const newIndex = currentState.history.currentIndex + 1;
-            const nextNode = currentState.history.nodes[newIndex];
+            const newHistory = navigateHistory(currentState.history, currentState.history.currentIndex + 1);
+            const node = getCurrentHistoryNode(newHistory);
             set({
                 context: {
                     ...currentState,
-                    node: nextNode,
-                    history: {
-                        ...currentState.history,
-                        currentIndex: newIndex
-                    }
+                    node,
+                    history: newHistory
                 }
             });
         }
@@ -287,67 +283,52 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             
             // Check if we already have this node in history
             const currentState = get().context;
-            const existingNode = currentState.history.nodes.find(n => n.id === nodeId);
+            const existingNodeIndex = currentState.history.nodes.findIndex(n => n.id === nodeId);
             
-            let node: NavigationNode;
-            if (existingNode) {
-                node = existingNode;
-                logger.debug('navigation', '📍 Using existing node from history', {
-                    nodeId: node.id,
-                    historyLength: currentState.history.nodes.length,
+            // If node exists in history, just navigate to it
+            if (existingNodeIndex !== -1) {
+                logger.debug('navigation', '📍 Navigating to existing node in history', {
+                    nodeId,
+                    historyIndex: existingNodeIndex,
                     currentIndex: currentState.history.currentIndex
                 });
-            } else {
-                const nodeData = await UserNeoDBService.fetchNodeData(nodeId, dbName);
-                if (!nodeData) {
-                    throw new Error(`Node not found: ${nodeId}`);
-                }
-
-                node = {
-                    id: nodeId,
-                    path: nodeData.node_data.path || '',
-                    label: nodeData.node_data.title || nodeData.node_data.user_name || nodeId,
-                    type: nodeData.node_type
-                };
-                logger.debug('navigation', '📍 Created new node', {
-                    nodeId: node.id,
-                    type: node.type,
-                    path: node.path
-                });
-            }
-
-            // Clear current node state before loading new one
-            set({
-                context: {
-                    ...currentState,
-                    node: null
-                },
-                isLoading: true
-            });
-
-            // Load snapshot
-            try {
-                await UserNeoDBService.loadSnapshotIntoStore(node.path, (state) => {
-                    set({ isLoading: state.status === 'loading' });
-                });
-            } catch (snapshotError) {
-                logger.error('navigation', '❌ Failed to load snapshot:', snapshotError);
-                set({ 
-                    error: 'Failed to load node snapshot',
-                    isLoading: false 
+                
+                const newHistory = navigateHistory(currentState.history, existingNodeIndex);
+                const node = getCurrentHistoryNode(newHistory);
+                
+                set({
+                    context: {
+                        ...currentState,
+                        node,
+                        history: newHistory
+                    },
+                    isLoading: false,
+                    error: null
                 });
                 return;
             }
 
-            // Update history and state
-            const newHistory = addToHistory(currentState.history, node);
-            logger.debug('navigation', '📍 Updated navigation history', {
-                previousIndex: currentState.history.currentIndex,
-                newIndex: newHistory.currentIndex,
-                historyLength: newHistory.nodes.length,
-                currentNode: node.id
+            // Fetch new node data
+            const nodeData = await UserNeoDBService.fetchNodeData(nodeId, dbName);
+            if (!nodeData) {
+                throw new Error(`Node not found: ${nodeId}`);
+            }
+
+            const node: NavigationNode = {
+                id: nodeId,
+                path: nodeData.node_data.path || '',
+                label: nodeData.node_data.title || nodeData.node_data.user_name || nodeId,
+                type: nodeData.node_type
+            };
+
+            logger.debug('navigation', '📍 Adding new node to history', {
+                nodeId: node.id,
+                type: node.type,
+                path: node.path
             });
 
+            // Add to history and update state
+            const newHistory = addToHistory(currentState.history, node);
             set({
                 context: {
                     ...currentState,
