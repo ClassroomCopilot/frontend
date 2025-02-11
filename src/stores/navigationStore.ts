@@ -89,6 +89,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             // Update main context if provided
             if (contextSwitch.main) {
                 newState = validateContextTransition(newState, { main: contextSwitch.main });
+                // When switching main context, we always want to use its default base context
+                if (!contextSwitch.skipBaseContextLoad) {
+                    newState.base = getDefaultBaseForMain(contextSwitch.main);
+                }
             }
 
             // Update base context if provided
@@ -98,10 +102,26 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
             // Determine which context to use for the node
             const targetContext = contextSwitch.extended || 
-                                (contextSwitch.base ? contextSwitch.base : newState.base);
+                                (contextSwitch.base ? contextSwitch.base : 
+                                 contextSwitch.main ? getDefaultBaseForMain(contextSwitch.main) : 
+                                 newState.base);
 
             // Get database name
             const dbName = getContextDatabase(newState, userDbName, workerDbName);
+
+            logger.debug('navigation', '🔄 Switching context', {
+                from: {
+                    main: currentState.main,
+                    base: currentState.base,
+                    node: currentState.node?.id
+                },
+                to: {
+                    main: newState.main,
+                    base: newState.base,
+                    targetContext
+                },
+                contextSwitch
+            });
 
             // Get default node for the final context
             const defaultNode = await UserNeoDBService.getDefaultNode(targetContext, dbName);

@@ -167,6 +167,7 @@ export interface UnifiedContextSwitch {
     main?: MainContext;
     base?: BaseContext;
     extended?: ExtendedContext;
+    skipBaseContextLoad?: boolean;
 }
 
 // Navigation Actions Interface

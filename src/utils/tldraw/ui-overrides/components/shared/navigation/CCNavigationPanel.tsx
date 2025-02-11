@@ -71,8 +71,7 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
 }) => {
   const {
     context: navigationContext,
-    setBaseContext,
-    setExtendedContext,
+    switchContext,
     isLoading,
     error,
   } = useNavigationStore();
@@ -153,18 +152,16 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
 
   const handleContextChange = async (newContext: BaseContext) => {
     try {
-      // First update the store
-      await setBaseContext(newContext, userDbName, workerDbName);
-      
-      // Then update local state
-      onContextChange(newContext);
-      
-      // Set appropriate default view for the new context
+      // Use unified context switch with both base and extended contexts
       const defaultView = getDefaultViewForContext(newContext);
+      await switchContext({
+        base: newContext,
+        extended: isValidViewContext(defaultView) ? defaultView : undefined
+      }, userDbName, workerDbName);
+      
+      // Update local state
+      onContextChange(newContext);
       if (isValidViewContext(defaultView)) {
-        // Update store first
-        await setExtendedContext(defaultView, userDbName, workerDbName);
-        // Then update local state
         onExtendedContextChange?.(defaultView);
       }
     } catch (error) {
@@ -180,9 +177,12 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
         return;
       }
 
-      // Update store first
-      await setExtendedContext(newContext, userDbName, workerDbName);
-      // Then update local state
+      // Use unified context switch for extended context only
+      await switchContext({
+        extended: newContext
+      }, userDbName, workerDbName);
+      
+      // Update local state
       onExtendedContextChange?.(newContext);
     } catch (error) {
       console.error('Failed to change extended context:', error);

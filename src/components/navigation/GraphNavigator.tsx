@@ -84,9 +84,7 @@ const ContextToggleButton = styled(Button, {
 export const GraphNavigator: React.FC = () => {
     const {
         context,
-        setMainContext,
-        setBaseContext,
-        setExtendedContext,
+        switchContext,
         goBack,
         goForward,
         isLoading
@@ -224,11 +222,15 @@ export const GraphNavigator: React.FC = () => {
                 workerDbName
             });
 
-            await setMainContext(main, userDbName, workerDbName);
+            // Use unified context switch
+            await switchContext({ 
+                main,
+                skipBaseContextLoad: true // Skip base context load as it's handled in the unified switch
+            }, userDbName, workerDbName);
         } catch (error) {
             logger.error('navigation', '❌ Failed to change main context:', error);
         }
-    }, [context.main, setMainContext, userDbName, workerDbName]);
+    }, [context.main, switchContext, userDbName, workerDbName]);
 
     const handleContextMenu = (event: React.MouseEvent<HTMLElement>) => {
         setContextMenuAnchor(event.currentTarget);
@@ -237,16 +239,18 @@ export const GraphNavigator: React.FC = () => {
     const handleContextSelect = useCallback(async (context: BaseContext) => {
         setContextMenuAnchor(null);
         try {
-            await setBaseContext(context, userDbName, workerDbName);
-            
+            // Use unified context switch with both base and extended contexts
             const contextDef = NAVIGATION_CONTEXTS[context];
-            if (contextDef && contextDef.views.length > 0) {
-                await setExtendedContext(contextDef.views[0].id, userDbName, workerDbName);
-            }
+            const defaultExtended = contextDef?.views[0]?.id;
+            
+            await switchContext({ 
+                base: context,
+                extended: defaultExtended 
+            }, userDbName, workerDbName);
         } catch (error) {
             logger.error('navigation', '❌ Failed to select context:', error);
         }
-    }, [setBaseContext, setExtendedContext, userDbName, workerDbName]);
+    }, [switchContext, userDbName, workerDbName]);
 
     const getContextItems = useCallback(() => {
         if (context.main === 'profile') {
