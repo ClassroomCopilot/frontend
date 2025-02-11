@@ -73,7 +73,7 @@ export default function SinglePlayerPage() {
     const location = useLocation();
 
     // Navigation store
-    const { navigate: navigateNode, context } = useNavigationStore();
+    const { context, switchContext } = useNavigationStore();
     const currentNode = context.node;
 
     // Refs
@@ -105,7 +105,7 @@ export default function SinglePlayerPage() {
 
     // Initialize user nodes and navigate to today's node
     useEffect(() => {
-        const initializeUserNodes = async () => {
+        const initializeUserContext = async () => {
             // Wait for all contexts to be ready
             if (!areContextsInitialized) {
                 logger.debug('single-player-page', '⏳ Waiting for context initialization...', {
@@ -131,34 +131,25 @@ export default function SinglePlayerPage() {
             try {
                 setLoadingState({ status: 'loading', error: '' });
                 
-                logger.debug('single-player-page', '🔄 Initializing user nodes', {
+                logger.debug('single-player-page', '🔄 Initializing user context', {
                     email: user.email,
                     userDbName,
                     workerDbName
                 });
 
-                // Fetch user nodes data
-                const userNodes = await UserNeoDBService.fetchUserNodesData(
-                    user.email,
-                    userDbName,
-                    workerDbName || undefined
-                );
+                // Instead of directly navigating to the user node,
+                // switch to the profile context with overview view
+                await switchContext({
+                    main: 'profile',
+                    base: 'profile',
+                    extended: 'overview'
+                }, userDbName, workerDbName);
 
-                if (userNodes?.privateUserNode) {
-                    logger.debug('single-player-page', '🔄 Navigating to user node', {
-                        nodeId: userNodes.privateUserNode.unique_id,
-                        dbName: userDbName
-                    });
-                    await navigateNode(userNodes.privateUserNode.unique_id, userDbName);
-                    logger.info('single-player-page', '✅ Successfully navigated to user node');
-                } else {
-                    logger.warn('single-player-page', '⚠️ No private user node found');
-                }
-                
+                logger.info('single-player-page', '✅ Successfully initialized user context');
                 setLoadingState({ status: 'ready', error: '' });
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to initialize user nodes';
-                logger.error('single-player-page', '❌ Failed to initialize user nodes', {
+                const errorMessage = error instanceof Error ? error.message : 'Failed to initialize user context';
+                logger.error('single-player-page', '❌ Failed to initialize user context', {
                     error: errorMessage,
                     userDbName,
                     workerDbName
@@ -170,14 +161,14 @@ export default function SinglePlayerPage() {
             }
         };
 
-        initializeUserNodes();
+        initializeUserContext();
     }, [
         user?.email, 
         userDbName, 
         workerDbName, 
         isNeo4jLoading, 
         areContextsInitialized,
-        navigateNode
+        switchContext
     ]);
 
     // Initialize preferences when user is available
