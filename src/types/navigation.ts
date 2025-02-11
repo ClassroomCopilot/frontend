@@ -162,23 +162,33 @@ export interface NavigationState {
   error: string | null;
 }
 
+// Add UnifiedContextSwitch interface
+export interface UnifiedContextSwitch {
+    main?: MainContext;
+    base?: BaseContext;
+    extended?: ExtendedContext;
+}
+
 // Navigation Actions Interface
 export interface NavigationActions {
-  // Context Navigation
-  setMainContext: (context: MainContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
-  setBaseContext: (context: BaseContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
-  setExtendedContext: (context: ExtendedContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
-  
-  // Node Navigation
-  navigate: (nodeId: string, dbName: string) => Promise<void>;
-  navigateToNode: (node: NavigationNode, userDbName: string | null, workerDbName: string | null) => Promise<void>;
-  
-  // History Navigation
-  goBack: () => void;
-  goForward: () => void;
-  
-  // Utility Methods
-  refreshNavigationState: (userDbName: string | null, workerDbName: string | null) => Promise<void>;
+    // Unified Context Switch
+    switchContext: (contextSwitch: UnifiedContextSwitch, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+    
+    // Context Navigation
+    setMainContext: (context: MainContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+    setBaseContext: (context: BaseContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+    setExtendedContext: (context: ExtendedContext, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+    
+    // Node Navigation
+    navigate: (nodeId: string, dbName: string) => Promise<void>;
+    navigateToNode: (node: NavigationNode, userDbName: string | null, workerDbName: string | null) => Promise<void>;
+    
+    // History Navigation
+    goBack: () => void;
+    goForward: () => void;
+    
+    // Utility Methods
+    refreshNavigationState: (userDbName: string | null, workerDbName: string | null) => Promise<void>;
 }
 
 export type NavigationStore = NavigationState & NavigationActions;

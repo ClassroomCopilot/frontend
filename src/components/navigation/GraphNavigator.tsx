@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { useNeo4j } from '../../contexts/Neo4jContext';
+import { NAVIGATION_CONTEXTS } from '../../config/navigationContexts';
 import { 
     MainContext,
     BaseContext
@@ -85,6 +86,7 @@ export const GraphNavigator: React.FC = () => {
         context,
         setMainContext,
         setBaseContext,
+        setExtendedContext,
         goBack,
         goForward,
         isLoading
@@ -235,18 +237,16 @@ export const GraphNavigator: React.FC = () => {
     const handleContextSelect = useCallback(async (context: BaseContext) => {
         setContextMenuAnchor(null);
         try {
-            // setBaseContext now handles setting the default extended context
             await setBaseContext(context, userDbName, workerDbName);
             
-            logger.debug('navigation', '✅ Context switched successfully', {
-                context,
-                userDbName,
-                workerDbName
-            });
+            const contextDef = NAVIGATION_CONTEXTS[context];
+            if (contextDef && contextDef.views.length > 0) {
+                await setExtendedContext(contextDef.views[0].id, userDbName, workerDbName);
+            }
         } catch (error) {
             logger.error('navigation', '❌ Failed to select context:', error);
         }
-    }, [setBaseContext, userDbName, workerDbName]);
+    }, [setBaseContext, setExtendedContext, userDbName, workerDbName]);
 
     const getContextItems = useCallback(() => {
         if (context.main === 'profile') {

@@ -209,6 +209,33 @@ export default function SinglePlayerPage() {
         loadSnapshot();
     }, [currentNode]);
 
+    // Add autosave when navigating away from current node
+    useEffect(() => {
+        const handleBeforeNavigate = async () => {
+            // Skip autosave during initial load
+            if (isInitialLoad || !editorRef.current || !currentNode?.path) return;
+
+            try {
+                logger.info('single-player-page', '💾 Auto-saving before navigation', { 
+                    nodeId: currentNode.id,
+                    path: currentNode.path 
+                });
+
+                const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
+                await saveNodeSnapshotToDatabase(currentNode.path, dbName, editorRef.current.store);
+                
+                logger.info('single-player-page', '✅ Node saved successfully');
+            } catch (error) {
+                logger.error('single-player-page', '❌ Failed to save node:', error);
+            }
+        };
+
+        // Save on unmount/cleanup
+        return () => {
+            handleBeforeNavigate();
+        };
+    }, [currentNode, isInitialLoad]);
+
     // Add periodic autosave
     useEffect(() => {
         // Skip autosave during initial load

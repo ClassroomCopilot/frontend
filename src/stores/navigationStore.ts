@@ -8,26 +8,52 @@ import {
     MainContext,
     BaseContext,
     NavigationContextState,
+    isProfileContext,
+    isInstituteContext,
     getContextDatabase,
     addToHistory,
-    ExtendedContext
+    ExtendedContext,
+    UnifiedContextSwitch
 } from '../types/navigation';
-import { NAVIGATION_CONTEXTS } from '../config/navigationContexts';
 
-const cleanupContext = () => {
-    return {
-        main: 'profile' as MainContext,
-        base: 'profile' as BaseContext,
-        node: null,
-        history: {
-            nodes: [],
-            currentIndex: -1
-        }
-    };
+const initialState: NavigationContextState = {
+    main: 'profile',
+    base: 'profile',
+    node: null,
+    history: {
+        nodes: [],
+        currentIndex: -1
+    }
 };
 
 function getDefaultBaseForMain(main: MainContext): BaseContext {
     return main === 'profile' ? 'profile' : 'school';
+}
+
+function validateContextTransition(
+    current: NavigationContextState,
+    updates: Partial<NavigationContextState>
+): NavigationContextState {
+    const newState = { ...current, ...updates };
+
+    // Validate main context
+    if (updates.main) {
+        newState.base = getDefaultBaseForMain(updates.main);
+    }
+
+    // Validate base context
+    if (updates.base) {
+        // Ensure base context matches main context
+        const isValid = newState.main === 'profile' 
+            ? isProfileContext(updates.base)
+            : isInstituteContext(updates.base);
+
+        if (!isValid) {
+            newState.base = getDefaultBaseForMain(newState.main);
+        }
+    }
+
+    return newState;
 }
 
 export interface NavigationActions {
@@ -48,16 +74,67 @@ export interface NavigationActions {
   refreshNavigationState: (userDbName: string | null, workerDbName: string | null) => Promise<void>;
 }
 
-export type NavigationStateType = {
-    context: NavigationContextState;
-    isLoading: boolean;
-    error: string | null;
-};
-
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
-    context: cleanupContext(),
+    context: initialState,
     isLoading: false,
     error: null,
+
+    switchContext: async (contextSwitch: UnifiedContextSwitch, userDbName: string | null, workerDbName: string | null) => {
+        try {
+            set({ isLoading: true, error: null });
+            
+            const currentState = get().context;
+            let newState = { ...currentState };
+
+            // Update main context if provided
+            if (contextSwitch.main) {
+                newState = validateContextTransition(newState, { main: contextSwitch.main });
+            }
+
+            // Update base context if provided
+            if (contextSwitch.base) {
+                newState = validateContextTransition(newState, { base: contextSwitch.base });
+            }
+
+            // Determine which context to use for the node
+            const targetContext = contextSwitch.extended || 
+                                (contextSwitch.base ? contextSwitch.base : newState.base);
+
+            // Get database name
+            const dbName = getContextDatabase(newState, userDbName, workerDbName);
+
+            // Get default node for the final context
+            const defaultNode = await UserNeoDBService.getDefaultNode(targetContext, dbName);
+            
+            if (!defaultNode) {
+                throw new Error(`No default node for context: ${targetContext}`);
+            }
+
+            // Update history with new node
+            const newHistory = addToHistory(currentState.history, defaultNode);
+
+            // Update state
+            set({ 
+                context: { 
+                    ...newState, 
+                    node: defaultNode,
+                    history: newHistory
+                },
+                isLoading: false 
+            });
+
+            // Load node snapshot
+            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
+                set({ isLoading: state.status === 'loading' });
+            });
+        } catch (error) {
+            logger.error('navigation', '❌ Failed to switch context:', error);
+            set({ 
+                error: error instanceof Error ? error.message : 'Failed to switch context',
+                isLoading: false 
+            });
+        }
+    },
 
     goBack: () => {
         const currentState = get().context;
@@ -95,61 +172,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
         }
     },
 
-    // Context Navigation
     setMainContext: async (main: MainContext, userDbName: string | null, workerDbName: string | null) => {
         try {
-            set({ isLoading: true, error: null });
-            
-            const newBase = getDefaultBaseForMain(main);
-            
-            // Clean up old context first
-            set(() => ({
-                context: {
-                    ...cleanupContext(),
-                    main,
-                    base: newBase
-                }
-            }));
-
-            // Then load new context data
-            const newContext: NavigationContextState = {
-                main,
-                base: newBase,
-                node: null,
-                history: { nodes: [], currentIndex: -1 }
-            };
-            
-            const dbName = getContextDatabase(newContext, userDbName, workerDbName);
-            logger.debug('navigation', '🔄 Setting main context', {
-                main,
-                base: newBase,
-                dbName,
-                userDbName,
-                workerDbName
-            });
-
-            const defaultNode = await UserNeoDBService.getDefaultNode(newBase, dbName);
-            
-            if (!defaultNode) {
-                throw new Error(`No default node for context: ${newBase}`);
-            }
-
-            // Update history with new node
-            const newHistory = addToHistory(get().context.history, defaultNode);
-
-            set({ 
-                context: { 
-                    ...newContext, 
-                    node: defaultNode,
-                    history: newHistory
-                },
-                isLoading: false 
-            });
-
-            // Load node snapshot without clearing canvas
-            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
-                set({ isLoading: state.status === 'loading' });
-            }, false);
+            // Use switchContext instead of direct implementation
+            await get().switchContext({ main }, userDbName, workerDbName);
         } catch (error) {
             logger.error('navigation', '❌ Failed to set main context:', error);
             set({ 
@@ -161,63 +187,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
     setBaseContext: async (base: BaseContext, userDbName: string | null, workerDbName: string | null) => {
         try {
-            set({ isLoading: true, error: null });
-            
-            // Get the default extended context for this base context
-            const contextDef = NAVIGATION_CONTEXTS[base];
-            if (!contextDef) {
-                throw new Error(`Invalid base context: ${base}`);
-            }
-            const defaultExtendedContext = contextDef.views[0]?.id;
-            
-            // Clean up context data and set both base and extended contexts at once
-            set(state => ({
-                context: {
-                    ...state.context,
-                    base,
-                    node: null,
-                    history: {
-                        nodes: [],
-                        currentIndex: -1
-                    }
-                }
-            }));
-
-            // Then load new context data
-            const dbName = getContextDatabase(get().context, userDbName, workerDbName);
-            logger.debug('navigation', '🔄 Setting base context', {
-                base,
-                defaultExtendedContext,
-                dbName,
-                userDbName,
-                workerDbName
-            });
-
-            // Get default node for the default extended context if it exists, otherwise for base
-            const defaultNode = defaultExtendedContext 
-                ? await UserNeoDBService.getDefaultNode(defaultExtendedContext, dbName)
-                : await UserNeoDBService.getDefaultNode(base, dbName);
-            
-            if (!defaultNode) {
-                throw new Error(`No default node for context: ${defaultExtendedContext || base}`);
-            }
-
-            // Update history with new node
-            const newHistory = addToHistory(get().context.history, defaultNode);
-
-            set({ 
-                context: { 
-                    ...get().context,
-                    node: defaultNode,
-                    history: newHistory
-                },
-                isLoading: false
-            });
-
-            // Load node snapshot without clearing canvas
-            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
-                set({ isLoading: state.status === 'loading' });
-            }, false);
+            // Use switchContext instead of direct implementation
+            await get().switchContext({ base }, userDbName, workerDbName);
         } catch (error) {
             logger.error('navigation', '❌ Failed to set base context:', error);
             set({ 
@@ -229,56 +200,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
     setExtendedContext: async (extended: ExtendedContext, userDbName: string | null, workerDbName: string | null) => {
         try {
-            // If we're already loading, skip this transition
-            if (get().isLoading) {
-                logger.debug('navigation', '⏭️ Skipping extended context change while loading');
-                return;
-            }
-
-            set({ isLoading: true, error: null });
-            
-            const currentState = get().context;
-            const contextDef = NAVIGATION_CONTEXTS[currentState.base];
-            if (!contextDef) {
-                throw new Error(`Invalid base context: ${currentState.base}`);
-            }
-
-            // Find the view definition for the extended context
-            const viewDef = contextDef.views.find(view => view.id === extended);
-            if (!viewDef) {
-                throw new Error(`Invalid extended context: ${extended} for base context: ${currentState.base}`);
-            }
-
-            logger.debug('navigation', '🔄 Setting extended context', {
-                base: currentState.base,
-                extended,
-                dbName: getContextDatabase(currentState, userDbName, workerDbName)
-            });
-
-            // Get the default node for this extended context
-            const dbName = getContextDatabase(currentState, userDbName, workerDbName);
-            const defaultNode = await UserNeoDBService.getDefaultNode(extended, dbName);
-            
-            if (!defaultNode) {
-                throw new Error(`No default node for extended context: ${extended}`);
-            }
-
-            // Update history with new node
-            const newHistory = addToHistory(currentState.history, defaultNode);
-
-            set({ 
-                context: { 
-                    ...currentState,
-                    node: defaultNode,
-                    history: newHistory
-                },
-                isLoading: false 
-            });
-
-            // Load node snapshot
-            await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
-                set({ isLoading: state.status === 'loading' });
-            });
+            // Use switchContext instead of direct implementation
+            await get().switchContext({ extended }, userDbName, workerDbName);
         } catch (error) {
             logger.error('navigation', '❌ Failed to set extended context:', error);
             set({ 

@@ -85,6 +85,7 @@ export type LogCategory =
     | 'cc-node-snapshot-panel' // For cc node snapshot related logs
     | 'user-neo-db'
     | 'navigation-queue-service' // For navigation queue service related logs
+    | 'editor-state' // For editor state related logs
 
 interface LogConfig {
     enabled: boolean        // Master switch to turn logging on/off
@@ -168,7 +169,7 @@ export const logger = new DebugLogger()
 logger.setConfig({
     enabled: true,
     level: 'debug',
-    categories: ['app', 'header', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool', 'store-service', 'morphic-page', 'not-found', 'share-handler', 'transcription-service', 'slideshow-helpers', 'slide-shape', 'graph-panel', 'cc-user-node-shape-util',  'cc-base-shape-util', 'node-canvas', 'navigation-service', 'autosave', 'cc-exam-marker', 'cc-search', 'cc-web-browser', 'neo-user-context', 'neo-institute-context', 'cc-node-snapshot-panel', 'user-neo-db', 'navigation-queue-service']
+    categories: ['app', 'header', 'routing', 'neo4j-context', 'auth-context', 'auth-service', 'state-management', 'local-storage', 'axios', 'system', 'navigation', 'calendar', 'presentation', 'selection', 'camera', 'binding', 'shape', 'tldraw-service', 'tldraw-events', 'signup-page', 'timetable-service', 'dev-page', 'super-admin-auth-route', 'admin-page', 'storage-service', 'user-context', 'login-form', 'super-admin-section', 'routes', 'neo4j-service', 'supabase-client', 'user-page', 'site-page', 'auth-page', 'email-signup-form', 'supabase-profile-service', 'multiplayer-page', 'snapshot-service', 'sync-service', 'slides-panel', 'local-store-service', 'shared-store-service', 'single-player-page', 'user-toolbar', 'registration-service', 'graph-service', 'graph-shape', 'calendar-shape', 'snapshot-toolbar', 'graphStateUtil', 'baseNodeShapeUtil', 'school-service', 'microphone-state-tool', 'store-service', 'morphic-page', 'not-found', 'share-handler', 'transcription-service', 'slideshow-helpers', 'slide-shape', 'graph-panel', 'cc-user-node-shape-util',  'cc-base-shape-util', 'node-canvas', 'navigation-service', 'autosave', 'cc-exam-marker', 'cc-search', 'cc-web-browser', 'neo-user-context', 'neo-institute-context', 'cc-node-snapshot-panel', 'user-neo-db', 'navigation-queue-service', 'editor-state']
 })
 
 export default logger
