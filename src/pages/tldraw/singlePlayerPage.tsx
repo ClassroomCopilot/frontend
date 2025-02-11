@@ -39,6 +39,8 @@ import { LoadingState } from '../../services/tldraw/snapshotService';
 import { saveNodeSnapshotToDatabase } from '../../services/tldraw/snapshotService';
 import { CircularProgress, Alert, Snackbar } from '@mui/material';
 import { getThemeFromLabel } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-styles';
+import { NodeData } from '../../types/graph-shape';
+import { NavigationNode } from '../../types/navigation';
 
 export default function SinglePlayerPage() {
     // Context hooks with initialization states
@@ -198,68 +200,26 @@ export default function SinglePlayerPage() {
                     isInitialLoad
                 });
 
-                // First load the snapshot
+                // 1. Load snapshot
                 await UserNeoDBService.loadSnapshotIntoStore(currentNode.path, setLoadingState);
                 
-                // Get node data if not available in navigation context
-                const nodeData: Record<string, unknown> = currentNode.data || {};
-                if (!Object.keys(nodeData).length) {
-                    const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
-                    const fetchedData = await UserNeoDBService.fetchNodeData(currentNode.id, dbName);
-                    if (!fetchedData?.node_data) {
-                        throw new Error('Failed to fetch node data');
-                    }
-                    Object.assign(nodeData, fetchedData.node_data);
-                }
-
-                // Process node data to match NodeData type
-                const theme = getThemeFromLabel(currentNode.type);
-                const processedNodeData = {
-                    ...nodeData,
-                    title: (nodeData.title as string) || currentNode.label,
-                    w: 500,
-                    h: 350,
-                    state: {
-                        parentId: null,
-                        isPageChild: true,
-                        hasChildren: null,
-                        bindings: null
-                    },
-                    headerColor: theme.headerColor,
-                    backgroundColor: theme.backgroundColor,
-                    isLocked: false,
-                    __primarylabel__: currentNode.type,
-                    unique_id: currentNode.id,
-                    path: currentNode.path
-                };
-
-                // After loading snapshot and getting node data, handle the node on canvas
+                // 2. Always fetch fresh node data
+                const nodeData = await loadNodeData(currentNode);
+                
+                // 3. Handle the node on canvas
                 const shapes = editorRef.current.getCurrentPageShapes();
-                const nodeShapes = shapes.filter(s => s.id.toString().includes(currentNode.id));
+                const nodeShapes = shapes.filter(s => s.id === currentNode.id);
                 
                 if (nodeShapes.length > 0) {
-                    // Node shape exists, just center it
-                    logger.debug('single-player-page', '🎯 Centering existing node shape', {
-                        nodeId: currentNode.id,
-                        shapeCount: nodeShapes.length
-                    });
-                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, processedNodeData);
+                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
                 } else {
-                    // No node shape found, create and center it
-                    logger.debug('single-player-page', '✨ Creating and centering new node shape', {
-                        nodeId: currentNode.id
-                    });
-                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, processedNodeData);
+                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
                 }
 
                 // Mark initialization as complete after first snapshot load
                 setIsInitialLoad(false);
             } catch (error) {
-                logger.error('single-player-page', '❌ Failed to load snapshot or node data', {
-                    nodeId: currentNode.id,
-                    path: currentNode.path,
-                    error
-                });
+                logger.error('single-player-page', '❌ Failed to load snapshot or node data', error);
                 setLoadingState({ 
                     status: 'error', 
                     error: error instanceof Error ? error.message : 'Failed to load node data'
@@ -515,3 +475,34 @@ export default function SinglePlayerPage() {
         </div>
     );
 }
+
+const loadNodeData = async (node: NavigationNode): Promise<NodeData> => {
+    // 1. Always fetch fresh data
+    const dbName = UserNeoDBService.getNodeDatabaseName(node);
+    const fetchedData = await UserNeoDBService.fetchNodeData(node.id, dbName);
+    
+    if (!fetchedData?.node_data) {
+        throw new Error('Failed to fetch node data');
+    }
+
+    // 2. Process the data into the correct shape
+    const theme = getThemeFromLabel(node.type);
+    return {
+        ...fetchedData.node_data,
+        title: fetchedData.node_data.title || node.label,
+        w: 500,
+        h: 350,
+        state: {
+            parentId: null,
+            isPageChild: true,
+            hasChildren: null,
+            bindings: null
+        },
+        headerColor: theme.headerColor,
+        backgroundColor: theme.backgroundColor,
+        isLocked: false,
+        __primarylabel__: node.type,
+        unique_id: node.id,
+        path: node.path
+    };
+};
