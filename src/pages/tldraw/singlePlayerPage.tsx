@@ -6,6 +6,7 @@ import {
     useTldrawUser,
     DEFAULT_SUPPORT_VIDEO_TYPES,
     DEFAULT_SUPPORTED_IMAGE_TYPES,
+    TLShape,
 } from '@tldraw/tldraw';
 // App context
 import { useAuth } from '../../contexts/AuthContext';
@@ -199,7 +200,10 @@ export default function SinglePlayerPage() {
                 
                 // 3. Handle the node on canvas
                 const shapes = editorRef.current.getCurrentPageShapes();
-                const nodeShapes = shapes.filter(s => s.id === currentNode.id);
+                const nodeShapes = shapes.filter((shape: TLShape) => 
+                    shape.id === `shape:${currentNode.id}` || // Exact shape ID match
+                    shape.id === currentNode.id // Fallback for legacy IDs
+                );
                 
                 if (nodeShapes.length > 0) {
                     await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
