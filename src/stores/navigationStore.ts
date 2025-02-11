@@ -85,6 +85,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
         try {
             // Check if we have the necessary database connections
             if (contextSwitch.main === 'profile' && !userDbName) {
+                logger.error('navigation-context', '❌ User database connection not initialized');
                 set({ 
                     error: 'User database connection not initialized',
                     isLoading: false 
@@ -92,12 +93,28 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 return;
             }
             if (contextSwitch.main === 'institute' && !workerDbName) {
+                logger.error('navigation-context', '❌ Worker database connection not initialized');
                 set({ 
                     error: 'Worker database connection not initialized',
                     isLoading: false 
                 });
                 return;
             }
+
+            logger.debug('navigation-context', '🔄 Starting context switch', {
+                from: {
+                    main: get().context.main,
+                    base: get().context.base,
+                    extended: contextSwitch.extended,
+                    nodeId: get().context.node?.id
+                },
+                to: {
+                    main: contextSwitch.main,
+                    base: contextSwitch.base,
+                    extended: contextSwitch.extended
+                },
+                skipBaseContextLoad: contextSwitch.skipBaseContextLoad
+            });
 
             set({ isLoading: true, error: null });
             
@@ -110,12 +127,26 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 if (!contextSwitch.skipBaseContextLoad) {
                     newState.base = getDefaultBaseForMain(contextSwitch.main);
                 }
+                logger.debug('navigation-state', '✅ Main context updated', {
+                    previous: currentState.main,
+                    new: newState.main,
+                    defaultBase: newState.base
+                });
             }
 
             // Update base context if provided
             if (contextSwitch.base) {
                 newState = validateContextTransition(newState, { base: contextSwitch.base });
+                logger.debug('navigation-state', '✅ Base context updated', {
+                    previous: currentState.base,
+                    new: newState.base
+                });
             }
+
+            logger.debug('navigation-state', '✅ Context validation complete', {
+                validatedState: newState,
+                originalState: currentState
+            });
 
             // Determine which context to use for the node
             const targetContext = contextSwitch.extended || 
@@ -126,19 +157,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             // Get database name
             const dbName = getContextDatabase(newState, userDbName, workerDbName);
 
-            logger.debug('navigation', '🔄 Switching context', {
-                from: {
-                    main: currentState.main,
-                    base: currentState.base,
-                    node: currentState.node?.id
-                },
-                to: {
-                    main: newState.main,
-                    base: newState.base,
-                    targetContext
-                },
-                contextSwitch,
-                dbName
+            logger.debug('context-switch', '🔍 Fetching default node for context', {
+                targetContext,
+                dbName,
+                currentState: newState
             });
 
             // Clear current node state before getting new one
@@ -154,26 +176,33 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             const defaultNode = await UserNeoDBService.getDefaultNode(targetContext, dbName);
             
             if (!defaultNode) {
+                const errorMsg = `No default node found for context: ${targetContext}`;
+                logger.error('context-switch', '❌ Default node fetch failed', { targetContext });
                 set({ 
-                    error: `No default node found for context: ${targetContext}`,
+                    error: errorMsg,
                     isLoading: false 
                 });
                 return;
             }
 
-            logger.debug('navigation', '📍 Got default node for context', {
+            logger.debug('context-switch', '✨ Default node fetched', {
                 nodeId: defaultNode.id,
-                context: targetContext,
-                path: defaultNode.path
+                path: defaultNode.path,
+                type: defaultNode.type
             });
 
             // Load snapshot
             try {
+                logger.debug('navigation-state', '📥 Loading snapshot for node', {
+                    nodeId: defaultNode.id,
+                    path: defaultNode.path
+                });
+
                 await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
                     set({ isLoading: state.status === 'loading' });
                 });
             } catch (snapshotError) {
-                logger.error('navigation', '❌ Failed to load snapshot:', snapshotError);
+                logger.error('navigation-state', '❌ Failed to load snapshot:', snapshotError);
                 set({ 
                     error: 'Failed to load node snapshot',
                     isLoading: false 
@@ -183,11 +212,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
             // Update history and state
             const newHistory = addToHistory(currentState.history, defaultNode);
-            logger.debug('navigation', '📍 Updated navigation history', {
-                previousIndex: currentState.history.currentIndex,
-                newIndex: newHistory.currentIndex,
-                historyLength: newHistory.nodes.length,
-                currentNode: defaultNode.id
+            logger.debug('history-management', '📚 History updated', {
+                previousState: currentState.history,
+                newState: newHistory,
+                addedNode: defaultNode
             });
 
             set({ 
@@ -199,8 +227,16 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 isLoading: false,
                 error: null
             });
+
+            logger.debug('navigation-context', '✅ Context switch completed', {
+                finalState: {
+                    main: newState.main,
+                    base: newState.base,
+                    nodeId: defaultNode.id
+                }
+            });
         } catch (error) {
-            logger.error('navigation', '❌ Failed to switch context:', error);
+            logger.error('navigation-context', '❌ Failed to switch context:', error);
             set({ 
                 error: error instanceof Error ? error.message : 'Failed to switch context',
                 isLoading: false 

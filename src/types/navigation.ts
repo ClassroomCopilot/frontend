@@ -75,8 +75,13 @@ export interface NavigationHistory {
 
 // Helper function to get current node from history
 export const getCurrentHistoryNode = (history: NavigationHistory): NavigationNode | null => {
-    if (history.currentIndex === -1 || !history.nodes.length) return null;
-    return history.nodes[history.currentIndex];
+    const node = history.currentIndex === -1 || !history.nodes.length ? null : history.nodes[history.currentIndex];
+    logger.debug('history-management', '📍 Getting current history node', {
+        currentIndex: history.currentIndex,
+        totalNodes: history.nodes.length,
+        node
+    });
+    return node;
 };
 
 // Helper function to add node to history
@@ -84,12 +89,24 @@ export const addToHistory = (
     history: NavigationHistory, 
     node: NavigationNode
 ): NavigationHistory => {
-    // Remove any forward history if we're not at the end
+    logger.debug('history-management', '➕ Adding node to history', {
+        currentIndex: history.currentIndex,
+        newNode: node,
+        existingNodes: history.nodes.length
+    });
+    
     const newNodes = [...history.nodes.slice(0, history.currentIndex + 1), node];
-    return {
+    const newHistory = {
         nodes: newNodes,
         currentIndex: newNodes.length - 1
     };
+    
+    logger.debug('history-management', '✅ History updated', {
+        previousState: history,
+        newState: newHistory
+    });
+    
+    return newHistory;
 };
 
 // Helper function to navigate history
@@ -97,11 +114,32 @@ export const navigateHistory = (
     history: NavigationHistory,
     index: number
 ): NavigationHistory => {
-    if (index < 0 || index >= history.nodes.length) return history;
-    return {
+    logger.debug('history-management', '🔄 Navigating history', {
+        currentIndex: history.currentIndex,
+        targetIndex: index,
+        totalNodes: history.nodes.length
+    });
+
+    if (index < 0 || index >= history.nodes.length) {
+        logger.warn('history-management', '⚠️ Invalid history navigation index', {
+            requestedIndex: index,
+            historyLength: history.nodes.length
+        });
+        return history;
+    }
+
+    const newHistory = {
         nodes: history.nodes,
         currentIndex: index
     };
+
+    logger.debug('history-management', '✅ History navigation complete', {
+        from: history.currentIndex,
+        to: index,
+        node: history.nodes[index]
+    });
+
+    return newHistory;
 };
 
 // Context State Interface
@@ -123,28 +161,28 @@ export const isInstituteContext = (context: BaseContext): context is InstituteCo
 
 // Database selector
 export const getContextDatabase = (context: NavigationContextState, userDbName: string | null, workerDbName: string | null): string => {
-  logger.debug('navigation', '🔄 Getting context database', {
-    mainContext: context.main,
-    baseContext: context.base,
-    userDbName,
-    workerDbName
-  });
+    logger.debug('navigation-context', '🔄 Getting context database', {
+        mainContext: context.main,
+        baseContext: context.base,
+        userDbName,
+        workerDbName
+    });
 
-  if (context.main === 'profile') {
-    if (!userDbName) {
-      logger.error('navigation', '❌ Missing user database name for profile context');
-      throw new Error('User database name is required for profile context');
+    if (context.main === 'profile') {
+        if (!userDbName) {
+            logger.error('navigation-context', '❌ Missing user database name for profile context');
+            throw new Error('User database name is required for profile context');
+        }
+        logger.debug('navigation-context', '✅ Using user database', { dbName: userDbName });
+        return userDbName;
+    } else {
+        if (!workerDbName) {
+            logger.error('navigation-context', '❌ Missing worker database name for institute context');
+            throw new Error('Worker database name is required for institute context');
+        }
+        logger.debug('navigation-context', '✅ Using worker database', { dbName: workerDbName });
+        return workerDbName;
     }
-    logger.debug('navigation', '✅ Using user database', { dbName: userDbName });
-    return userDbName;
-  } else {
-    if (!workerDbName) {
-      logger.error('navigation', '❌ Missing worker database name for institute context');
-      throw new Error('Worker database name is required for institute context');
-    }
-    logger.debug('navigation', '✅ Using worker database', { dbName: workerDbName });
-    return workerDbName;
-  }
 };
 
 // Context Definition Types
