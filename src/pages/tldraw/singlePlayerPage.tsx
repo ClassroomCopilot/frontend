@@ -38,6 +38,7 @@ import { logger } from '../../debugConfig';
 import { LoadingState } from '../../services/tldraw/snapshotService';
 import { saveNodeSnapshotToDatabase } from '../../services/tldraw/snapshotService';
 import { CircularProgress, Alert, Snackbar } from '@mui/material';
+import { getThemeFromLabel } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-styles';
 
 export default function SinglePlayerPage() {
     // Context hooks with initialization states
@@ -209,6 +210,7 @@ export default function SinglePlayerPage() {
                 }
 
                 // Process node data to match NodeData type
+                const theme = getThemeFromLabel(nodeData.node_type);
                 const processedNodeData = {
                     ...nodeData.node_data,
                     title: nodeData.node_data.title || currentNode.label,
@@ -220,8 +222,8 @@ export default function SinglePlayerPage() {
                         hasChildren: null,
                         bindings: null
                     },
-                    headerColor: nodeData.node_data.headerColor || '#000000',
-                    backgroundColor: nodeData.node_data.backgroundColor || '#ffffff',
+                    headerColor: theme.headerColor,
+                    backgroundColor: theme.backgroundColor,
                     isLocked: false,
                     __primarylabel__: nodeData.node_type,
                     unique_id: currentNode.id,

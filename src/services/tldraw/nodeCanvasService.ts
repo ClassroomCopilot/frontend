@@ -1,31 +1,8 @@
-import { Editor, TLShape, createShapeId, TLShapeId } from '@tldraw/tldraw';
+import { Editor, TLShape, createShapeId } from '@tldraw/tldraw';
 import { logger } from '../../debugConfig';
 import { NavigationNode } from '../../types/navigation';
-import { getShapeType, CCNodeTypes, CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
-import { formatDate, DateValue } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-shared';
-
-interface ShapeState {
-    parentId: TLShapeId | null;
-    isPageChild: boolean;
-    hasChildren: boolean | null;
-    bindings: Record<string, unknown> | null;
-}
-
-type NodeData = {
-    [K in keyof CCUserNodeProps]: CCUserNodeProps[K];
-} & {
-    title: string;
-    w: number;
-    h: number;
-    state: ShapeState | null;
-    headerColor: string;
-    backgroundColor: string;
-    isLocked: boolean;
-    __primarylabel__: string;
-    unique_id: string;
-    path: string;
-    [key: string]: string | number | boolean | null | ShapeState | undefined;
-}
+import { NeoShapeService } from '../graph/neoShapeService';
+import { NodeData } from '../../types/graph-shape';
 
 export class NodeCanvasService {
     private static readonly CANVAS_PADDING = 100;
@@ -208,42 +185,14 @@ export class NodeCanvasService {
             const centerX = viewportBounds.x + viewportBounds.w / 2;
             const centerY = viewportBounds.y + viewportBounds.h / 2;
 
-            // Process the node data with proper date handling
-            const nodeDataWithFormattedDates: NodeData = {
-                ...nodeData,
-                created: formatDate(nodeData.created as DateValue || ''),
-                merged: formatDate(nodeData.merged as DateValue || ''),
-                title: nodeData.title || node.label,
-                w: 500,
-                h: 350,
-                state: {
-                    parentId: null,
-                    isPageChild: true,
-                    hasChildren: null,
-                    bindings: null
-                }
-            };
-
-            // Convert all date/time fields to formatted strings
-            const timeFields = ['date', 'start_time', 'end_time', 'start_date', 'end_date'];
-            for (const field of timeFields) {
-                const value = nodeData[field];
-                if (value) {
-                    nodeDataWithFormattedDates[field] = formatDate(value as DateValue);
-                }
-            }
-
-            logger.debug('node-canvas', '📄 Processed node data', { nodeData: nodeDataWithFormattedDates });
-
-            const shapeType = getShapeType(node.type as keyof CCNodeTypes);
+            // Get shape configuration from NeoShapeService
+            const shapeConfig = NeoShapeService.getShapeConfig(node, nodeData, centerX, centerY);
             const shapeId = createShapeId(node.id);
-            
+
+            // Create the shape with the configuration
             editor.createShape<TLShape>({
                 id: shapeId,
-                type: shapeType,
-                x: centerX - (nodeDataWithFormattedDates.w / 2),
-                y: centerY - (nodeDataWithFormattedDates.h / 2),
-                props: nodeDataWithFormattedDates
+                ...shapeConfig
             });
 
             return editor.getShape(shapeId) || null;

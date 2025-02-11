@@ -156,6 +156,13 @@ export const getNodeTheme = (nodeType: string) => {
   return themeKey ? NODE_THEMES[themeKey] : NODE_THEMES.resource // Default to resource theme
 }
 
+// Helper function to get theme from primary label
+export const getThemeFromLabel = (primaryLabel: string) => {
+  // Convert primary label to node type format (e.g., 'User' -> 'cc-user-node')
+  const nodeType = `cc-${primaryLabel.toLowerCase()}-node`;
+  return getNodeTheme(nodeType);
+}
+
 // Helper function to get styles for a specific node type
 export const getNodeStyles = (nodeType: string) => {
   const theme = getNodeTheme(nodeType)
