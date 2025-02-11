@@ -35,6 +35,7 @@ import { useNeo4j } from '../../../../../../contexts/Neo4jContext';
 import { CalendarNavigation } from '../../../../../../components/navigation/extended/CalendarNavigation';
 import { TeacherNavigation } from '../../../../../../components/navigation/extended/TeacherNavigation';
 import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
+import { logger } from '../../../../../../debugConfig';
 
 const PanelContainer = styled(Box)(() => ({
   display: 'flex',
@@ -71,7 +72,8 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
 }) => {
   const {
     context: navigationContext,
-    switchContext,
+    setBaseContext,
+    setExtendedContext,
     isLoading,
     error,
   } = useNavigationStore();
@@ -151,40 +153,82 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
   }, [navigationContext.main, navigationContext.base, currentContext, currentExtendedContext, onContextChange, onExtendedContextChange]);
 
   const handleContextChange = async (newContext: BaseContext) => {
+    logger.debug('navigation-panel', '🔄 Starting context change', {
+      from: currentContext,
+      to: newContext
+    });
+
     try {
-      // Use unified context switch with both base and extended contexts
+      // Get default view for new context
       const defaultView = getDefaultViewForContext(newContext);
-      await switchContext({
+      logger.debug('navigation-panel', '📍 Determined default view', {
+        context: newContext,
+        defaultView
+      });
+
+      // Use unified context switch with both base and extended contexts
+      const contextUpdate = {
         base: newContext,
         extended: isValidViewContext(defaultView) ? defaultView : undefined
-      }, userDbName, workerDbName);
+      };
       
+      logger.debug('navigation-panel', '🚀 Initiating context switch', contextUpdate);
+      
+      await setBaseContext(newContext, userDbName, workerDbName);
+      
+      logger.debug('navigation-panel', '✅ Context switch successful', {
+        context: newContext,
+        view: defaultView
+      });
+
       // Update local state
       onContextChange(newContext);
       if (isValidViewContext(defaultView)) {
+        await setExtendedContext(defaultView, userDbName, workerDbName);
         onExtendedContextChange?.(defaultView);
       }
     } catch (error) {
+      logger.error('navigation-panel', '❌ Failed to change context', {
+        error,
+        attemptedContext: newContext
+      });
       console.error('Failed to change context:', error);
     }
   };
 
   const handleExtendedContextChange = async (newContext: ViewContext) => {
+    logger.debug('navigation-panel', '🔄 Starting extended context change', {
+      from: currentExtendedContext,
+      to: newContext
+    });
+
     try {
       // Validate that the new context is valid for current base context
       if (!isValidExtendedContextForBase(newContext, currentContext)) {
-        console.warn(`Invalid extended context ${newContext} for base context ${currentContext}`);
+        logger.warn('navigation-panel', '⚠️ Invalid extended context combination', {
+          baseContext: currentContext,
+          attemptedExtendedContext: newContext
+        });
         return;
       }
 
+      const contextUpdate = { extended: newContext };
+      logger.debug('navigation-panel', '🚀 Initiating extended context switch', contextUpdate);
+
       // Use unified context switch for extended context only
-      await switchContext({
-        extended: newContext
-      }, userDbName, workerDbName);
+      await setExtendedContext(newContext, userDbName, workerDbName);
       
+      logger.debug('navigation-panel', '✅ Extended context switch successful', {
+        newView: newContext
+      });
+
       // Update local state
       onExtendedContextChange?.(newContext);
     } catch (error) {
+      logger.error('navigation-panel', '❌ Failed to change extended context', {
+        error,
+        attemptedContext: newContext
+      });
       console.error('Failed to change extended context:', error);
     }
   };

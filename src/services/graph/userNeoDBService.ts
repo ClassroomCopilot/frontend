@@ -6,9 +6,7 @@ import { fetchSchoolNode } from './schoolNeoDBService';
 import { storageService, StorageKeys } from '../auth/localStorageService';
 import { CCUserNodeProps, CCTeacherNodeProps, CCCalendarNodeProps, CCUserTeacherTimetableNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { NavigationNode, StaticNavigationNode, BaseContext, NodeContext } from '../../types/navigation';
-import { TLEditorSnapshot, TLBinding, TLShapeId } from '@tldraw/tldraw';
-import { localStoreService } from '../tldraw/localStoreService';
-import { LoadingState } from '../tldraw/snapshotService';
+import { TLBinding, TLShapeId } from '@tldraw/tldraw';
 import { logger } from '../../debugConfig';
 import { useNavigationStore } from '../../stores/navigationStore';
 
@@ -280,32 +278,6 @@ export class UserNeoDBService {
         }
     }
 
-    private static async fetchUserContextNodes(dbName: string) {
-        try {
-            // Fetch all required nodes for user context
-            const response = await axiosInstance.get<{
-                status: string;
-                nodes: {
-                    userNode: CCUserNodeProps;
-                    calendarNode: CCCalendarNodeProps;
-                    teacherNode: CCTeacherNodeProps;
-                    timetableNode: CCUserTeacherTimetableNodeProps;
-                };
-            }>('/api/database/tools/get-user-context-nodes', {
-                params: { db_name: dbName }
-            });
-
-            if (response.data?.status === 'success' && response.data.nodes) {
-                return response.data.nodes;
-            }
-
-            return null;
-        } catch (error) {
-            logger.error('neo4j-service', '❌ Failed to fetch user context nodes:', error);
-            throw error;
-        }
-    }
-
     static async registerNeo4JUser(
         user: CCUser, 
         username: string, 
@@ -571,63 +543,6 @@ export class UserNeoDBService {
         }
     }
 
-    static async loadNodeSnapshot(path: string): Promise<TLEditorSnapshot> {
-        const dbName = this.getNodeDatabaseName({ path } as NavigationNode);
-        const response = await axiosInstance.get(
-            '/api/database/tldraw_fs/get_tldraw_node_file',
-            {
-                params: {
-                    path: path,
-                    db_name: dbName
-                }
-            }
-        );
-
-        if (response.data) {
-            return response.data;
-        }
-        throw new Error('Failed to load node snapshot');
-    }
-
-    static async saveNodeSnapshot(path: string, snapshot: TLEditorSnapshot): Promise<void> {
-        const dbName = this.getNodeDatabaseName({ path } as NavigationNode);
-        const response = await axiosInstance.post(
-            '/api/database/tldraw_fs/set_tldraw_node_file',
-            snapshot,
-            {
-                params: {
-                    path: path,
-                    db_name: dbName
-                }
-            }
-        );
-
-        if (response.data.status !== 'success') {
-            throw new Error('Failed to save node snapshot');
-        }
-    }
-
-    static async loadSnapshotIntoStore(
-        path: string, 
-        setLoadingState: (state: LoadingState) => void
-    ): Promise<void> {
-        try {
-            const snapshot = await this.loadNodeSnapshot(path);
-            if (snapshot) {
-                await localStoreService.loadSnapshot(snapshot, setLoadingState);
-                logger.info('neo4j-service', '✅ Loaded snapshot into store', { path });
-            } else {
-                setLoadingState({ status: 'error', error: 'No snapshot found' });
-            }
-        } catch (error) {
-            logger.error('neo4j-service', '❌ Failed to load snapshot into store:', error);
-            setLoadingState({ 
-                status: 'error', 
-                error: error instanceof Error ? error.message : 'Failed to load snapshot' 
-            });
-        }
-    }
-
     static async getStaticNodesForContext(context: BaseContext, dbName: string): Promise<StaticNavigationNode[]> {
         try {
             const response = await axiosInstance.get('/api/database/tools/get-static-nodes', {
@@ -761,23 +676,6 @@ export class UserNeoDBService {
         } catch (error) {
             logger.error('neo4j-service', '❌ Failed to get previous lesson:', error);
             return null;
-        }
-    }
-
-    static async saveSnapshotToSharedRoom(path: string, roomId: string): Promise<void> {
-        try {
-            const snapshot = await this.loadNodeSnapshot(path);
-            const response = await axiosInstance.post('/api/database/tldraw_fs/save-shared-snapshot', {
-                snapshot,
-                roomId
-            });
-            
-            if (response.data?.status !== 'success') {
-                throw new Error('Failed to save shared snapshot');
-            }
-        } catch (error) {
-            logger.error('neo4j-service', '❌ Failed to save shared snapshot:', error);
-            throw error;
         }
     }
 

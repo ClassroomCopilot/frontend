@@ -119,7 +119,21 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             set({ isLoading: true, error: null });
             
             const currentState = get().context;
-            let newState = { ...currentState };
+            
+            // Clear node state immediately
+            const clearedState: NavigationContextState = {
+                ...currentState,
+                node: null
+            };
+            set({
+                context: clearedState,
+                isLoading: true
+            });
+
+            let newState: NavigationContextState = { 
+                ...currentState,
+                node: null
+            };
 
             // Update main context if provided
             if (contextSwitch.main) {
@@ -149,8 +163,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             });
 
             // Determine which context to use for the node
-            const targetContext = contextSwitch.extended || 
-                                contextSwitch.base || 
+            const targetContext = contextSwitch.base || 
+                                contextSwitch.extended || 
                                 (contextSwitch.main ? getDefaultBaseForMain(contextSwitch.main) : 
                                 newState.base);
 
@@ -161,15 +175,6 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 targetContext,
                 dbName,
                 currentState: newState
-            });
-
-            // Clear current node state before getting new one
-            set({
-                context: {
-                    ...newState,
-                    node: null
-                },
-                isLoading: true
             });
 
             // Get default node for the final context
@@ -190,25 +195,6 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
                 path: defaultNode.path,
                 type: defaultNode.type
             });
-
-            // Load snapshot
-            try {
-                logger.debug('navigation-state', '📥 Loading snapshot for node', {
-                    nodeId: defaultNode.id,
-                    path: defaultNode.path
-                });
-
-                await UserNeoDBService.loadSnapshotIntoStore(defaultNode.path, (state) => {
-                    set({ isLoading: state.status === 'loading' });
-                });
-            } catch (snapshotError) {
-                logger.error('navigation-state', '❌ Failed to load snapshot:', snapshotError);
-                set({ 
-                    error: 'Failed to load node snapshot',
-                    isLoading: false 
-                });
-                return;
-            }
 
             // Update history and state
             const newHistory = addToHistory(currentState.history, defaultNode);

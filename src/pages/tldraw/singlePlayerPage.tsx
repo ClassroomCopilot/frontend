@@ -6,7 +6,6 @@ import {
     useTldrawUser,
     DEFAULT_SUPPORT_VIDEO_TYPES,
     DEFAULT_SUPPORTED_IMAGE_TYPES,
-    TLShape,
 } from '@tldraw/tldraw';
 // App context
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +19,7 @@ import { localStoreService } from '../../services/tldraw/localStoreService';
 import { PresentationService } from '../../services/tldraw/presentationService';
 import { UserNeoDBService } from '../../services/graph/userNeoDBService';
 import { NodeCanvasService } from '../../services/tldraw/nodeCanvasService';
+import { NavigationSnapshotService } from '../../services/tldraw/snapshotService';
 // Tldraw utils
 import { getUiOverrides, getUiComponents } from '../../utils/tldraw/ui-overrides';
 import { customAssets } from '../../utils/tldraw/assets';
@@ -36,12 +36,15 @@ import { HEADER_HEIGHT } from '../../pages/Layout';
 import '../../utils/tldraw/tldraw.css';
 // App debug
 import { logger } from '../../debugConfig';
-import { LoadingState } from '../../services/tldraw/snapshotService';
-import { saveNodeSnapshotToDatabase } from '../../services/tldraw/snapshotService';
 import { CircularProgress, Alert, Snackbar } from '@mui/material';
 import { getThemeFromLabel } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-styles';
 import { NodeData } from '../../types/graph-shape';
 import { NavigationNode } from '../../types/navigation';
+
+interface LoadingState {
+    status: 'ready' | 'loading' | 'error';
+    error: string;
+}
 
 export default function SinglePlayerPage() {
     // Context hooks with initialization states
@@ -180,41 +183,50 @@ export default function SinglePlayerPage() {
         }
     }, [user?.id, tldrawPreferences, initializePreferences]);
 
-    // Load snapshot when current node changes
+    // Move store memo up
+    const store = useMemo(() => localStoreService.getStore({
+        schema: customSchema,
+        shapeUtils: allShapeUtils,
+        bindingUtils: allBindingUtils
+    }), []);
+
+    // Add snapshot service ref
+    const snapshotServiceRef = useRef<NavigationSnapshotService | null>(null);
+
+    // Initialize snapshot service when store is created
     useEffect(() => {
-        const loadSnapshot = async () => {
-            if (!currentNode?.path || !editorRef.current) return;
+        if (store && !snapshotServiceRef.current) {
+            snapshotServiceRef.current = new NavigationSnapshotService(store);
+            logger.debug('single-player-page', '✨ Initialized NavigationSnapshotService');
+        }
+    }, [store]);
+
+    // Handle navigation changes
+    useEffect(() => {
+        const handleNodeChange = async () => {
+            if (!currentNode?.id || !editorRef.current || !snapshotServiceRef.current) return;
 
             try {
-                logger.debug('single-player-page', '🔄 Loading snapshot for node', {
+                logger.debug('single-player-page', '🔄 Loading node data', {
                     nodeId: currentNode.id,
-                    path: currentNode.path,
                     isInitialLoad
                 });
 
-                // 1. Load snapshot
-                await UserNeoDBService.loadSnapshotIntoStore(currentNode.path, setLoadingState);
-                
-                // 2. Always fetch fresh node data
-                const nodeData = await loadNodeData(currentNode);
-                
-                // 3. Handle the node on canvas
-                const shapes = editorRef.current.getCurrentPageShapes();
-                const nodeShapes = shapes.filter((shape: TLShape) => 
-                    shape.id === `shape:${currentNode.id}` || // Exact shape ID match
-                    shape.id === currentNode.id // Fallback for legacy IDs
-                );
-                
-                if (nodeShapes.length > 0) {
-                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
-                } else {
-                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
-                }
+                // Get the previous node from navigation history
+                const previousNode = context.history.nodes[context.history.currentIndex - 1] || null;
 
-                // Mark initialization as complete after first snapshot load
+                // Handle navigation in snapshot service
+                await snapshotServiceRef.current.handleNavigationStart(previousNode, currentNode);
+
+                // Center the node on canvas
+                const nodeData = await loadNodeData(currentNode);
+                await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
+
+                // Mark initialization as complete
                 setIsInitialLoad(false);
+                setLoadingState({ status: 'ready', error: '' });
             } catch (error) {
-                logger.error('single-player-page', '❌ Failed to load snapshot or node data', error);
+                logger.error('single-player-page', '❌ Failed to load node data', error);
                 setLoadingState({ 
                     status: 'error', 
                     error: error instanceof Error ? error.message : 'Failed to load node data'
@@ -223,60 +235,19 @@ export default function SinglePlayerPage() {
             }
         };
 
-        loadSnapshot();
-    }, [currentNode, isInitialLoad]);
+        handleNodeChange();
+    }, [currentNode, context.history, isInitialLoad]);
 
-    // Add autosave when navigating away from current node
+    // Cleanup snapshot service
     useEffect(() => {
-        const handleBeforeNavigate = async () => {
-            // Skip autosave during initial load
-            if (isInitialLoad || !editorRef.current || !currentNode?.path) return;
-
-            try {
-                logger.info('single-player-page', '💾 Auto-saving before navigation', { 
-                    nodeId: currentNode.id,
-                    path: currentNode.path 
-                });
-
-                const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
-                await saveNodeSnapshotToDatabase(currentNode.path, dbName, editorRef.current.store);
-                
-                logger.info('single-player-page', '✅ Node saved successfully');
-            } catch (error) {
-                logger.error('single-player-page', '❌ Failed to save node:', error);
-            }
-        };
-
-        // Save on unmount/cleanup
         return () => {
-            handleBeforeNavigate();
-        };
-    }, [currentNode, isInitialLoad]);
-
-    // Add periodic autosave
-    useEffect(() => {
-        // Skip autosave during initial load
-        if (isInitialLoad || !editorRef.current || !currentNode?.path) return;
-
-        const autoSaveInterval = setInterval(async () => {
-            try {
-                const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
-                await saveNodeSnapshotToDatabase(currentNode.path, dbName, editorRef.current!.store);
-                logger.debug('single-player-page', '💾 Auto-saved node', { nodeId: currentNode.id });
-            } catch (error) {
-                logger.error('single-player-page', '❌ Auto-save failed:', error);
+            if (snapshotServiceRef.current) {
+                snapshotServiceRef.current.clearCurrentNode();
+                snapshotServiceRef.current = null;
+                logger.debug('single-player-page', '🧹 Cleaned up NavigationSnapshotService');
             }
-        }, 30000); // Autosave every 30 seconds
-
-        return () => clearInterval(autoSaveInterval);
-    }, [currentNode, isInitialLoad]);
-
-    // 4. All memos
-    const store = useMemo(() => localStoreService.getStore({
-        schema: customSchema,
-        shapeUtils: allShapeUtils,
-        bindingUtils: allBindingUtils
-    }), []);
+        };
+    }, []);
 
     const tldrawUser = useTldrawUser({
         userPreferences: {

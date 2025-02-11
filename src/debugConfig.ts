@@ -97,7 +97,7 @@ export type LogCategory =
     | 'context-switch'       // Context switching operations
     | 'history-management'   // History stack operations
     | 'node-navigation'      // Node-specific navigation
-
+    | 'navigation-panel'     // Navigation panel related logs
 interface LogConfig {
     enabled: boolean        // Master switch to turn logging on/off
     level: LogLevel        // Current log level
@@ -209,7 +209,8 @@ logger.setConfig({
         'navigation-state',
         'context-switch',
         'history-management',
-        'node-navigation'
+        'node-navigation',
+        'navigation-panel'
     ]
 })
 

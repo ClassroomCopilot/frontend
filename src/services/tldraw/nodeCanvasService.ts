@@ -11,7 +11,13 @@ export class NodeCanvasService {
 
     private static findAllNodeShapes(editor: Editor, nodeId: string): TLShape[] {
         const shapes = editor.getCurrentPageShapes();
-        return shapes.filter((shape: TLShape) => shape.id.toString().includes(nodeId));
+        const exactShapeId = `shape:${nodeId}`;
+        
+        // Filter shapes with exact ID match only
+        return shapes.filter((shape: TLShape) => {
+            const shapeId = shape.id.toString();
+            return shapeId === exactShapeId || shapeId === nodeId;
+        });
     }
 
     private static handleMultipleNodeInstances(editor: Editor, nodeId: string, shapes: TLShape[]): TLShape | undefined {
