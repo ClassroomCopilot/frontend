@@ -201,19 +201,22 @@ export default function SinglePlayerPage() {
                 // First load the snapshot
                 await UserNeoDBService.loadSnapshotIntoStore(currentNode.path, setLoadingState);
                 
-                // Then fetch node data
-                const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
-                const nodeData = await UserNeoDBService.fetchNodeData(currentNode.id, dbName);
-                
-                if (!nodeData) {
-                    throw new Error('Failed to fetch node data');
+                // Get node data if not available in navigation context
+                const nodeData: Record<string, unknown> = currentNode.data || {};
+                if (!Object.keys(nodeData).length) {
+                    const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
+                    const fetchedData = await UserNeoDBService.fetchNodeData(currentNode.id, dbName);
+                    if (!fetchedData?.node_data) {
+                        throw new Error('Failed to fetch node data');
+                    }
+                    Object.assign(nodeData, fetchedData.node_data);
                 }
 
                 // Process node data to match NodeData type
-                const theme = getThemeFromLabel(nodeData.node_type);
+                const theme = getThemeFromLabel(currentNode.type);
                 const processedNodeData = {
-                    ...nodeData.node_data,
-                    title: nodeData.node_data.title || currentNode.label,
+                    ...nodeData,
+                    title: (nodeData.title as string) || currentNode.label,
                     w: 500,
                     h: 350,
                     state: {
@@ -225,7 +228,7 @@ export default function SinglePlayerPage() {
                     headerColor: theme.headerColor,
                     backgroundColor: theme.backgroundColor,
                     isLocked: false,
-                    __primarylabel__: nodeData.node_type,
+                    __primarylabel__: currentNode.type,
                     unique_id: currentNode.id,
                     path: currentNode.path
                 };

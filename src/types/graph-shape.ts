@@ -18,5 +18,5 @@ export type NodeData = {
     __primarylabel__: string;
     unique_id: string;
     path: string;
-    [key: string]: string | number | boolean | null | ShapeState | undefined;
+    [key: string]: string | number | boolean | null | ShapeState | Record<string, unknown> | undefined;
 } 
