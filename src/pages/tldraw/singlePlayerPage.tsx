@@ -197,9 +197,38 @@ export default function SinglePlayerPage() {
                     isInitialLoad
                 });
 
+                // First load the snapshot
                 await UserNeoDBService.loadSnapshotIntoStore(currentNode.path, setLoadingState);
                 
-                // After loading snapshot, check if we need to center the node
+                // Then fetch node data
+                const dbName = UserNeoDBService.getNodeDatabaseName(currentNode);
+                const nodeData = await UserNeoDBService.fetchNodeData(currentNode.id, dbName);
+                
+                if (!nodeData) {
+                    throw new Error('Failed to fetch node data');
+                }
+
+                // Process node data to match NodeData type
+                const processedNodeData = {
+                    ...nodeData.node_data,
+                    title: nodeData.node_data.title || currentNode.label,
+                    w: 500,
+                    h: 350,
+                    state: {
+                        parentId: null,
+                        isPageChild: true,
+                        hasChildren: null,
+                        bindings: null
+                    },
+                    headerColor: nodeData.node_data.headerColor || '#000000',
+                    backgroundColor: nodeData.node_data.backgroundColor || '#ffffff',
+                    isLocked: false,
+                    __primarylabel__: nodeData.node_type,
+                    unique_id: currentNode.id,
+                    path: currentNode.path
+                };
+
+                // After loading snapshot and getting node data, handle the node on canvas
                 const shapes = editorRef.current.getCurrentPageShapes();
                 const nodeShapes = shapes.filter(s => s.id.toString().includes(currentNode.id));
                 
@@ -209,22 +238,26 @@ export default function SinglePlayerPage() {
                         nodeId: currentNode.id,
                         shapeCount: nodeShapes.length
                     });
-                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode);
+                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, processedNodeData);
                 } else {
                     // No node shape found, create and center it
                     logger.debug('single-player-page', '✨ Creating and centering new node shape', {
                         nodeId: currentNode.id
                     });
-                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode);
+                    await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, processedNodeData);
                 }
 
                 // Mark initialization as complete after first snapshot load
                 setIsInitialLoad(false);
             } catch (error) {
-                logger.error('single-player-page', '❌ Failed to load snapshot', {
+                logger.error('single-player-page', '❌ Failed to load snapshot or node data', {
                     nodeId: currentNode.id,
                     path: currentNode.path,
                     error
+                });
+                setLoadingState({ 
+                    status: 'error', 
+                    error: error instanceof Error ? error.message : 'Failed to load node data'
                 });
                 setIsInitialLoad(false);
             }
