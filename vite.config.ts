@@ -1,11 +1,11 @@
 /// <reference types="vitest" />
 /// <reference types="vite/client" />
 
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, UserConfig, ConfigEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import process from 'node:process';
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => {
   // Load env file based on mode
   const env = loadEnv(mode, process.cwd(), '');
   
@@ -85,7 +85,7 @@ export default defineConfig(async ({ mode }) => {
       })
     ],
     define: {
-      'process.env': env
+      'process.env': env,
     },
     envPrefix: ['VITE_', 'HOST_', 'PORT_'],
     server: {
@@ -98,19 +98,48 @@ export default defineConfig(async ({ mode }) => {
     },
     clearScreen: false,
     optimizeDeps: {
-      force: true
+      force: true,
+      include: ['react', 'react-dom', '@mui/material', '@tldraw/tldraw']
     },
     build: {
       sourcemap: !isProd,
       manifest: true,
+      minify: isProd ? 'terser' : false,
+      terserOptions: isProd ? {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.info', 'console.debug']
+        }
+      } : undefined,
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom']
-          }
-        }
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-mui': ['@mui/material', '@mui/icons-material'],
+            'vendor-tldraw': ['@tldraw/tldraw', '@tldraw/store', '@tldraw/tlschema'],
+            'vendor-utils': ['axios', 'zustand', '@supabase/supabase-js']
+          },
+          // Ensure chunk filenames include content hash
+          chunkFileNames: isProd ? 'assets/[name].[hash].js' : 'assets/[name].js',
+          assetFileNames: isProd ? 'assets/[name].[hash][extname]' : 'assets/[name][extname]'
+        },
+        // Externalize dependencies that shouldn't be bundled
+        external: isProd ? [] : [/^@vite/, /^@react-refresh/]
       },
-      chunkSizeWarningLimit: 2000
+      chunkSizeWarningLimit: 2000,
+      // Enable module concatenation for better minification
+      target: 'esnext',
+      cssCodeSplit: true,
+      assetsInlineLimit: 4096, // 4kb
+      modulePreload: true,
+      reportCompressedSize: !isProd
+    },
+    // Add esbuild optimization
+    esbuild: {
+      drop: isProd ? ['console', 'debugger'] : [],
+      legalComments: 'none',
+      target: ['esnext']
     }
   };
 });
