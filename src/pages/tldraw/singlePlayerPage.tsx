@@ -74,7 +74,6 @@ export default function SinglePlayerPage() {
 
     // Navigation store
     const { context, switchContext } = useNavigationStore();
-    const currentNode = context.node;
 
     // Refs
     const editorRef = useRef<Editor | null>(null);
@@ -87,6 +86,9 @@ export default function SinglePlayerPage() {
 
     // Add initialization flag
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // Add loading state for editor
+    const [isEditorReady, setIsEditorReady] = useState(false);
 
     // Check if all contexts are initialized
     const areContextsInitialized = useMemo(() => {
@@ -133,10 +135,37 @@ export default function SinglePlayerPage() {
         initializeUserContext();
     }, [areContextsInitialized, user?.email, userDbName, workerDbName, isNeo4jLoading]);
 
-    // Handle initial node placement after context initialization
+    // Move store creation into an effect that runs after contexts are initialized
+    const store = useMemo(() => {
+        if (!areContextsInitialized) return null;
+        logger.debug('system', '🔄 Creating new TLStore');
+        return localStoreService.getStore({
+            schema: customSchema,
+            shapeUtils: allShapeUtils,
+            bindingUtils: allBindingUtils
+        });
+    }, [areContextsInitialized]);
+
+    // Initialize snapshot service only after editor is mounted
+    useEffect(() => {
+        if (!store || !isEditorReady || snapshotServiceRef.current) return;
+
+        snapshotServiceRef.current = new NavigationSnapshotService(store);
+        logger.debug('single-player-page', '✨ Initialized NavigationSnapshotService');
+
+        return () => {
+            if (snapshotServiceRef.current) {
+                snapshotServiceRef.current.clearCurrentNode();
+                snapshotServiceRef.current = null;
+                logger.debug('single-player-page', '🧹 Cleaned up NavigationSnapshotService');
+            }
+        };
+    }, [store, isEditorReady]);
+
+    // Handle initial node placement after editor is ready
     useEffect(() => {
         const placeInitialNode = async () => {
-            if (!context.node || !editorRef.current || !isInitialLoad) return;
+            if (!context.node || !editorRef.current || !isEditorReady || !isInitialLoad) return;
 
             try {
                 const nodeData = await loadNodeData(context.node);
@@ -148,7 +177,41 @@ export default function SinglePlayerPage() {
         };
 
         placeInitialNode();
-    }, [context.node, isInitialLoad]);
+    }, [context.node, isEditorReady, isInitialLoad]);
+
+    // Handle navigation changes
+    useEffect(() => {
+        const handleNodeChange = async () => {
+            if (!context.node?.id || !editorRef.current || !snapshotServiceRef.current || !isEditorReady) return;
+
+            try {
+                logger.debug('single-player-page', '🔄 Loading node data', {
+                    nodeId: context.node.id,
+                    isInitialLoad
+                });
+
+                // Get the previous node from navigation history
+                const previousNode = context.history.nodes[context.history.currentIndex - 1] || null;
+
+                // Handle navigation in snapshot service
+                await snapshotServiceRef.current.handleNavigationStart(previousNode, context.node);
+
+                // Center the node on canvas
+                const nodeData = await loadNodeData(context.node);
+                await NodeCanvasService.centerCurrentNode(editorRef.current, context.node, nodeData);
+
+                setLoadingState({ status: 'ready', error: '' });
+            } catch (error) {
+                logger.error('single-player-page', '❌ Failed to load node data', error);
+                setLoadingState({ 
+                    status: 'error', 
+                    error: error instanceof Error ? error.message : 'Failed to load node data'
+                });
+            }
+        };
+
+        handleNodeChange();
+    }, [context.node?.id, context.history, isEditorReady]);
 
     // Initialize preferences when user is available
     useEffect(() => {
@@ -158,71 +221,8 @@ export default function SinglePlayerPage() {
         }
     }, [user?.id, tldrawPreferences, initializePreferences]);
 
-    // Move store memo up
-    const store = useMemo(() => localStoreService.getStore({
-        schema: customSchema,
-        shapeUtils: allShapeUtils,
-        bindingUtils: allBindingUtils
-    }), []);
-
     // Add snapshot service ref
     const snapshotServiceRef = useRef<NavigationSnapshotService | null>(null);
-
-    // Initialize snapshot service when store is created
-    useEffect(() => {
-        if (store && !snapshotServiceRef.current) {
-            snapshotServiceRef.current = new NavigationSnapshotService(store);
-            logger.debug('single-player-page', '✨ Initialized NavigationSnapshotService');
-        }
-    }, [store]);
-
-    // Handle navigation changes
-    useEffect(() => {
-        const handleNodeChange = async () => {
-            if (!currentNode?.id || !editorRef.current || !snapshotServiceRef.current) return;
-
-            try {
-                logger.debug('single-player-page', '🔄 Loading node data', {
-                    nodeId: currentNode.id,
-                    isInitialLoad
-                });
-
-                // Get the previous node from navigation history
-                const previousNode = context.history.nodes[context.history.currentIndex - 1] || null;
-
-                // Handle navigation in snapshot service
-                await snapshotServiceRef.current.handleNavigationStart(previousNode, currentNode);
-
-                // Center the node on canvas
-                const nodeData = await loadNodeData(currentNode);
-                await NodeCanvasService.centerCurrentNode(editorRef.current, currentNode, nodeData);
-
-                // Mark initialization as complete
-                setIsInitialLoad(false);
-                setLoadingState({ status: 'ready', error: '' });
-            } catch (error) {
-                logger.error('single-player-page', '❌ Failed to load node data', error);
-                setLoadingState({ 
-                    status: 'error', 
-                    error: error instanceof Error ? error.message : 'Failed to load node data'
-                });
-                setIsInitialLoad(false);
-            }
-        };
-
-        handleNodeChange();
-    }, [currentNode, context.history, isInitialLoad]);
-
-    // Cleanup snapshot service
-    useEffect(() => {
-        return () => {
-            if (snapshotServiceRef.current) {
-                snapshotServiceRef.current.clearCurrentNode();
-                snapshotServiceRef.current = null;
-                logger.debug('single-player-page', '🧹 Cleaned up NavigationSnapshotService');
-            }
-        };
-    }, []);
 
     const tldrawUser = useTldrawUser({
         userPreferences: {
@@ -349,6 +349,22 @@ export default function SinglePlayerPage() {
     const uiOverrides = getUiOverrides(presentationMode);
     const uiComponents = getUiComponents(presentationMode);
 
+    if (!store || !areContextsInitialized) {
+        return (
+            <div style={{ 
+                position: 'fixed',
+                inset: 0,
+                top: `${HEADER_HEIGHT}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'var(--color-background)'
+            }}>
+                <CircularProgress />
+            </div>
+        );
+    }
+
     return (
         <div style={{ 
             position: 'fixed',
@@ -359,7 +375,7 @@ export default function SinglePlayerPage() {
             overflow: 'hidden'
         }}>
             {/* Loading overlay - show when loading or contexts not initialized */}
-            {(loadingState.status === 'loading' || !areContextsInitialized) && (
+            {loadingState.status === 'loading' && (
                 <div style={{
                     position: 'absolute',
                     top: 0,
@@ -407,6 +423,7 @@ export default function SinglePlayerPage() {
                 renderDebugMenuItems={() => []}
                 onMount={(editor) => {
                     editorRef.current = editor;
+                    setIsEditorReady(true);
                     logger.info('system', '🎨 Tldraw mounted', {
                         editorId: editor.store.id,
                         presentationMode
