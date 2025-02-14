@@ -1,5 +1,5 @@
 import { Editor } from '@tldraw/tldraw'
-import { LoadingState, loadNodeSnapshotFromDatabase } from '../../../../services/tldraw/snapshotService'
+import { LoadingState, NavigationSnapshotService } from '../../../../services/tldraw/snapshotService'
 import logger from '../../../../debugConfig'
 
 export const openTldrawFile = async (
@@ -14,7 +14,7 @@ export const openTldrawFile = async (
   });
 
   try {
-    await loadNodeSnapshotFromDatabase(
+    await NavigationSnapshotService.loadNodeSnapshotFromDatabase(
       path,
       dbName,
       editor.store,

@@ -7,7 +7,7 @@ import { UserNeoDBService } from '../../../../../../services/graph/userNeoDBServ
 import { PageComponent } from '../components/pageComponent';
 import { logger } from '../../../../../../debugConfig';
 import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
-import { saveNodeSnapshotToDatabase } from '../../../../../../services/tldraw/snapshotService';
+import { NavigationSnapshotService } from '../../../../../../services/tldraw/snapshotService';
 import { blankCanvasSnapshot } from '../../../../../tldraw/assets';
 
 const CurrentNodeSection = styled(Box)(() => ({
@@ -128,7 +128,7 @@ export const CCNodeSnapshotPanel: React.FC = () => {
       });
 
       const dbName = UserNeoDBService.getNodeDatabaseName(navigationContext.node);
-      await saveNodeSnapshotToDatabase(navigationContext.node.path, dbName, editor.store);
+      await NavigationSnapshotService.saveNodeSnapshotToDatabase(navigationContext.node.path, dbName, editor.store);
 
       addToast({
         title: 'Snapshot saved',
