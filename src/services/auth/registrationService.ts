@@ -3,7 +3,7 @@ import { CCUser, convertToCCUser } from '../../services/auth/authService';
 import { EmailCredentials } from '../../services/auth/authService';
 import { formatEmailForDatabase } from '../graph/neoDBService';
 import { RegistrationResponse } from '../../services/auth/authService';
-import { UserNeoDBService } from '../graph/userNeoDBService';
+import { neoRegistrationService } from '../graph/neoRegistrationService';
 import { storageService, StorageKeys } from './localStorageService';
 import { logger } from '../../debugConfig';
 
@@ -77,7 +77,7 @@ export class RegistrationService {
 
             // 3. Create Neo4j nodes
             try {
-                const userNode = await UserNeoDBService.registerNeo4JUser(
+                const userNode = await neoRegistrationService.registerNeo4JUser(
                     ccUser,
                     username,
                     credentials.role
