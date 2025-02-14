@@ -107,9 +107,7 @@ export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => 
       minify: isProd ? 'terser' : false,
       terserOptions: isProd ? {
         compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug']
+          drop_debugger: true
         }
       } : undefined,
       rollupOptions: {
@@ -137,7 +135,7 @@ export default defineConfig(async ({ mode }: ConfigEnv): Promise<UserConfig> => 
     },
     // Add esbuild optimization
     esbuild: {
-      drop: isProd ? ['console', 'debugger'] : [],
+      drop: isProd ? ['debugger'] : [],
       legalComments: 'none',
       target: ['esnext']
     }
