@@ -1,12 +1,14 @@
 import React, { useCallback, useMemo } from 'react';
 import { Box, Typography, styled, Button, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
-import { useEditor, useToasts } from '@tldraw/tldraw';
+import { Save as SaveIcon, RestartAlt as ResetIcon } from '@mui/icons-material';
+import { useEditor, useToasts, loadSnapshot } from '@tldraw/tldraw';
 import { useNavigationStore } from '../../../../../../stores/navigationStore';
 import { UserNeoDBService } from '../../../../../../services/graph/userNeoDBService';
 import { PageComponent } from '../components/pageComponent';
 import { logger } from '../../../../../../debugConfig';
 import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
+import { saveNodeSnapshotToDatabase } from '../../../../../../services/tldraw/snapshotService';
+import { blankCanvasSnapshot } from '../../../../../tldraw/assets';
 
 const CurrentNodeSection = styled(Box)(() => ({
   padding: '8px',
@@ -55,6 +57,12 @@ const ActionButton = styled(Button)(() => ({
   }
 }));
 
+const ButtonContainer = styled(Box)(() => ({
+  display: 'flex',
+  gap: '8px',
+  width: '100%'
+}));
+
 export const CCNodeSnapshotPanel: React.FC = () => {
   const editor = useEditor();
   const { addToast } = useToasts();
@@ -81,6 +89,26 @@ export const CCNodeSnapshotPanel: React.FC = () => {
     });
   }, [tldrawPreferences?.colorScheme, prefersDarkMode]);
 
+  const handleResetCanvas = useCallback(() => {
+    try {
+      loadSnapshot(editor.store, blankCanvasSnapshot);
+      addToast({
+        title: 'Canvas reset',
+        description: 'The canvas has been reset to blank.',
+        icon: 'reset-zoom',
+      });
+    } catch (error) {
+      logger.error('cc-node-snapshot-panel', '❌ Failed to reset canvas', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      addToast({
+        title: 'Error',
+        description: 'Failed to reset canvas',
+        icon: 'warning-triangle',
+      });
+    }
+  }, [editor.store, addToast]);
+
   const handleSaveSnapshot = useCallback(async () => {
     try {
       if (!navigationContext.node?.path) {
@@ -99,8 +127,8 @@ export const CCNodeSnapshotPanel: React.FC = () => {
         nodeType: navigationContext.node.type
       });
 
-      const snapshot = editor.getSnapshot();
-      await UserNeoDBService.saveNodeSnapshot(navigationContext.node.path, snapshot);
+      const dbName = UserNeoDBService.getNodeDatabaseName(navigationContext.node);
+      await saveNodeSnapshotToDatabase(navigationContext.node.path, dbName, editor.store);
 
       addToast({
         title: 'Snapshot saved',
@@ -136,16 +164,28 @@ export const CCNodeSnapshotPanel: React.FC = () => {
             {navigationContext.node.type}
           </Typography>
         </NodeInfoContainer>
-        <ActionButton
-          variant="contained"
-          size="small"
-          startIcon={<SaveIcon />}
-          onClick={handleSaveSnapshot}
-          disabled={isLoading}
-          fullWidth
-        >
-          Save Snapshot
-        </ActionButton>
+        <ButtonContainer>
+          <ActionButton
+            variant="contained"
+            size="small"
+            startIcon={<SaveIcon />}
+            onClick={handleSaveSnapshot}
+            disabled={isLoading}
+            sx={{ flex: 1 }}
+          >
+            Save Snapshot
+          </ActionButton>
+          <ActionButton
+            variant="contained"
+            size="small"
+            startIcon={<ResetIcon />}
+            onClick={handleResetCanvas}
+            disabled={isLoading}
+            sx={{ flex: 1 }}
+          >
+            Reset Canvas
+          </ActionButton>
+        </ButtonContainer>
       </CurrentNodeSection>
     );
   };
