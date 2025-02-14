@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useEditor } from '@tldraw/tldraw'
-import { useNeo4j } from '../../../../contexts/Neo4jContext'
+import { useNeoUser } from '../../../../contexts/NeoUserContext'
 import { graphState } from '../../../../utils/tldraw/cc-base/cc-graph/graphStateUtil';
 import { AllNodeShapes } from '../../../../utils/tldraw/cc-base/cc-graph/cc-graph-shapes';
 import { createUserNodeFromProfile } from '../../../../utils/tldraw/cc-base/shape-helpers/graph-helpers';
@@ -10,23 +10,23 @@ export function ToolsToolbar({ children }: { children: (props: {
   handleAddCalendar: () => void
 }) => ReactNode }) {
     const editor = useEditor();
-    const { userNodes } = useNeo4j()
+    const { userNode } = useNeoUser()
 
     const handlePutUserNode = () => {
-        if (!userNodes?.privateUserNode) {
+        if (!userNode) {
             console.error("User node is not available");
             return;
         }
-        const existingNode = graphState.getNode(userNodes.privateUserNode.unique_id);
+        const existingNode = graphState.getNode(userNode.unique_id);
         if (!existingNode) {
-            console.log("Adding user node to graphState:", userNodes.privateUserNode);
+            console.log("Adding user node to graphState:", userNode);
             const centerX = editor.getViewportScreenCenter().x
             const centerY = editor.getViewportScreenCenter().y
 
             // Create the user node using the helper function
             const newShapeId = createUserNodeFromProfile(
                 editor,
-                userNodes.privateUserNode,
+                userNode,
                 centerX,
                 centerY
             );
@@ -54,7 +54,7 @@ export function ToolsToolbar({ children }: { children: (props: {
                 }
             }
         } else {
-            console.log(`Node with id ${userNodes.privateUserNode.unique_id} already exists on the canvas.`);
+            console.log(`Node with id ${userNode.unique_id} already exists on the canvas.`);
         }
     };
 

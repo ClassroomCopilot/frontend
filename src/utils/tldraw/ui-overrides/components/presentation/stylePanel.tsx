@@ -54,11 +54,8 @@ export const PresentationStylePanel = (props: TLUiStylePanelProps) => {
                     )}
                 </UserToolbar>
                 <SnapshotToolbar>
-                    {({ save, resetToBlankCanvas }) => (
+                    {({ resetToBlankCanvas }) => (
                         <div style={toolbarStyle}>
-                            <TldrawUiButton type="icon" title="Save Snapshot" onClick={save} style={emojiButtonStyle}>
-                                💾
-                            </TldrawUiButton>
                             <TldrawUiButton type="icon" title="Reset Canvas" onClick={resetToBlankCanvas} style={emojiButtonStyle}>
                                 🔄
                             </TldrawUiButton>

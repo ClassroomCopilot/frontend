@@ -8,12 +8,12 @@ import {
   Alert
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNeo4j } from '../../contexts/Neo4jContext';
+import { useNeoUser } from '../../contexts/NeoUserContext';
 import { TimetableNeoDBService } from '../../services/graph/timetableNeoDBService';
 
 const SettingsPage: React.FC = () => {
   const { user, userRole } = useAuth();
-  const { userNodes } = useNeo4j();
+  const { userNode, workerNode } = useNeoUser();
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -28,8 +28,8 @@ const SettingsPage: React.FC = () => {
       setUploadSuccess(null);
       const result = await TimetableNeoDBService.handleTimetableUpload(
         event.target.files?.[0],
-        userNodes?.privateUserNode,
-        userNodes?.connectedNodes?.teacher
+        userNode || undefined,
+        workerNode?.nodeData
       );
       if (result.success) {
         setUploadSuccess(result.message);
@@ -72,7 +72,7 @@ const SettingsPage: React.FC = () => {
             Timetable Management
           </Typography>
           
-          {!userNodes?.privateUserNode && (
+          {!userNode && (
             <Alert severity="info" sx={{ mb: 2 }}>
               Your workspace is being set up. Some features may be limited until setup is complete.
             </Alert>
@@ -94,7 +94,7 @@ const SettingsPage: React.FC = () => {
             <Button
               variant="contained"
               component="label"
-              disabled={isUploading || !userNodes?.connectedNodes?.teacher}
+              disabled={isUploading || !workerNode}
               color="secondary"
               fullWidth
             >

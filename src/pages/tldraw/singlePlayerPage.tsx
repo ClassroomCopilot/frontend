@@ -10,10 +10,9 @@ import {
 // App context
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
-import { useNeo4j } from '../../contexts/Neo4jContext';
+import { useNeoUser } from '../../contexts/NeoUserContext';
 import { useNeoInstitute } from '../../contexts/NeoInstituteContext';
 import { useUser } from '../../contexts/UserContext';
-import { useNeoUser } from '../../contexts/NeoUserContext';
 // Tldraw services
 import { localStoreService } from '../../services/tldraw/localStoreService';
 import { PresentationService } from '../../services/tldraw/presentationService';
@@ -66,13 +65,10 @@ export default function SinglePlayerPage() {
         workerDbName, 
         isLoading: isNeo4jLoading, 
         isInitialized: isNeo4jInitialized 
-    } = useNeo4j();
+    } = useNeoUser();
     const { 
         isInitialized: isInstituteInitialized 
     } = useNeoInstitute();
-    const {
-        isInitialized: isNeoUserInitialized
-    } = useNeoUser();
     const routerNavigate = useNavigate();
     const location = useLocation();
 
@@ -97,15 +93,14 @@ export default function SinglePlayerPage() {
         const initStates = {
             auth: isAuthInitialized,
             user: isUserInitialized,
-            neo4j: isNeo4jInitialized,
-            neoInstitute: isInstituteInitialized,
-            neoUser: isNeoUserInitialized
+            neoUser: isNeo4jInitialized,
+            neoInstitute: isInstituteInitialized
         };
 
         logger.debug('single-player-page', '🔄 Checking context initialization states', initStates);
 
         return Object.values(initStates).every(state => state);
-    }, [isAuthInitialized, isUserInitialized, isNeo4jInitialized, isInstituteInitialized, isNeoUserInitialized]);
+    }, [isAuthInitialized, isUserInitialized, isNeo4jInitialized, isInstituteInitialized]);
 
     // Initialize user nodes and navigate to today's node
     useEffect(() => {
@@ -116,8 +111,7 @@ export default function SinglePlayerPage() {
                     isAuthInitialized,
                     isUserInitialized,
                     isNeo4jInitialized,
-                    isInstituteInitialized,
-                    isNeoUserInitialized
+                    isInstituteInitialized
                 });
                 return;
             }

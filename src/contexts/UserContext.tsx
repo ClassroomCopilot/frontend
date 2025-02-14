@@ -1,6 +1,5 @@
 import React, { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { useNeo4j } from './Neo4jContext';
 import { UserProfile, UserPreferences } from '../services/auth/profileService';
 import { storageService, StorageKeys } from '../services/auth/localStorageService';
 import { supabase } from '../supabaseClient';
@@ -32,7 +31,6 @@ const UserContext = createContext<UserContextType>({
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, isLoading: isAuthLoading, isInitialized: isAuthInitialized } = useAuth();
-  const { userNode } = useNeo4j();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -143,7 +141,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     loadUserProfile();
-  }, [user, isAuthLoading, isAuthInitialized, userNode]);
+  }, [user, isAuthLoading, isAuthInitialized]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user?.id || !profile) {

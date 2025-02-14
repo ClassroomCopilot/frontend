@@ -273,4 +273,72 @@ export interface StaticNavigationNode extends NavigationNode {
   isStatic: true;
   order: number;
   section: string;
+}
+
+// Calendar Structure Types
+export interface CalendarDay {
+  id: string;
+  date: string;
+  title: string;
+}
+
+export interface CalendarWeek {
+  id: string;
+  title: string;
+  days: { id: string }[];
+  startDate: string;
+  endDate: string;
+}
+
+export interface CalendarMonth {
+  id: string;
+  title: string;
+  days: { id: string }[];
+  weeks: { id: string }[];
+  year: string;
+  month: string;
+}
+
+export interface CalendarYear {
+  id: string;
+  title: string;
+  months: { id: string }[];
+  year: string;
+}
+
+export interface CalendarStructure {
+  currentDay: string;
+  days: Record<string, CalendarDay>;
+  weeks: Record<string, CalendarWeek>;
+  months: Record<string, CalendarMonth>;
+  years: CalendarYear[];
+}
+
+// Worker Structure Types
+export interface TimetableEntry {
+  id: string;
+  title: string;
+  type: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface ClassEntry {
+  id: string;
+  title: string;
+  type: string;
+}
+
+export interface LessonEntry {
+  id: string;
+  title: string;
+  type: string;
+}
+
+export interface WorkerStructure {
+  timetables: Record<string, TimetableEntry[]>;
+  classes: Record<string, ClassEntry[]>;
+  lessons: Record<string, LessonEntry[]>;
+  journals: Record<string, { id: string; title: string }[]>;
+  planners: Record<string, { id: string; title: string }[]>;
 } 

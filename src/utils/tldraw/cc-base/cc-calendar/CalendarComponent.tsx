@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { HTMLContainer, useEditor } from '@tldraw/tldraw'
 import FullCalendar from '@fullcalendar/react'
 import { DateSelectArg, ViewMountArg } from '@fullcalendar/core'
-import { useNeo4j } from '../../../../contexts/Neo4jContext'
+import { useNeoUser } from '../../../../contexts/NeoUserContext'
 import { LoadingState } from '../../../../services/tldraw/snapshotService'
 import { TimetableNeoDBService, TeacherTimetableEvent } from '../../../../services/graph/timetableNeoDBService'
 import { ClassFilterModal, ViewMenuModal, EventDetailsModal } from './CalendarModals'
@@ -19,7 +19,7 @@ interface CalendarComponentProps {
 
 export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) => {
   const editor = useEditor()
-  const { userNodes, isLoading, error, workerDbName } = useNeo4j()
+  const { workerNode, isLoading, error, workerDbName } = useNeoUser()
   const [events, setEvents] = useState<TeacherTimetableEvent[]>(shape.props.events)
   const calendarRef = useRef<FullCalendar>(null)
   const lastFetchRef = useRef<number>(0)
@@ -51,17 +51,17 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
     }
     lastFetchRef.current = now
 
-    if ((events && events.length > 0) || isLoading || error || !userNodes?.connectedNodes.teacher) {
-      if (isLoading || error || !userNodes?.connectedNodes.teacher) {
-        console.error('Unable to fetch events: Neo4j context not ready');
+    if ((events && events.length > 0) || isLoading || error || !workerNode?.nodeData) {
+      if (isLoading || error || !workerNode?.nodeData) {
+        console.error('Unable to fetch events: NeoUser context not ready');
       }
       return;
     }
 
     try {
       const fetchedEvents = await TimetableNeoDBService.fetchTeacherTimetableEvents(
-        userNodes.connectedNodes.teacher.unique_id,
-        userNodes.connectedNodes.teacher.worker_db_name
+        workerNode.nodeData.unique_id,
+        workerDbName || ''
       );
 
       setEvents(fetchedEvents);
@@ -87,7 +87,7 @@ export const CalendarComponent: React.FC<CalendarComponentProps> = ({ shape }) =
     } catch (error) {
       console.error('Error fetching calendar events:', error)
     }
-  }, [editor, userNodes, isLoading, error, events, shape.id, shape.props])
+  }, [editor, workerNode, workerDbName, isLoading, error, events, shape.id, shape.props])
 
   useEffect(() => {
     debouncedUpdateSize();

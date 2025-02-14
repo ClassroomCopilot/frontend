@@ -2,7 +2,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { theme } from './services/themeService';
 import { AuthProvider } from './contexts/AuthContext';
-import { Neo4jProvider } from './contexts/Neo4jContext';
 import { TLDrawProvider } from './contexts/TLDrawContext';
 import { UserProvider } from './contexts/UserContext';
 import { NeoUserProvider } from './contexts/NeoUserContext';
@@ -16,15 +15,13 @@ const App = React.memo(() => (
     <ThemeProvider theme={theme}>
       <AuthProvider>
         <UserProvider>
-          <Neo4jProvider>
-            <NeoUserProvider>
-              <NeoInstituteProvider>
-                <TLDrawProvider>
-                  <AppRoutes />
-                </TLDrawProvider>
-              </NeoInstituteProvider>
-            </NeoUserProvider>
-          </Neo4jProvider>
+          <NeoUserProvider>
+            <NeoInstituteProvider>
+              <TLDrawProvider>
+                <AppRoutes />
+              </TLDrawProvider>
+            </NeoInstituteProvider>
+          </NeoUserProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>

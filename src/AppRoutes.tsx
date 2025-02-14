@@ -2,7 +2,8 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useUser } from './contexts/UserContext';
-import { useNeo4j } from './contexts/Neo4jContext';
+import { useNeoUser } from './contexts/NeoUserContext';
+import { useNeoInstitute } from './contexts/NeoInstituteContext';
 import Layout from './pages/Layout';
 import LoginPage from './pages/auth/loginPage';
 import SignupPage from './pages/auth/signupPage';
@@ -27,7 +28,8 @@ import { CircularProgress } from '@mui/material';
 const AppRoutes: React.FC = () => {
   const { user, isLoading: isAuthLoading, isInitialized: isAuthInitialized } = useAuth();
   const { isLoading: isUserLoading, isInitialized: isUserInitialized } = useUser();
-  const { isLoading: isNeo4jLoading, isInitialized: isNeo4jInitialized } = useNeo4j();
+  const { isLoading: isNeoUserLoading, isInitialized: isNeoUserInitialized } = useNeoUser();
+  const { isLoading: isNeoInstituteLoading, isInitialized: isNeoInstituteInitialized } = useNeoInstitute();
   const location = useLocation();
 
   // Debug log for routing
@@ -44,14 +46,18 @@ const AppRoutes: React.FC = () => {
       isLoading: isUserLoading,
       isInitialized: isUserInitialized
     },
-    neo4jStatus: {
-      isLoading: isNeo4jLoading,
-      isInitialized: isNeo4jInitialized
+    neoUserStatus: {
+      isLoading: isNeoUserLoading,
+      isInitialized: isNeoUserInitialized
+    },
+    neoInstituteStatus: {
+      isLoading: isNeoInstituteLoading,
+      isInitialized: isNeoInstituteInitialized
     }
   });
 
   // Show loading state while initializing
-  if (!isAuthInitialized || (user && (!isUserInitialized || !isNeo4jInitialized))) {
+  if (!isAuthInitialized || (user && (!isUserInitialized || !isNeoUserInitialized || !isNeoInstituteInitialized))) {
     return (
       <Layout>
         <div style={{ 
@@ -82,7 +88,7 @@ const AppRoutes: React.FC = () => {
         />
 
         {/* Authentication only routes - only render if all contexts are initialized */}
-        {user && isUserInitialized && isNeo4jInitialized && (
+        {user && isUserInitialized && isNeoUserInitialized && isNeoInstituteInitialized && (
           <>
             <Route path="/search" element={<SearxngPage />} />
             <Route path="/teacher-planner" element={<TeacherPlanner />} />

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
-import { useNeo4j } from './Neo4jContext';
 import { SchoolNeoDBService } from '../services/graph/schoolNeoDBService';
 import { CCSchoolNodeProps } from '../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { logger } from '../debugConfig';
@@ -23,7 +22,6 @@ const NeoInstituteContext = createContext<NeoInstituteContextType>({
 export const NeoInstituteProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const { profile, isLoading: isUserLoading, isInitialized: isUserInitialized } = useUser();
-    const { isLoading: isNeo4jLoading, isInitialized: isNeo4jInitialized } = useNeo4j();
     
     const [schoolNode, setSchoolNode] = useState<CCSchoolNodeProps | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -31,9 +29,9 @@ export const NeoInstituteProvider: React.FC<{ children: ReactNode }> = ({ childr
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Wait for user profile and Neo4j context to be ready
-        if (!isUserInitialized || isUserLoading || !isNeo4jInitialized || isNeo4jLoading) {
-            logger.debug('neo-institute-context', '⏳ Waiting for user and Neo4j initialization...');
+        // Wait for user profile to be ready
+        if (!isUserInitialized || isUserLoading) {
+            logger.debug('neo-institute-context', '⏳ Waiting for user initialization...');
             return;
         }
 
@@ -52,7 +50,6 @@ export const NeoInstituteProvider: React.FC<{ children: ReactNode }> = ({ childr
                     userEmail: user?.email
                 });
 
-
                 const node = await SchoolNeoDBService.getSchoolNode(profile.worker_db_name);
                 if (node) {
                     setSchoolNode(node);
@@ -60,7 +57,6 @@ export const NeoInstituteProvider: React.FC<{ children: ReactNode }> = ({ childr
                         schoolId: node.unique_id,
                         dbName: profile.worker_db_name
                     });
-
                 } else {
                     logger.warn('neo-institute-context', '⚠️ No school node found');
                 }
@@ -79,7 +75,7 @@ export const NeoInstituteProvider: React.FC<{ children: ReactNode }> = ({ childr
         };
 
         loadSchoolNode();
-    }, [user?.email, profile, isUserLoading, isUserInitialized, isNeo4jLoading, isNeo4jInitialized]);
+    }, [user?.email, profile, isUserLoading, isUserInitialized]);
 
     return (
         <NeoInstituteContext.Provider value={{

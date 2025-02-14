@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNeo4j } from './Neo4jContext';
 import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
 import { logger } from '../debugConfig';
-import { CalendarNodeData, WorkerNodeData } from '../services/graph/neoDBService';
 import { UserNeoDBService } from '../services/graph/userNeoDBService';
+import { CCUserNodeProps, CCTeacherNodeProps, CCCalendarNodeProps } from '../utils/tldraw/cc-base/cc-graph/cc-graph-types';
+import { CalendarStructure, WorkerStructure } from '../types/navigation';
 
 // Core Node Types
 export interface CalendarNode {
@@ -12,8 +12,8 @@ export interface CalendarNode {
   label: string;
   title: string;
   path: string;
-  type?: CalendarNodeData['__primarylabel__'];
-  nodeData?: CalendarNodeData;
+  type?: CCCalendarNodeProps['__primarylabel__'];
+  nodeData?: CCCalendarNodeProps;
 }
 
 export interface WorkerNode {
@@ -21,8 +21,8 @@ export interface WorkerNode {
   label: string;
   title: string;
   path: string;
-  type?: WorkerNodeData['__primarylabel__'];
-  nodeData?: WorkerNodeData;
+  type?: CCTeacherNodeProps['__primarylabel__'];
+  nodeData?: CCTeacherNodeProps;
 }
 
 // Calendar Structure Types
@@ -56,14 +56,6 @@ export interface CalendarYear {
   year: string;
 }
 
-export interface CalendarStructure {
-  currentDay: string;
-  days: Record<string, CalendarDay>;
-  weeks: Record<string, CalendarWeek>;
-  months: Record<string, CalendarMonth>;
-  years: CalendarYear[];
-}
-
 // Worker Structure Types
 export interface TimetableEntry {
   id: string;
@@ -85,17 +77,12 @@ export interface LessonEntry {
   type: string;
 }
 
-export interface WorkerStructure {
-  timetables: Record<string, TimetableEntry[]>;
-  classes: Record<string, ClassEntry[]>;
-  lessons: Record<string, LessonEntry[]>;
-  journals: Record<string, { id: string; title: string }[]>;
-  planners: Record<string, { id: string; title: string }[]>;
-}
-
 interface NeoUserContextType {
+  userNode: CCUserNodeProps | null;
   calendarNode: CalendarNode | null;
   workerNode: WorkerNode | null;
+  userDbName: string | null;
+  workerDbName: string | null;
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
@@ -119,8 +106,11 @@ interface NeoUserContextType {
 }
 
 const NeoUserContext = createContext<NeoUserContextType>({
+  userNode: null,
   calendarNode: null,
   workerNode: null,
+  userDbName: null,
+  workerDbName: null,
   isLoading: false,
   isInitialized: false,
   error: null,
@@ -142,17 +132,142 @@ const NeoUserContext = createContext<NeoUserContextType>({
 export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { profile, isInitialized: isUserInitialized } = useUser();
-  const { userNodes, isInitialized: isNeo4jInitialized, userDbName } = useNeo4j();
   
+  const [userNode, setUserNode] = useState<CCUserNodeProps | null>(null);
   const [calendarNode, setCalendarNode] = useState<CalendarNode | null>(null);
   const [workerNode, setWorkerNode] = useState<WorkerNode | null>(null);
   const [currentCalendarNode, setCurrentCalendarNode] = useState<CalendarNode | null>(null);
   const [currentWorkerNode, setCurrentWorkerNode] = useState<WorkerNode | null>(null);
   const [calendarStructure, setCalendarStructure] = useState<CalendarStructure | null>(null);
   const [workerStructure, setWorkerStructure] = useState<WorkerStructure | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [userDbName, setUserDbName] = useState<string | null>(null);
+  const [workerDbName, setWorkerDbName] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Add base properties for node data
+  const getBaseNodeProps = () => ({
+    w: 500,
+    h: 350,
+    headerColor: '#000000',
+    backgroundColor: '#ffffff',
+    isLocked: false
+  });
+
+  // Initialize context when dependencies are ready
+  useEffect(() => {
+    if (!isUserInitialized) {
+      logger.debug('neo-user-context', '⏳ Waiting for user initialization...');
+      return;
+    }
+
+    // If no profile, mark as initialized with no data
+    if (!profile) {
+      setIsLoading(false);
+      setIsInitialized(true);
+      return;
+    }
+
+    const initializeContext = async () => {
+      try {
+        setIsLoading(true);
+
+        // Set database names
+        if (!profile.user_db_name && user?.email) {
+          const formattedEmail = user.email.replace('@', 'at').replace(/\./g, 'dot');
+          const constructedDbName = `cc.ccusers.${formattedEmail}`;
+          setUserDbName(constructedDbName);
+        } else {
+          setUserDbName(profile.user_db_name);
+        }
+        setWorkerDbName(profile.worker_db_name);
+
+        // Fetch user nodes data
+        if (profile.user_db_name && user?.email) {
+          const userNodesData = await UserNeoDBService.fetchUserNodesData(
+            user.email,
+            profile.user_db_name,
+            profile.worker_db_name
+          );
+
+          if (userNodesData) {
+            // Set user node
+            if (userNodesData.privateUserNode) {
+              setUserNode(userNodesData.privateUserNode);
+            }
+
+            // Set calendar node
+            if (userNodesData.connectedNodes.calendar) {
+              const calendarNodeData = {
+                ...getBaseNodeProps(),
+                ...userNodesData.connectedNodes.calendar,
+                __primarylabel__: 'Calendar' as const,
+                unique_id: userNodesData.connectedNodes.calendar.unique_id,
+                path: userNodesData.connectedNodes.calendar.path,
+                title: userNodesData.connectedNodes.calendar.calendar_name || 'Calendar'
+              } as CCCalendarNodeProps;
+
+              const calendarNode = {
+                id: calendarNodeData.unique_id,
+                label: calendarNodeData.__primarylabel__,
+                title: calendarNodeData.title,
+                path: calendarNodeData.path,
+                type: calendarNodeData.__primarylabel__,
+                nodeData: calendarNodeData
+              };
+              setCalendarNode(calendarNode);
+              setCurrentCalendarNode(calendarNode);
+            }
+
+            // Set worker node
+            if (userNodesData.connectedNodes.teacher) {
+              const teacherNodeData = {
+                ...getBaseNodeProps(),
+                ...userNodesData.connectedNodes.teacher,
+                __primarylabel__: 'Teacher' as const,
+                unique_id: userNodesData.connectedNodes.teacher.unique_id,
+                path: userNodesData.connectedNodes.teacher.path,
+                title: userNodesData.connectedNodes.teacher.teacher_name_formal || 'Teacher'
+              } as CCTeacherNodeProps;
+
+              const workerNode = {
+                id: teacherNodeData.unique_id,
+                label: teacherNodeData.__primarylabel__,
+                title: teacherNodeData.title,
+                path: teacherNodeData.path,
+                type: teacherNodeData.__primarylabel__,
+                nodeData: teacherNodeData
+              };
+              setWorkerNode(workerNode);
+              setCurrentWorkerNode(workerNode);
+            }
+
+            // Initialize structures
+            if (profile.user_db_name) {
+              const [calendarData, workerData] = await Promise.all([
+                UserNeoDBService.fetchCalendarStructure(profile.user_db_name),
+                UserNeoDBService.fetchWorkerStructure(profile.user_db_name)
+              ]);
+              setCalendarStructure(calendarData);
+              setWorkerStructure(workerData);
+            }
+          }
+        }
+
+        setIsInitialized(true);
+        setIsLoading(false);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to initialize user context';
+        logger.error('neo-user-context', '❌ Failed to initialize context', { error: errorMessage });
+        setError(errorMessage);
+        setIsLoading(false);
+        setIsInitialized(true);
+      }
+    };
+
+    initializeContext();
+  }, [user?.email, profile, isUserInitialized]);
 
   // Calendar Navigation Functions
   const navigateToDay = async (id: string) => {
@@ -161,13 +276,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('day', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'CalendarDay' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCCalendarNodeProps;
+
         setCurrentCalendarNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'CalendarDay',
-          nodeData: node.data as CalendarNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -183,13 +307,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('week', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'CalendarWeek' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCCalendarNodeProps;
+
         setCurrentCalendarNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'CalendarWeek',
-          nodeData: node.data as CalendarNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -205,13 +338,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('month', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'CalendarMonth' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCCalendarNodeProps;
+
         setCurrentCalendarNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'CalendarMonth',
-          nodeData: node.data as CalendarNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -227,13 +369,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('year', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'CalendarYear' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCCalendarNodeProps;
+
         setCurrentCalendarNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'CalendarYear',
-          nodeData: node.data as CalendarNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -250,13 +401,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('timetable', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'UserTeacherTimetable' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCTeacherNodeProps;
+
         setCurrentWorkerNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'UserTeacherTimetable',
-          nodeData: node.data as WorkerNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -272,13 +432,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('journal', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'Teacher' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCTeacherNodeProps;
+
         setCurrentWorkerNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'Teacher',
-          nodeData: node.data as WorkerNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -294,13 +463,22 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const node = await UserNeoDBService.getDefaultNode('planner', userDbName);
       if (node) {
+        const nodeData = {
+          ...getBaseNodeProps(),
+          ...node.data,
+          __primarylabel__: 'Teacher' as const,
+          unique_id: id || node.id,
+          path: node.path,
+          title: node.label
+        } as CCTeacherNodeProps;
+
         setCurrentWorkerNode({
           id: id || node.id,
           label: node.label,
           title: node.label,
           path: node.path,
           type: 'Teacher',
-          nodeData: node.data as WorkerNodeData
+          nodeData
         });
       }
     } catch (error) {
@@ -336,93 +514,33 @@ export const NeoUserProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  // Initialize context when dependencies are ready
-  useEffect(() => {
-    // Wait for user profile and Neo4j context
-    if (!isUserInitialized || !isNeo4jInitialized) {
-      logger.debug('neo-user-context', '⏳ Waiting for user and Neo4j initialization...');
-      return;
-    }
-
-    // If no user nodes, mark as initialized with no data
-    if (!userNodes) {
-      logger.debug('neo-user-context', '⚠️ No user nodes available, marking as initialized');
-      setIsInitialized(true);
-      return;
-    }
-
-    const initializeStructures = async () => {
-      try {
-        if (userDbName) {
-          // Initialize calendar structure
-          const calendarData = await UserNeoDBService.fetchCalendarStructure(userDbName);
-          setCalendarStructure(calendarData);
-
-          // Initialize worker structure
-          const workerData = await UserNeoDBService.fetchWorkerStructure(userDbName);
-          setWorkerStructure(workerData);
-        }
-      } catch (error) {
-        logger.error('neo-user-context', '❌ Failed to initialize structures', error);
-      }
-    };
-
-    // Set calendar node if available
-    if (userNodes.connectedNodes.calendar) {
-      const calendarNodeData = {
-        id: userNodes.connectedNodes.calendar.unique_id,
-        label: userNodes.connectedNodes.calendar.__primarylabel__,
-        title: userNodes.connectedNodes.calendar.calendar_name || 'Calendar',
-        path: userNodes.connectedNodes.calendar.path,
-        type: userNodes.connectedNodes.calendar.__primarylabel__ as CalendarNodeData['__primarylabel__'],
-        nodeData: userNodes.connectedNodes.calendar as unknown as CalendarNodeData
-      };
-      setCalendarNode(calendarNodeData);
-      setCurrentCalendarNode(calendarNodeData);
-    }
-
-    // Set worker node if available
-    if (userNodes.connectedNodes.teacher) {
-      const workerNodeData = {
-        id: userNodes.connectedNodes.teacher.unique_id,
-        label: userNodes.connectedNodes.teacher.__primarylabel__,
-        title: userNodes.connectedNodes.teacher.teacher_name_formal || 'Teacher',
-        path: userNodes.connectedNodes.teacher.path,
-        type: userNodes.connectedNodes.teacher.__primarylabel__ as WorkerNodeData['__primarylabel__'],
-        nodeData: userNodes.connectedNodes.teacher as unknown as WorkerNodeData
-      };
-      setWorkerNode(workerNodeData);
-      setCurrentWorkerNode(workerNodeData);
-    }
-
-    initializeStructures();
-    setIsInitialized(true);
-  }, [user?.email, profile, userNodes, isUserInitialized, isNeo4jInitialized, userDbName]);
-
   return (
     <NeoUserContext.Provider value={{
-        calendarNode,
-        workerNode,
-        isLoading,
-        isInitialized,
-        error,
-        navigateToDay,
-        navigateToWeek,
-        navigateToMonth,
-        navigateToYear,
-        navigateToTimetable,
-        navigateToJournal,
-        navigateToPlanner,
-        navigateToClass,
-        navigateToLesson,
-        currentCalendarNode,
-        currentWorkerNode,
-        calendarStructure,
-        workerStructure
+      userNode,
+      calendarNode,
+      workerNode,
+      userDbName,
+      workerDbName,
+      isLoading,
+      isInitialized,
+      error,
+      navigateToDay,
+      navigateToWeek,
+      navigateToMonth,
+      navigateToYear,
+      navigateToTimetable,
+      navigateToJournal,
+      navigateToPlanner,
+      navigateToClass,
+      navigateToLesson,
+      currentCalendarNode,
+      currentWorkerNode,
+      calendarStructure,
+      workerStructure
     }}>
-        {children}
+      {children}
     </NeoUserContext.Provider>
-    );
+  );
 };
 
 export const useNeoUser = () => useContext(NeoUserContext);

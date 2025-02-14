@@ -10,7 +10,7 @@ import multiMonthPlugin from '@fullcalendar/multimonth';  // Import the multiMon
 import listPlugin from '@fullcalendar/list';
 
 import { useAuth } from '../../contexts/AuthContext';
-import { useNeo4j } from '../../contexts/Neo4jContext';
+import { useNeoUser } from '../../contexts/NeoUserContext';
 import { FaCheck, FaExternalLinkAlt, FaEllipsisV } from 'react-icons/fa';
 import { logger } from '../../debugConfig';
 import { TimetableNeoDBService } from '../../services/graph/timetableNeoDBService';
@@ -155,7 +155,7 @@ const CalendarPage: React.FC = () => {
   const [hiddenTimeDivs, setHiddenTimeDivs] = useState<string[]>([]);
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [eventRange, setEventRange] = useState<{ start: Date | null; end: Date | null }>({ start: null, end: null });
-  const { userNodes, isLoading, error } = useNeo4j();
+  const { workerNode, isLoading, error, workerDbName } = useNeoUser();
 
   const getEventRange = useCallback((events: Event[]) => {
     if (events.length === 0) {
@@ -184,22 +184,22 @@ const CalendarPage: React.FC = () => {
   }, []);
 
   const fetchEvents = useCallback(async () => {
-    if (!user || isLoading || error || !userNodes?.connectedNodes.teacher) {
+    if (!user || isLoading || error || !workerNode?.nodeData) {
       if (error) {
-        logger.error('calendar', 'Neo4j context error', { error });
+        logger.error('calendar', 'NeoUser context error', { error });
       }
       return;
     }
 
     try {
       logger.debug('calendar', 'Fetching events', {
-        unique_id: userNodes.connectedNodes.teacher.unique_id,
-        worker_db_name: userNodes.connectedNodes.teacher.worker_db_name
+        unique_id: workerNode.nodeData.unique_id,
+        worker_db_name: workerDbName
       });
 
       const events = await TimetableNeoDBService.fetchTeacherTimetableEvents(
-        userNodes.connectedNodes.teacher.unique_id,
-        userNodes.connectedNodes.teacher.worker_db_name
+        workerNode.nodeData.unique_id,
+        workerDbName || ''
       );
 
       setEvents(events);
@@ -224,7 +224,7 @@ const CalendarPage: React.FC = () => {
     } catch (error) {
       logger.error('calendar', 'Error fetching events', { error });
     }
-  }, [user, userNodes, isLoading, error, getEventRange]);
+  }, [user, workerNode, workerDbName, isLoading, error, getEventRange]);
 
   useEffect(() => {
     fetchEvents();

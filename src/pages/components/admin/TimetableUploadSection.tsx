@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Button, Box, Typography, Alert } from '@mui/material';
-import { useNeo4j } from '../../../contexts/Neo4jContext';
+import { useNeoUser } from '../../../contexts/NeoUserContext';
 import { TimetableNeoDBService } from '../../../services/graph/timetableNeoDBService';
 
 export const TimetableUploadSection = () => {
-    const { userNodes } = useNeo4j();
+    const { userNode, workerNode } = useNeoUser();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -17,10 +17,9 @@ export const TimetableUploadSection = () => {
 
             const result = await TimetableNeoDBService.handleTimetableUpload(
                 event.target.files?.[0],
-                userNodes?.privateUserNode,
-                userNodes?.connectedNodes?.teacher
+                userNode || undefined,
+                workerNode?.nodeData
             );
-
 
             if (result.success) {
                 setSuccess(result.message);
@@ -56,7 +55,7 @@ export const TimetableUploadSection = () => {
             <Button
                 variant="contained"
                 component="label"
-                disabled={isUploading || !userNodes?.connectedNodes?.teacher}
+                disabled={isUploading || !workerNode}
             >
                 {isUploading ? 'Uploading...' : 'Upload Timetable'}
                 <input
@@ -68,7 +67,7 @@ export const TimetableUploadSection = () => {
                 />
             </Button>
 
-            {!userNodes?.connectedNodes?.teacher && (
+            {!workerNode && (
                 <Typography color="error" sx={{ mt: 1 }}>
                     No teacher node found. Please ensure you have the correct permissions.
                 </Typography>

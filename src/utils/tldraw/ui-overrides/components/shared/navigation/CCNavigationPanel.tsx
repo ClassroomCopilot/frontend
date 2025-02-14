@@ -31,7 +31,7 @@ import {
 } from '../../../../../../types/navigation';
 import { NAVIGATION_CONTEXTS } from '../../../../../../config/navigationContexts';
 import { useNavigationStore } from '../../../../../../stores/navigationStore';
-import { useNeo4j } from '../../../../../../contexts/Neo4jContext';
+import { useNeoUser } from '../../../../../../contexts/NeoUserContext';
 import { CalendarNavigation } from '../../../../../../components/navigation/extended/CalendarNavigation';
 import { TeacherNavigation } from '../../../../../../components/navigation/extended/TeacherNavigation';
 import { useTLDraw } from '../../../../../../contexts/TLDrawContext';
@@ -78,7 +78,7 @@ export const CCNavigationPanel: React.FC<CCNavigationPanelProps> = ({
     error,
   } = useNavigationStore();
 
-  const { userDbName, workerDbName } = useNeo4j();
+  const { userDbName, workerDbName } = useNeoUser();
   const { tldrawPreferences } = useTLDraw();
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   

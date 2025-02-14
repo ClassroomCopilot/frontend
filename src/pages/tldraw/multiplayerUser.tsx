@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Tldraw,
     Editor,
@@ -11,6 +11,7 @@ import { useSync } from '@tldraw/sync';
 // App context
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
+import { useNeoInstitute } from '../../contexts/NeoInstituteContext';
 // Tldraw services
 import { multiplayerOptions } from '../../services/tldraw/optionsService';
 import { PresentationService } from '../../services/tldraw/presentationService';
@@ -36,6 +37,7 @@ const SYNC_WORKER_URL = import.meta.env.VITE_SITE_URL.startsWith('http')
 
 export default function TldrawMultiUser() {
     const { user } = useAuth();
+    const { isLoading: isInstituteLoading, isInitialized: isInstituteInitialized } = useNeoInstitute();
     const {
         tldrawPreferences,
         setTldrawPreferences,
@@ -43,7 +45,6 @@ export default function TldrawMultiUser() {
         presentationMode
     } = useTLDraw();
     const navigate = useNavigate();
-    const location = useLocation();
     const [searchParams] = useSearchParams();
     const editorRef = useRef<Editor | null>(null);
 
@@ -137,7 +138,7 @@ export default function TldrawMultiUser() {
         return null;
     }
 
-    if (store.status !== 'synced-remote') {
+    if (store.status !== 'synced-remote' || isInstituteLoading || !isInstituteInitialized) {
         return (
             <div style={{
                 position: 'fixed',
@@ -154,7 +155,7 @@ export default function TldrawMultiUser() {
                     borderRadius: '8px',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                 }}>
-                    Connecting to room: {roomId}...
+                    {isInstituteLoading ? 'Loading institute data...' : `Connecting to room: ${roomId}...`}
                 </div>
             </div>
         );

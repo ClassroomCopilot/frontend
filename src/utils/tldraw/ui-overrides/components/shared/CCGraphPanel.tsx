@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useEditor } from '@tldraw/tldraw';
 import { createGraphShape, createUserNodeFromProfile } from '../../../cc-base/shape-helpers/graph-helpers';
 import { ccGraphShapeProps, getDefaultCCUserNodeProps } from '../../../cc-base/cc-graph/cc-graph-props';
-import { useNeo4j } from '../../../../../contexts/Neo4jContext';
+import { useNeoUser } from '../../../../../contexts/NeoUserContext';
 import { logger } from '../../../../../debugConfig';
 import './panel.css';
 import { GraphShapeType } from '../../../cc-base/cc-graph/cc-graph-types';
 
 export const CCGraphPanel = () => {
   const editor = useEditor();
-  const { userNode } = useNeo4j();
+  const { userNode } = useNeoUser();
   const [isOpen, setIsOpen] = useState(false);
   const graphShapeTypes = Object.keys(ccGraphShapeProps);
 

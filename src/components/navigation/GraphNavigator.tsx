@@ -25,7 +25,7 @@ import {
     ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { useNavigationStore } from '../../stores/navigationStore';
-import { useNeo4j } from '../../contexts/Neo4jContext';
+import { useNeoUser } from '../../contexts/NeoUserContext';
 import { NAVIGATION_CONTEXTS } from '../../config/navigationContexts';
 import { 
     MainContext,
@@ -90,7 +90,7 @@ export const GraphNavigator: React.FC = () => {
         isLoading
     } = useNavigationStore();
 
-    const { userDbName, workerDbName, isInitialized: isNeo4jInitialized } = useNeo4j();
+    const { userDbName, workerDbName, isInitialized: isNeoUserInitialized } = useNeoUser();
 
     const [contextMenuAnchor, setContextMenuAnchor] = useState<null | HTMLElement>(null);
     const [historyMenuAnchor, setHistoryMenuAnchor] = useState<null | HTMLElement>(null);
@@ -188,7 +188,7 @@ export const GraphNavigator: React.FC = () => {
     };
 
     const handleHistoryItemClick = (index: number) => {
-        const currentIndex = context.history.currentIndex;
+        const {currentIndex} = context.history;
         const steps = index - currentIndex;
         
         if (steps < 0) {
@@ -287,7 +287,7 @@ export const GraphNavigator: React.FC = () => {
         }
     }, []);
 
-    const isDisabled = !isNeo4jInitialized || isLoading;
+    const isDisabled = !isNeoUserInitialized || isLoading;
     const { history } = context;
     const canGoBack = history.currentIndex > 0;
     const canGoForward = history.currentIndex < history.nodes.length - 1;
