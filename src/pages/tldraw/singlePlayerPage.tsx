@@ -133,6 +133,23 @@ export default function SinglePlayerPage() {
         initializeUserContext();
     }, [areContextsInitialized, user?.email, userDbName, workerDbName, isNeo4jLoading]);
 
+    // Handle initial node placement after context initialization
+    useEffect(() => {
+        const placeInitialNode = async () => {
+            if (!context.node || !editorRef.current || !isInitialLoad) return;
+
+            try {
+                const nodeData = await loadNodeData(context.node);
+                await NodeCanvasService.centerCurrentNode(editorRef.current, context.node, nodeData);
+                setIsInitialLoad(false);
+            } catch (error) {
+                logger.error('single-player-page', '❌ Failed to place initial node', error);
+            }
+        };
+
+        placeInitialNode();
+    }, [context.node, isInitialLoad]);
+
     // Initialize preferences when user is available
     useEffect(() => {
         if (user?.id && !tldrawPreferences) {
