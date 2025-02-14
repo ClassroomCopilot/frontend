@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Box, Typography, styled, Button, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
 import { Save as SaveIcon, RestartAlt as ResetIcon } from '@mui/icons-material';
 import { useEditor, useToasts, loadSnapshot } from '@tldraw/tldraw';
@@ -69,6 +69,7 @@ export const CCNodeSnapshotPanel: React.FC = () => {
   const { context: navigationContext, isLoading, error } = useNavigationStore();
   const { tldrawPreferences } = useTLDraw();
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Create a dynamic theme based on TLDraw preferences
   const theme = useMemo(() => {
@@ -110,7 +111,10 @@ export const CCNodeSnapshotPanel: React.FC = () => {
   }, [editor.store, addToast]);
 
   const handleSaveSnapshot = useCallback(async () => {
+    if (isSaving) return;
+    
     try {
+      setIsSaving(true);
       if (!navigationContext.node?.path) {
         logger.error('cc-node-snapshot-panel', '❌ No current node available for saving');
         addToast({
@@ -145,8 +149,10 @@ export const CCNodeSnapshotPanel: React.FC = () => {
         description: error instanceof Error ? error.message : 'Failed to save snapshot',
         icon: 'warning-triangle',
       });
+    } finally {
+      setIsSaving(false);
     }
-  }, [editor, navigationContext.node, addToast]);
+  }, [editor, navigationContext.node, addToast, isSaving]);
 
   const renderCurrentNode = () => {
     if (!navigationContext.node) return null;

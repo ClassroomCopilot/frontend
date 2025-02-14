@@ -28,8 +28,8 @@ import { useNavigationStore } from '../../stores/navigationStore';
 import { useNeoUser } from '../../contexts/NeoUserContext';
 import { NAVIGATION_CONTEXTS } from '../../config/navigationContexts';
 import { 
-    MainContext,
-    BaseContext
+    BaseContext,
+    ViewContext
 } from '../../types/navigation';
 import { logger } from '../../debugConfig';
 
@@ -204,33 +204,59 @@ export const GraphNavigator: React.FC = () => {
         handleHistoryClose();
     };
 
-    const handleMainContextChange = useCallback(async (main: MainContext) => {
+    const handleContextChange = useCallback(async (newContext: BaseContext) => {
         try {
-            if (main === 'institute' && !workerDbName) {
+            // Check if trying to access institute contexts without worker database
+            if (['school', 'department', 'class'].includes(newContext) && !workerDbName) {
                 logger.error('navigation', '❌ Cannot switch to institute context: missing worker database');
                 return;
             }
-            if (main === 'profile' && !userDbName) {
+            // Check if trying to access profile contexts without user database
+            if (['profile', 'calendar', 'teaching'].includes(newContext) && !userDbName) {
                 logger.error('navigation', '❌ Cannot switch to profile context: missing user database');
                 return;
             }
 
             logger.debug('navigation', '🔄 Changing main context', {
                 from: context.main,
-                to: main,
+                to: newContext,
                 userDbName,
                 workerDbName
             });
 
-            // Use unified context switch
+            // Get default view for new context
+            const defaultView = getDefaultViewForContext(newContext);
+            
+            // Use unified context switch with both base and extended contexts
             await switchContext({ 
-                main,
-                skipBaseContextLoad: true // Skip base context load as it's handled in the unified switch
+                main: ['profile', 'calendar', 'teaching'].includes(newContext) ? 'profile' : 'institute',
+                base: newContext,
+                extended: defaultView,
+                skipBaseContextLoad: false
             }, userDbName, workerDbName);
+
         } catch (error) {
-            logger.error('navigation', '❌ Failed to change main context:', error);
+            logger.error('navigation', '❌ Failed to change context:', error);
         }
     }, [context.main, switchContext, userDbName, workerDbName]);
+
+    // Helper function to get default view for a context
+    const getDefaultViewForContext = (context: BaseContext): ViewContext => {
+        switch (context) {
+            case 'calendar':
+                return 'overview';
+            case 'teaching':
+                return 'overview';
+            case 'school':
+                return 'overview';
+            case 'department':
+                return 'overview';
+            case 'class':
+                return 'overview';
+            default:
+                return 'overview';
+        }
+    };
 
     const handleContextMenu = (event: React.MouseEvent<HTMLElement>) => {
         setContextMenuAnchor(event.currentTarget);
@@ -366,7 +392,7 @@ export const GraphNavigator: React.FC = () => {
             <ContextToggleContainer>
                 <ContextToggleButton
                     active={context.main === 'profile'}
-                    onClick={() => handleMainContextChange('profile')}
+                    onClick={() => handleContextChange('profile' as BaseContext)}
                     startIcon={<PersonIcon />}
                     disabled={isDisabled || !userDbName}
                 >
@@ -374,7 +400,7 @@ export const GraphNavigator: React.FC = () => {
                 </ContextToggleButton>
                 <ContextToggleButton
                     active={context.main === 'institute'}
-                    onClick={() => handleMainContextChange('institute')}
+                    onClick={() => handleContextChange('school' as BaseContext)}
                     startIcon={<SchoolIcon />}
                     disabled={isDisabled || !workerDbName}
                 >

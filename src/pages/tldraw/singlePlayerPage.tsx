@@ -105,69 +105,33 @@ export default function SinglePlayerPage() {
     // Initialize user nodes and navigate to today's node
     useEffect(() => {
         const initializeUserContext = async () => {
-            // Wait for all contexts to be ready
-            if (!areContextsInitialized) {
-                logger.debug('single-player-page', '⏳ Waiting for context initialization...', {
-                    isAuthInitialized,
-                    isUserInitialized,
-                    isNeo4jInitialized,
-                    isInstituteInitialized
-                });
-                return;
-            }
-
-            // Check for required data
-            if (!user?.email || !userDbName || isNeo4jLoading) {
-                logger.debug('single-player-page', '⏳ Waiting for required data...', {
-                    hasEmail: !!user?.email,
-                    userDbName,
-                    isNeo4jLoading
-                });
+            // Only proceed if all contexts are ready and we have required data
+            if (!areContextsInitialized || !user?.email || !userDbName || isNeo4jLoading) {
                 return;
             }
 
             try {
                 setLoadingState({ status: 'loading', error: '' });
                 
-                logger.debug('single-player-page', '🔄 Initializing user context', {
-                    email: user.email,
-                    userDbName,
-                    workerDbName
-                });
-
-                // Instead of directly navigating to the user node,
-                // switch to the profile context with overview view
+                // Use a single context switch with all required information
                 await switchContext({
                     main: 'profile',
                     base: 'profile',
-                    extended: 'overview'
+                    extended: 'overview',
+                    skipBaseContextLoad: false
                 }, userDbName, workerDbName);
 
-                logger.info('single-player-page', '✅ Successfully initialized user context');
                 setLoadingState({ status: 'ready', error: '' });
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to initialize user context';
-                logger.error('single-player-page', '❌ Failed to initialize user context', {
-                    error: errorMessage,
-                    userDbName,
-                    workerDbName
-                });
                 setLoadingState({ 
                     status: 'error', 
-                    error: errorMessage
+                    error: error instanceof Error ? error.message : 'Failed to initialize user context'
                 });
             }
         };
 
         initializeUserContext();
-    }, [
-        user?.email, 
-        userDbName, 
-        workerDbName, 
-        isNeo4jLoading, 
-        areContextsInitialized,
-        switchContext
-    ]);
+    }, [areContextsInitialized, user?.email, userDbName, workerDbName, isNeo4jLoading]);
 
     // Initialize preferences when user is available
     useEffect(() => {

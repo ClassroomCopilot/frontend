@@ -19,6 +19,7 @@ export class NavigationSnapshotService {
     private isSaving = false;
     private isLoading = false;
     private pendingOperation: { save?: string; load?: string } | null = null;
+    private debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
     constructor(store: TLStore) {
         this.store = store;
@@ -192,6 +193,26 @@ export class NavigationSnapshotService {
     }
 
     async handleNavigationStart(fromNode: NavigationNode | null, toNode: NavigationNode): Promise<void> {
+        // Clear any pending debounce
+        if (this.debounceTimeout) {
+            clearTimeout(this.debounceTimeout);
+        }
+
+        // Debounce the navigation operation
+        return new Promise((resolve) => {
+            this.debounceTimeout = setTimeout(async () => {
+                try {
+                    await this.executeNavigation(fromNode, toNode);
+                    resolve();
+                } catch (error) {
+                    logger.error('snapshot-service', '❌ Navigation failed', error);
+                    throw error;
+                }
+            }, 100); // 100ms debounce
+        });
+    }
+
+    private async executeNavigation(fromNode: NavigationNode | null, toNode: NavigationNode): Promise<void> {
         try {
             logger.debug('snapshot-service', '🔄 Starting navigation snapshot handling', {
                 from: fromNode?.path,
