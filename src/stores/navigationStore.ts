@@ -15,7 +15,8 @@ import {
     navigateHistory,
     getCurrentHistoryNode,
     ExtendedContext,
-    UnifiedContextSwitch
+    UnifiedContextSwitch,
+    NodeContext
 } from '../types/navigation';
 
 const initialState: NavigationContextState = {
@@ -74,6 +75,20 @@ export interface NavigationActions {
   
   // Utility Methods
   refreshNavigationState: (userDbName: string | null, workerDbName: string | null) => Promise<void>;
+}
+
+export interface NavigationState {
+    context: {
+        main: NodeContext;
+        base: NodeContext;
+        extended?: string;
+        node: NavigationNode;
+        history: {
+            nodes: NavigationNode[];
+            currentIndex: number;
+        };
+    };
+    // ... rest of the state interface ...
 }
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({

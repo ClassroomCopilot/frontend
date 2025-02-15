@@ -66,21 +66,3 @@ export class SchoolNeoDBService {
         }
     }
 }
-
-export async function fetchSchoolNode(schoolUuid: string): Promise<CCSchoolNodeProps> {
-  logger.debug('neo4j-service', '🔄 Fetching school node', { schoolUuid });
-  
-  try {
-    const response = await axiosInstance.get(`/api/database/tools/get-school-node?school_uuid=${schoolUuid}`);
-    
-    if (response.data?.status === 'success' && response.data.school_node) {
-      logger.info('neo4j-service', '✅ School node fetched successfully');
-      return response.data.school_node;
-    }
-    
-    throw new Error('Failed to fetch school node: ' + JSON.stringify(response.data));
-  } catch (error) {
-    logger.error('neo4j-service', '❌ Failed to fetch school node:', error);
-    throw error;
-  }
-}

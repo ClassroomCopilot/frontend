@@ -1,15 +1,12 @@
+import { supabase } from '../../supabaseClient';
 import { CCUser } from '../auth/authService';
-import { CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
-import { fetchSchoolNode } from './schoolNeoDBService';
+import { CCSchoolNodeProps, CCUserNodeProps } from '../../utils/tldraw/cc-base/cc-graph/cc-graph-types';
 import { storageService, StorageKeys } from '../auth/localStorageService';
-import { updateUserNeo4jDetails } from './userNeoDBService';
 import axiosInstance from '../../axiosConfig';
 import { logger } from '../../debugConfig';
 
 // Dev configuration - only hardcoded value we need
 const DEV_SCHOOL_UUID = 'kevlarai';
-
-const NEO4J_SERVICE = 'neo4j-service' as const;
 
 class NeoRegistrationService {
     private static instance: NeoRegistrationService;
@@ -32,7 +29,7 @@ class NeoRegistrationService {
             // For teachers and students, fetch school node first
             let schoolNode = null;
             if (role.includes('teacher') || role.includes('student')) {
-                schoolNode = await fetchSchoolNode(DEV_SCHOOL_UUID);
+                schoolNode = await this.fetchSchoolNode(DEV_SCHOOL_UUID);
                 if (!schoolNode) {
                     throw new Error('Failed to fetch required school node');
                 }
@@ -69,7 +66,7 @@ class NeoRegistrationService {
             }
 
             // Debug log the form data
-            logger.debug(NEO4J_SERVICE, '🔄 Sending form data', {
+            logger.debug('neo4j-service', '🔄 Sending form data', {
                 userId: user.id,
                 userType: role,
                 userName: username,
@@ -95,7 +92,7 @@ class NeoRegistrationService {
             
             // Store calendar data if needed
             if (response.data.data.calendar_nodes) {
-                logger.debug(NEO4J_SERVICE, '🔄 Storing calendar data', {
+                logger.debug('neo4j-service', '🔄 Storing calendar data', {
                     calendarNodes: response.data.data.calendar_nodes
                 });
                 storageService.set(StorageKeys.CALENDAR_DATA, response.data.data.calendar_nodes);
@@ -104,9 +101,9 @@ class NeoRegistrationService {
             // Update user node with worker data
             userNode.worker_node_data = JSON.stringify(workerNode);
             
-            await updateUserNeo4jDetails(user.id, userNode);
+            await this.updateUserNeo4jDetails(user.id, userNode);
 
-            logger.info(NEO4J_SERVICE, '✅ Neo4j user registration successful', {
+            logger.info('neo4j-service', '✅ Neo4j user registration successful', {
                 userId: user.id,
                 nodeId: userNode.unique_id,
                 hasCalendar: !!response.data.data.calendar_nodes
@@ -114,8 +111,41 @@ class NeoRegistrationService {
 
             return userNode;
         } catch (error) {
-            logger.error(NEO4J_SERVICE, '❌ Neo4j user registration failed', error);
+            logger.error('neo4j-service', '❌ Neo4j user registration failed', error);
             throw error;
+        }
+    }
+
+    async updateUserNeo4jDetails(userId: string, userNode: CCUserNodeProps) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ 
+            neo4j_user_node: userNode,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+      
+        if (error) {
+          logger.error('neo4j-service', '❌ Failed to update Neo4j details:', error);
+          throw error;
+        }
+      }
+    
+    async fetchSchoolNode(schoolUuid: string): Promise<CCSchoolNodeProps> {
+        logger.debug('neo4j-service', '🔄 Fetching school node', { schoolUuid });
+        
+        try {
+        const response = await axiosInstance.get(`/api/database/tools/get-school-node?school_uuid=${schoolUuid}`);
+        
+        if (response.data?.status === 'success' && response.data.school_node) {
+            logger.info('neo4j-service', '✅ School node fetched successfully');
+            return response.data.school_node;
+        }
+        
+        throw new Error('Failed to fetch school node: ' + JSON.stringify(response.data));
+        } catch (error) {
+        logger.error('neo4j-service', '❌ Failed to fetch school node:', error);
+        throw error;
         }
     }
 }

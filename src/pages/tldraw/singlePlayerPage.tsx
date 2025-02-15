@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import {
     Tldraw,
@@ -6,13 +6,11 @@ import {
     useTldrawUser,
     DEFAULT_SUPPORT_VIDEO_TYPES,
     DEFAULT_SUPPORTED_IMAGE_TYPES,
+    TLStore
 } from '@tldraw/tldraw';
 // App context
 import { useAuth } from '../../contexts/AuthContext';
 import { useTLDraw } from '../../contexts/TLDrawContext';
-import { useNeoUser } from '../../contexts/NeoUserContext';
-import { useNeoInstitute } from '../../contexts/NeoInstituteContext';
-import { useUser } from '../../contexts/UserContext';
 // Tldraw services
 import { localStoreService } from '../../services/tldraw/localStoreService';
 import { PresentationService } from '../../services/tldraw/presentationService';
@@ -48,182 +46,34 @@ interface LoadingState {
 export default function SinglePlayerPage() {
     // Context hooks with initialization states
     const { 
-        user, 
-        isInitialized: isAuthInitialized 
+        user
     } = useAuth();
-    const { 
-        isInitialized: isUserInitialized 
-    } = useUser();
     const { 
         tldrawPreferences, 
         initializePreferences,
         presentationMode,
         setTldrawPreferences
     } = useTLDraw();
-    const { 
-        userDbName, 
-        workerDbName, 
-        isLoading: isNeo4jLoading, 
-        isInitialized: isNeo4jInitialized 
-    } = useNeoUser();
-    const { 
-        isInitialized: isInstituteInitialized 
-    } = useNeoInstitute();
     const routerNavigate = useNavigate();
     const location = useLocation();
 
     // Navigation store
-    const { context, switchContext } = useNavigationStore();
+    const { context } = useNavigationStore();
 
     // Refs
     const editorRef = useRef<Editor | null>(null);
+    const snapshotServiceRef = useRef<NavigationSnapshotService | null>(null);
 
-    // Add loading state
+    // State
     const [loadingState, setLoadingState] = useState<LoadingState>({ 
         status: 'ready', 
         error: '' 
     });
-
-    // Add initialization flag
     const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-    // Add loading state for editor
     const [isEditorReady, setIsEditorReady] = useState(false);
+    const [store, setStore] = useState<TLStore | null>(null);
 
-    // Check if all contexts are initialized
-    const areContextsInitialized = useMemo(() => {
-        const initStates = {
-            auth: isAuthInitialized,
-            user: isUserInitialized,
-            neoUser: isNeo4jInitialized,
-            neoInstitute: isInstituteInitialized
-        };
-
-        logger.debug('single-player-page', '🔄 Checking context initialization states', initStates);
-
-        return Object.values(initStates).every(state => state);
-    }, [isAuthInitialized, isUserInitialized, isNeo4jInitialized, isInstituteInitialized]);
-
-    // Initialize user nodes and navigate to today's node
-    useEffect(() => {
-        const initializeUserContext = async () => {
-            // Only proceed if all contexts are ready and we have required data
-            if (!areContextsInitialized || !user?.email || !userDbName || isNeo4jLoading) {
-                return;
-            }
-
-            try {
-                setLoadingState({ status: 'loading', error: '' });
-                
-                // Use a single context switch with all required information
-                await switchContext({
-                    main: 'profile',
-                    base: 'profile',
-                    extended: 'overview',
-                    skipBaseContextLoad: false
-                }, userDbName, workerDbName);
-
-                setLoadingState({ status: 'ready', error: '' });
-            } catch (error) {
-                setLoadingState({ 
-                    status: 'error', 
-                    error: error instanceof Error ? error.message : 'Failed to initialize user context'
-                });
-            }
-        };
-
-        initializeUserContext();
-    }, [areContextsInitialized, user?.email, userDbName, workerDbName, isNeo4jLoading]);
-
-    // Move store creation into an effect that runs after contexts are initialized
-    const store = useMemo(() => {
-        if (!areContextsInitialized) return null;
-        logger.debug('system', '🔄 Creating new TLStore');
-        return localStoreService.getStore({
-            schema: customSchema,
-            shapeUtils: allShapeUtils,
-            bindingUtils: allBindingUtils
-        });
-    }, [areContextsInitialized]);
-
-    // Initialize snapshot service only after editor is mounted
-    useEffect(() => {
-        if (!store || !isEditorReady || snapshotServiceRef.current) return;
-
-        snapshotServiceRef.current = new NavigationSnapshotService(store);
-        logger.debug('single-player-page', '✨ Initialized NavigationSnapshotService');
-
-        return () => {
-            if (snapshotServiceRef.current) {
-                snapshotServiceRef.current.clearCurrentNode();
-                snapshotServiceRef.current = null;
-                logger.debug('single-player-page', '🧹 Cleaned up NavigationSnapshotService');
-            }
-        };
-    }, [store, isEditorReady]);
-
-    // Handle initial node placement after editor is ready
-    useEffect(() => {
-        const placeInitialNode = async () => {
-            if (!context.node || !editorRef.current || !isEditorReady || !isInitialLoad) return;
-
-            try {
-                const nodeData = await loadNodeData(context.node);
-                await NodeCanvasService.centerCurrentNode(editorRef.current, context.node, nodeData);
-                setIsInitialLoad(false);
-            } catch (error) {
-                logger.error('single-player-page', '❌ Failed to place initial node', error);
-            }
-        };
-
-        placeInitialNode();
-    }, [context.node, isEditorReady, isInitialLoad]);
-
-    // Handle navigation changes
-    useEffect(() => {
-        const handleNodeChange = async () => {
-            if (!context.node?.id || !editorRef.current || !snapshotServiceRef.current || !isEditorReady) return;
-
-            try {
-                logger.debug('single-player-page', '🔄 Loading node data', {
-                    nodeId: context.node.id,
-                    isInitialLoad
-                });
-
-                // Get the previous node from navigation history
-                const previousNode = context.history.nodes[context.history.currentIndex - 1] || null;
-
-                // Handle navigation in snapshot service
-                await snapshotServiceRef.current.handleNavigationStart(previousNode, context.node);
-
-                // Center the node on canvas
-                const nodeData = await loadNodeData(context.node);
-                await NodeCanvasService.centerCurrentNode(editorRef.current, context.node, nodeData);
-
-                setLoadingState({ status: 'ready', error: '' });
-            } catch (error) {
-                logger.error('single-player-page', '❌ Failed to load node data', error);
-                setLoadingState({ 
-                    status: 'error', 
-                    error: error instanceof Error ? error.message : 'Failed to load node data'
-                });
-            }
-        };
-
-        handleNodeChange();
-    }, [context.node?.id, context.history, isEditorReady]);
-
-    // Initialize preferences when user is available
-    useEffect(() => {
-        if (user?.id && !tldrawPreferences) {
-            logger.debug('single-player-page', '🔄 Initializing preferences for user', { userId: user.id });
-            initializePreferences(user.id);
-        }
-    }, [user?.id, tldrawPreferences, initializePreferences]);
-
-    // Add snapshot service ref
-    const snapshotServiceRef = useRef<NavigationSnapshotService | null>(null);
-
+    // TLDraw user preferences
     const tldrawUser = useTldrawUser({
         userPreferences: {
             id: user?.id ?? '',
@@ -236,6 +86,183 @@ export default function SinglePlayerPage() {
         },
         setUserPreferences: setTldrawPreferences
     });
+
+    // Combined store and snapshot initialization
+    useEffect(() => {
+        if (!context.node || !isEditorReady) return;
+
+        const initializeStoreAndSnapshot = async () => {
+            try {
+                setLoadingState({ status: 'loading', error: '' });
+                
+                // 1. Create store
+                logger.debug('single-player-page', '🔄 Creating TLStore');
+                const newStore = localStoreService.getStore({
+                    schema: customSchema,
+                    shapeUtils: allShapeUtils,
+                    bindingUtils: allBindingUtils
+                });
+
+                // 2. Initialize snapshot service
+                const snapshotService = new NavigationSnapshotService(newStore);
+                snapshotServiceRef.current = snapshotService;
+                logger.debug('single-player-page', '✨ Initialized NavigationSnapshotService');
+
+                // 3. Load initial snapshot
+                const dbName = UserNeoDBService.getNodeDatabaseName(context.node);
+                await NavigationSnapshotService.loadNodeSnapshotFromDatabase(
+                    context.node.path,
+                    dbName,
+                    newStore,
+                    setLoadingState
+                );
+
+                // 4. Set up auto-save
+                newStore.listen(() => {
+                    if (snapshotServiceRef.current && context.node) {
+                        logger.debug('single-player-page', '💾 Auto-saving changes');
+                        snapshotServiceRef.current.forceSaveCurrentNode().catch(error => {
+                            logger.error('single-player-page', '❌ Auto-save failed', error);
+                        });
+                    }
+                });
+
+                // 5. Update store state
+                setStore(newStore);
+                setLoadingState({ status: 'ready', error: '' });
+
+                // 6. Handle cleanup
+                return () => {
+                    if (snapshotServiceRef.current) {
+                        snapshotServiceRef.current.forceSaveCurrentNode().catch(error => {
+                            logger.error('single-player-page', '❌ Final save failed', error);
+                        });
+                        snapshotServiceRef.current.clearCurrentNode();
+                        snapshotServiceRef.current = null;
+                    }
+                    newStore.dispose();
+                    setStore(null);
+                    logger.debug('single-player-page', '🧹 Cleaned up store and snapshot service');
+                };
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Failed to initialize store';
+                logger.error('single-player-page', '❌ Store initialization failed', error);
+                setLoadingState({ status: 'error', error: errorMessage });
+                return undefined;
+            }
+        };
+
+        initializeStoreAndSnapshot();
+    }, [context.node, isEditorReady]);
+
+    // Handle initial node placement
+    useEffect(() => {
+        const placeInitialNode = async () => {
+            if (!context.node || !editorRef.current || !store || !isInitialLoad) {
+                return;
+            }
+
+            try {
+                setLoadingState({ status: 'loading', error: '' });
+                
+                // Center the node
+                const nodeData = await loadNodeData(context.node);
+                await NodeCanvasService.centerCurrentNode(editorRef.current, context.node, nodeData);
+                
+                setIsInitialLoad(false);
+                setLoadingState({ status: 'ready', error: '' });
+            } catch (error) {
+                logger.error('single-player-page', '❌ Failed to place initial node', error);
+                setLoadingState({ 
+                    status: 'error', 
+                    error: error instanceof Error ? error.message : 'Failed to place initial node'
+                });
+            }
+        };
+
+        placeInitialNode();
+    }, [context.node, store, isInitialLoad]);
+
+    // Handle navigation changes
+    useEffect(() => {
+        const handleNodeChange = async () => {
+            if (!context.node?.id || !editorRef.current || !snapshotServiceRef.current || !store) {
+                return;
+            }
+
+            // We can safely assert these types because we've checked for null above
+            const editor = editorRef.current as Editor;
+            const snapshotService = snapshotServiceRef.current;
+            const currentNode = context.node;
+
+            try {
+                setLoadingState({ status: 'loading', error: '' });
+                logger.debug('single-player-page', '🔄 Loading node data', {
+                    nodeId: currentNode.id,
+                    path: currentNode.path,
+                    isInitialLoad
+                });
+
+                // Get the previous node from navigation history
+                const previousNode = context.history.currentIndex > 0 
+                    ? context.history.nodes[context.history.currentIndex - 1] 
+                    : null;
+
+                // Handle navigation in snapshot service
+                await snapshotService.handleNavigationStart(previousNode, currentNode);
+
+                // Center the node on canvas
+                const nodeData = await loadNodeData(currentNode);
+                await NodeCanvasService.centerCurrentNode(editor, currentNode, nodeData);
+
+                setLoadingState({ status: 'ready', error: '' });
+            } catch (error) {
+                logger.error('single-player-page', '❌ Failed to load node data', error);
+                setLoadingState({ 
+                    status: 'error', 
+                    error: error instanceof Error ? error.message : 'Failed to load node data'
+                });
+            }
+        };
+
+        handleNodeChange();
+    }, [context.node?.id, context.history, store]);
+
+    // Initialize preferences when user is available
+    useEffect(() => {
+        if (user?.id && !tldrawPreferences) {
+            logger.debug('single-player-page', '🔄 Initializing preferences for user', { userId: user.id });
+            initializePreferences(user.id);
+        }
+    }, [user?.id, tldrawPreferences, initializePreferences]);
+
+    // Redirect if no user
+    useEffect(() => {
+        if (!user) {
+            logger.info('single-player-page', '🚪 Redirecting to home - no user logged in');
+            routerNavigate('/');
+        }
+    }, [user, routerNavigate]);
+
+    // Handle presentation mode
+    useEffect(() => {
+        if (presentationMode && editorRef.current) {
+            logger.info('presentation', '🔄 Presentation mode changed', { 
+                presentationMode,
+                editorExists: !!editorRef.current
+            });
+
+            const editor = editorRef.current;
+            const presentationService = new PresentationService(editor);
+            const cleanup = presentationService.startPresentationMode();
+
+            return () => {
+                logger.info('presentation', '🧹 Cleaning up presentation mode');
+                presentationService.stopPresentationMode();
+                cleanup();
+            };
+        }
+    }, [presentationMode]);
 
     // Handle shared content
     useEffect(() => {
@@ -317,39 +344,11 @@ export default function SinglePlayerPage() {
         handleSharedContent();
     }, [location.state]);
 
-    // Redirect if no user
-    useEffect(() => {
-        if (!user) {
-            logger.info('single-player-page', '🚪 Redirecting to home - no user logged in');
-            routerNavigate('/');
-        }
-    }, [user, routerNavigate]);
-
-    // Handle presentation mode
-    useEffect(() => {
-        if (presentationMode && editorRef.current) {
-            logger.info('presentation', '🔄 Presentation mode changed', { 
-                presentationMode,
-                editorExists: !!editorRef.current
-            });
-
-            const editor = editorRef.current;
-            const presentationService = new PresentationService(editor);
-            const cleanup = presentationService.startPresentationMode();
-
-            return () => {
-                logger.info('presentation', '🧹 Cleaning up presentation mode');
-                presentationService.stopPresentationMode();
-                cleanup();
-            };
-        }
-    }, [presentationMode]);
-
     // Modify the render logic to use presentationMode
     const uiOverrides = getUiOverrides(presentationMode);
     const uiComponents = getUiComponents(presentationMode);
 
-    if (!store || !areContextsInitialized) {
+    if (!store) {
         return (
             <div style={{ 
                 position: 'fixed',

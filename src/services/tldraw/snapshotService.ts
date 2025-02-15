@@ -12,6 +12,13 @@ export interface LoadingState {
     error: string;
 }
 
+const EMPTY_NODE: NavigationNode = {
+    id: '',
+    path: '',
+    type: '',
+    label: ''
+};
+
 export class NavigationSnapshotService {
     private store: TLStore;
     private currentNodePath: string | null = null;
@@ -192,7 +199,12 @@ export class NavigationSnapshotService {
         }
     }
 
-    async handleNavigationStart(fromNode: NavigationNode | null, toNode: NavigationNode): Promise<void> {
+    async handleNavigationStart(fromNode: NavigationNode | null, toNode: NavigationNode | null): Promise<void> {
+        if (!toNode) {
+            logger.warn('snapshot-service', '⚠️ Cannot navigate to null node');
+            return;
+        }
+
         // Clear any pending debounce
         if (this.debounceTimeout) {
             clearTimeout(this.debounceTimeout);
@@ -202,7 +214,7 @@ export class NavigationSnapshotService {
         return new Promise((resolve) => {
             this.debounceTimeout = setTimeout(async () => {
                 try {
-                    await this.executeNavigation(fromNode, toNode);
+                    await this.executeNavigation(fromNode || EMPTY_NODE, toNode);
                     resolve();
                 } catch (error) {
                     logger.error('snapshot-service', '❌ Navigation failed', error);
@@ -212,10 +224,10 @@ export class NavigationSnapshotService {
         });
     }
 
-    private async executeNavigation(fromNode: NavigationNode | null, toNode: NavigationNode): Promise<void> {
+    private async executeNavigation(fromNode: NavigationNode, toNode: NavigationNode): Promise<void> {
         try {
             logger.debug('snapshot-service', '🔄 Starting navigation snapshot handling', {
-                from: fromNode?.path,
+                from: fromNode.path,
                 to: toNode.path,
                 currentPath: this.currentNodePath
             });
@@ -223,27 +235,11 @@ export class NavigationSnapshotService {
             // If we're already in a navigation operation, queue this one
             if (this.isSaving || this.isLoading) {
                 this.pendingOperation = {
-                    save: fromNode?.path || undefined,
+                    save: fromNode.path || undefined,
                     load: toNode.path
                 };
                 logger.debug('snapshot-service', '⏳ Queued navigation operation', this.pendingOperation);
                 return;
-            }
-
-            // Save current snapshot if we have a current node
-            if (fromNode?.path && this.isAutoSaveEnabled) {
-                // Set currentNodePath if this is our first node
-                if (!this.currentNodePath && fromNode.path) {
-                    this.currentNodePath = fromNode.path;
-                    logger.debug('snapshot-service', '📍 Initialized current node path', {
-                        path: fromNode.path
-                    });
-                }
-
-                await this.saveCurrentSnapshot(fromNode.path);
-                logger.debug('snapshot-service', '✅ Saved current snapshot', {
-                    nodePath: fromNode.path
-                });
             }
 
             // Clear the store before loading new snapshot
@@ -265,15 +261,15 @@ export class NavigationSnapshotService {
                 const operation = this.pendingOperation;
                 this.pendingOperation = null;
                 await this.handleNavigationStart(
-                    operation.save ? { path: operation.save } as NavigationNode : null,
-                    { path: operation.load } as NavigationNode
+                    operation.save ? { ...EMPTY_NODE, path: operation.save } : null,
+                    operation.load ? { ...EMPTY_NODE, path: operation.load } : null
                 );
                 logger.debug('snapshot-service', '✅ Completed pending operation');
             }
         } catch (error) {
             logger.error('snapshot-service', '❌ Error during navigation snapshot handling', {
                 error: error instanceof Error ? error.message : 'Unknown error',
-                fromPath: fromNode?.path,
+                fromPath: fromNode.path,
                 toPath: toNode.path
             });
             throw error;
